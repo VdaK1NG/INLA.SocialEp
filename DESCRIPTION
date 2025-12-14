@@ -13,7 +13,6 @@ URL: https://github.com/VdaK1NG/INLA.SocialEp, https://vdak1ng.github.io/INLA.So
 Depends:
     R (>= 4.1.0)
 Imports:
-    INLA,
     dplyr, 
     ggraph,
     spdep,
