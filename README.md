@@ -1,7 +1,9 @@
 
+<div style="text-align: justify">
+
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# INLA.SocialEp <a href='https://github.com/VdaK1NG/INLA.SocialEp'><img src='man/figures/logo.png' align="right" height="120" /></a>
+# INLA.SocialEp <a href='https://github.com/VdaK1NG/INLA.SocialEp'><img src='man/figures/logo.png' align="right" height="120" width="110" /></a>
 
 <br>
 
@@ -79,3 +81,5 @@ A BibTeX entry for LaTeX users is:
       note = {R package version 1.1, commit 0edbfae61f99d7d65045fd9be9dccfd2327445bc},
       url = {https://github.com/VdaK1NG/INLA.SocialEp},
     } 
+
+</div>
