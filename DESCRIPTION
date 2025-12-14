@@ -13,7 +13,19 @@ URL: https://github.com/VdaK1NG/INLA.SocialEp, https://vdak1ng.github.io/INLA.So
 Depends:
     R (>= 4.1.0)
 Imports:
-    dplyr
+    dplyr, 
+    INLA,
+    ggraph,
+    spdep,
+    ggplot2,
+    gridExtra,
+    broom,
+    sf, 
+    tidyr,
+    scales, 
+    SUMMER,
+    igraph,
+    reactable
 Suggests:
     assertthat,
     doFuture,

@@ -34,7 +34,6 @@ options(knitr.kable.NA = '---') # Celdas vacías en la tabla se rellenan con ---
 
 ```{r fig.width=1, warning=FALSE, message=FALSE}
 #################### Load Libraries and Functions ####################
-library("INLAMSM")
 library("INLA") 
 library("ggraph") 
 library("spdep")

@@ -1,4 +1,53 @@
 url: https://vdak1ng.github.io/INLA.SocialEp/
 template:
   bootstrap: 5
+articles:
+- title: Data Simulation
+  navbar: Data Simulation
+- title: Vignettes
+  navbar: Vignettes
+authors:
+  Pablo Escobar-Hernández:
+    href: https://github.com/VdaK1NG
+  Antonio López-Quílez:
+    href: https://github.com/antoloqui
+  Francisco Palmí-Perales:
+    href: https://github.com/FranciscoPalmiPerales
+home:
+  sidebar:
+    structure:
+    - links
+    - license
+    - community
+    - citation
+    - authors
+    - dev
+    - custom
+    components:
+      custom:
+        title: Impact metrics
+        text: ~
+reference:
+- title: INLA Model Wrappers
+  desc: |
+    Wrapper functions for several advanced disease mapping models in INLA.
+  contents: inla.SpANOVA.2x2
+- title: Model evaluation
+  desc: |
+    Evaluate and interpret models.
+  contents:
+  - inla.MARB
+  - inla.MedARB
+  - inla.MRRMSE
+  - inla.MedRRMSE
+  - inla.null.sp
+- title: Accessory Functions
+  desc: |
+    Prepare datasets for analysis.
+  contents: inla.full.graph
+- title: Package Data
+- subtitle: Datasets
+- subtitle: Simulated Datasets
+
+
 
