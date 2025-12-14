@@ -1,36 +1,30 @@
-#' Small OTU abundance dataset
+#' Population per US County - Year 2023
 #'
-#' A dataset containing relatives abundances of 60 OTUs for 60 human stool samples.
-#' This is a subset of the data provided in `extdata/otu_large.csv`, which was
-#' used in [Topçuoğlu _et al._ 2020](https://journals.asm.org/doi/10.1128/mbio.00434-20).
-#'
-#' @format A data frame with 60 rows and 61 variables.
-#' The `dx` column is the diagnosis: healthy or cancerous (colorectal).
-#' All other columns are OTU relative abundances.
+#' @format Dataframe
+#' Dataframe containing the population per US county on 2023
 "pop_data_us_23"
 
-#' Mini OTU abundance dataset
+#' Simulated spatial effects
 #'
-#' A dataset containing relatives abundances of OTUs for human stool samples
-#' with a binary outcome, `dx`.
-#' This is a subset of `otu_small`.
+#' A dataset containing simulated spatial effects.
 #'
-#' @format A data frame
-#' The `dx` column is the diagnosis: healthy or cancerous (colorectal).
-#' All other columns are OTU relative abundances.
+#' @format Matrix
+#' Each column contains one of the simulated spatial effect
 "sim_sp_ef"
 
-#' Mini OTU abundance dataset - preprocessed
+#' TMean Temperature 2023
 #'
-#' This is the result of running `preprocess_data("otu_mini_bin")`
+#' Mean Temperature per US County - Year 2023
+#'
+#' @format Dataframe
+#' Dataframe containing the mean temperature per US county on 2023
 "temp_data_us_23"
 
-#' Mini OTU abundance dataset with 3 categorical variables
+#' US County 2023
 #'
-#' A dataset containing relatives abundances of OTUs for human stool samples
+#' Spatial object coming from a shp file with the US counties
 #'
-#' @format A data frame
-#' The `dx` column is the colorectal cancer diagnosis: adenoma, carcinoma, normal.
-#' All other columns are OTU relative abundances.
+#' @format Spatial Object
+#' Spatial object with the US Counties, year 2023
 "us_county_23"
 
