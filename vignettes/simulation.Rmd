@@ -76,7 +76,7 @@ theme_VDK <- theme_update(plot.title = element_text(size=14, face= "bold", colou
 
 ```{r}
 # Load SHP
-us_counties <- read_sf('../data/cb_2023_us_county_5m.shp')
+us_counties <- us_counties_23
 
 # Remove states that are isolated from main continental US soil
 us_counties <- subset(us_counties, STATE_NAME %notin% c("Commonwealth of the Northern Mariana Islands", "American Samoa", "Guam", "Hawaii", "Puerto Rico", 
@@ -192,7 +192,7 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
   
 ```{r echo=TRUE}
 # Load temp data
-temp_data <- read.csv("./Datos/data_temp.csv")
+temp_data <- temp_data_us_23
 temp_data <- temp_data %>% select(Name, State, Value) %>% mutate(STATE_NAME=State, NAMELSAD=Name) %>% select(-State, -Name)
 
 # Merge datasets
@@ -217,7 +217,7 @@ ggplot() + geom_sf(data=us_counties, aes(fill=cut(Temp_Scale, breaks = c(-3.5, -
 
 ```{r echo=TRUE}
 # Load population data
-cov_data <- read.csv("./Datos/co-est2023-alldata.csv")
+cov_data <- pop_data_us_23 
 cov_data <- cov_data %>% select(STNAME, CTYNAME, POPESTIMATE2023) %>% mutate(STATE_NAME=STNAME, NAMELSAD=CTYNAME) %>% select(-STNAME, -CTYNAME)
 cov_data <- cov_data[!duplicated(cov_data), ]
 
@@ -246,16 +246,22 @@ ggplot() + geom_sf(data=us_counties, aes(fill=cut_number(POP_DENS_Scale, 5)), co
 
 ***
 
-```{r echo=TRUE, eval=TRUE}
+```{r echo=TRUE, eval=FALSE}
 ind.ef <- rst(n=4, type = "s", type.s = "ICAR", scale.model = FALSE, Amat = W)
 
-ind.ef.g1 <- ind.ef[2, ]
-ind.ef.g2 <- ind.ef[1, ]
+ind.ef.g1 <- ind.ef[1, ]
+ind.ef.g2 <- ind.ef[2, ]
 ind.ef.g3 <- ind.ef[3, ]
 ind.ef.g4 <- ind.ef[4, ]
-
-save(ind.ef, file="./Datos/ind_ef.Rdata")
 ```
+
+```{r echo=FALSE}
+ind.ef.g1 <- sim_sp_ef[2, ]
+ind.ef.g2 <- sim_sp_ef[1, ]
+ind.ef.g3 <- sim_sp_ef[3, ]
+ind.ef.g4 <- sim_sp_ef[4, ]
+```
+
 
 ```{r echo=FALSE}
 fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(ind.ef[1, ], breaks=c(-5, -2.5, -1.5, -1, 1, 1.5, 2.5, 5))), colour=NA) + 
