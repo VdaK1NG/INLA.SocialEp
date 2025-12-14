@@ -1,0 +1,3000 @@
+---
+title: "Simulation Study - Data Creation"
+author: "P. Escobar-Hernandez, A. López-Quílez, F. Palmí-Perales"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Introduction to mikropml}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+<style type="text/css">
+.main-container {
+  max-width: 1800px !important;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+
+<style>
+.list-group-item.active, .list-group-item.active:focus, .list-group-item.active:hover {
+    z-index: 2;
+    color: #fff;
+    background-color: #133BF2;
+    border-color: #133BF2;
+}
+</style>
+
+<div style="text-align: justify">
+
+```{r echo=FALSE}
+knitr::opts_chunk$set(echo = FALSE, stop = FALSE, message = FALSE, fig.align = "center", fig.width = 12)
+options(knitr.kable.NA = '---') # Celdas vacías en la tabla se rellenan con ---
+```
+
+```{r fig.width=1, warning=FALSE, message=FALSE}
+#################### Load Libraries and Functions ####################
+library("INLAMSM")
+library("INLA") 
+library("ggraph") 
+library("spdep")
+library("ggplot2") 
+library("gridExtra")
+library("dplyr") 
+library("broom")
+library("sf")
+library("tidyr")
+library("scales")
+library("SUMMER")
+library("igraph")
+library("reactable")
+`%notin%` <- Negate(`%in%`)
+
+#################### Modify Graphics ####################
+
+PSIC <- "#133BF2"
+VDK <- c(PSIC, "#66CDAA")
+PSIC_ESC <- c("#FFFFFF", "#133BF2", "#000000") 
+CScale <- colorRampPalette(PSIC_ESC)
+DIF <- c("#133BF2", "#7189F7", "#FFFFFF", "#FF867A", "#FF2F1B")
+CScale_dif <- colorRampPalette(DIF)
+CScale_dif2 <- colorRampPalette(c("#FFFFFF", "#FF2F1B"))
+fill.col <- c("#7189F7", "#66CDAA", "#8e7cc3", "#CAE25D", "#E2855D")
+
+theme_VDK <- theme_update(plot.title = element_text(size=14, face= "bold", colour= "grey43", hjust = 0.5), #cambiar estilo titulo
+        axis.title.x = element_text(size=14, face="bold", colour = "black"), #cambiar estilo eje x
+        axis.title.y = element_text(size=14, face="bold", colour = "black"), #cambiar estilo eje y
+        panel.border = element_rect(colour = "black", fill=NA, size=0.3), #cambiar bordes grafico
+        legend.title = element_text(size=10, face="bold", colour = "black"), # cambiar título leyenda
+        legend.text = element_text(size=8, colour = "black"),
+        strip.background = element_rect(color="black", fill=PSIC, size=0.5, linetype="solid"),
+        strip.text.x = element_text(color = "white", face = "bold"))
+```
+
+# .-Introduction
+
+|       For the simulation we are going to be using US Counties that belong to the main continental part. After downloading from official sources ([US Census Bureau](https://www.census.gov/geographies/mapping-files/time-series/geo/carto-boundary-file.html)), we need to process the spatial object. Specifically, we need to trim areas that are not connected to avoid possible problems that may arise during the INLA approximation caused by a not-fully connected graph underlying in the spatial effects. This means removing Alaska and non-continental states, as well as two island counties (San Juan and Nantucket), and leaving the final number of counties at 3104.
+
+```{r}
+# Load SHP
+us_counties <- read_sf('../data/cb_2023_us_county_5m.shp')
+
+# Remove states that are isolated from main continental US soil
+us_counties <- subset(us_counties, STATE_NAME %notin% c("Commonwealth of the Northern Mariana Islands", "American Samoa", "Guam", "Hawaii", "Puerto Rico", 
+                                                        "United States Virgin Islands", "Alaska"))
+
+# Remove states islands
+us_counties <- subset(us_counties, COUNTYNS %notin% c("01531931", # San Juan County - Wash
+                                                      "00606936")) # Nantucket
+
+# Prepare adjacency matrix and graph for INLA
+nc_sp <- as(us_counties, 'Spatial')
+neighbors <- poly2nb(nc_sp, snap=0.00000005)
+nb2INLA("graph", neighbors)
+graph <-  inla.read.graph("graph")
+n_county <- nrow(us_counties)
+W <- as.matrix(nb2mat(neighbors, style = "B", zero.policy = TRUE), ncol=n_county)
+```
+  
+```{r echo=FALSE}
+ggplot() + geom_sf(data = us_counties, aes(), col="black", fill=PSIC) + ggtitle("US Counties & Graph") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank(), legend.position = "bottom")
+```
+
+***
+
+We are going to fix the seed for the random numbers using the number of our [ARXIV page](https://arxiv.org/abs/2410.21227) and use and average of 100 observations per county, which would be 25 per group if they were equally distributed.
+
+```{r echo=TRUE}
+# Set seed for the simulation
+set.seed(241021227)
+
+# Total Number of Observations
+total_obs <- n_county * 1000
+```
+
+***
+
+|       We are going to assume that there are two existing underlying **risk factors** that may affect differently each of the risk groups. One of them presents a clear north-south gradient, and will be simulated using mean temperatures over the last 24 months. The second one presents a more diverse spatial pattern, but is concentrated around highly populated areas and will be generated using population density. Moreover, we are going to simulate baseline independent spatial effects, as well as heterogeneity effects.
+
+## .- Baseline Risks
+
+|       Finally, we are also going to consider two different possibilities for each one of the previous conditions: 
+
+  *   **Different Risks**: our dataset presents severe differentes in the relative risk for each group. In order to make sure that the model is able to detect this differences properly we will use a dataset that presents pronounced differences between the groups.
+  
+***
+  
+```{r echo=TRUE}
+# Different Risks
+us_counties$group1_dif_risk <- rnorm(n_county, 0.3, 0.5)
+us_counties$group2_dif_risk <- rnorm(n_county, 0.05, 0.5)
+us_counties$group3_dif_risk <- rnorm(n_county, -0.3, 0.5)
+us_counties$group4_dif_risk <- rnorm(n_county, -0.05, 0.5)
+```
+  
+```{r echo=FALSE}
+us_counties$FILL_group1_dif_risk <- cut(us_counties$group1_dif_risk, breaks = c(-2.5, -1.5, -1, -0.5, -0.1, 0.1, 0.5, 1, 1.5, 2.5), labels=CScale_dif(9))
+us_counties$FILL_group2_dif_risk <- cut(us_counties$group2_dif_risk, breaks = c(-2.5, -1.5, -1, -0.5, -0.1, 0.1, 0.5, 1, 1.5, 2.5), labels=CScale_dif(9))
+us_counties$FILL_group3_dif_risk <- cut(us_counties$group3_dif_risk, breaks = c(-2.5, -1.5, -1, -0.5, -0.1, 0.1, 0.5, 1, 1.5, 2.5), labels=CScale_dif(9))
+us_counties$FILL_group4_dif_risk <- cut(us_counties$group4_dif_risk, breaks = c(-2.5, -1.5, -1, -0.5, -0.1, 0.1, 0.5, 1, 1.5, 2.5), labels=CScale_dif(9))
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(), colour=NA, fill=us_counties$FILL_group1_dif_risk) + ggtitle("Group 1 - Dif. Risks")+ 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank())
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(), colour=NA, fill=us_counties$FILL_group2_dif_risk) + ggtitle("Group 2 - Dif. Risks")+ 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank())
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(), colour=NA, fill=us_counties$FILL_group3_dif_risk) + ggtitle("Group 3 - Dif. Risks")+ 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank())
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(), colour=NA, fill=us_counties$FILL_group4_dif_risk) + ggtitle("Group 4 - Dif. Risks")+ 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+  *   **Similar Risks**: to complement the previous option we will simulate two groups with a fairly similar relative risk.
+  
+***
+  
+```{r echo=TRUE}
+# Similar Risks
+us_counties$group1_sim_risk <- rnorm(n_county, 0, 0.5)
+us_counties$group2_sim_risk <- rnorm(n_county, 0, 0.5)
+us_counties$group3_sim_risk <- rnorm(n_county, 0, 0.5)
+us_counties$group4_sim_risk <- rnorm(n_county, 0, 0.5)
+```
+
+```{r echo=FALSE}
+us_counties$FILL_group1_sim_risk <- cut(us_counties$group1_sim_risk, breaks = c(-2.5, -1.5, -1, -0.5, -0.1, 0.1, 0.5, 1, 1.5, 2.5), labels=CScale_dif(9))
+us_counties$FILL_group2_sim_risk <- cut(us_counties$group2_sim_risk, breaks = c(-2.5, -1.5, -1, -0.5, -0.1, 0.1, 0.5, 1, 1.5, 2.5), labels=CScale_dif(9))
+us_counties$FILL_group3_sim_risk <- cut(us_counties$group3_sim_risk, breaks = c(-2.5, -1.5, -1, -0.5, -0.1, 0.1, 0.5, 1, 1.5, 2.5), labels=CScale_dif(9))
+us_counties$FILL_group4_sim_risk <- cut(us_counties$group4_sim_risk, breaks = c(-2.5, -1.5, -1, -0.5, -0.1, 0.1, 0.5, 1, 1.5, 2.5), labels=CScale_dif(9))
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(), colour=NA, fill=us_counties$FILL_group1_sim_risk) + ggtitle("Group 1 - Sim. Risks")+ 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank())
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(), colour=NA, fill=us_counties$FILL_group2_sim_risk) + ggtitle("Group 2 - Sim. Risks")+ 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank())
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(), colour=NA, fill=us_counties$FILL_group3_sim_risk) + ggtitle("Group 3 - Sim. Risks")+ 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank())
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(), colour=NA, fill=us_counties$FILL_group4_sim_risk) + ggtitle("Group 4 - Sim. Risks")+ 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+## .- Factor 1: Temperature
+
+|       Mean temperature between the months of January 2023 and January 2025 was extracted from official sources. Data had around 100 missing values that were filled using the mean temperature across all counties. In addition, values have been scaled to oscillate between 0.5 and 1.5 so that they have a similar scale to the rest of the values used. The final distribution of values is the following:
+
+***
+  
+```{r echo=TRUE}
+# Load temp data
+temp_data <- read.csv("./Datos/data_temp.csv")
+temp_data <- temp_data %>% select(Name, State, Value) %>% mutate(STATE_NAME=State, NAMELSAD=Name) %>% select(-State, -Name)
+
+# Merge datasets
+us_counties <- left_join(us_counties, temp_data)
+us_counties$Value[is.na(us_counties$Value)] <- mean(us_counties$Value, na.rm = TRUE)
+us_counties$Temp_Scale <- scale(us_counties$Value)
+summary(us_counties$Temp_Scale)
+```
+
+```{r echo=FALSE}
+ggplot() + geom_sf(data=us_counties, aes(fill=cut(Temp_Scale, breaks = c(-3.5, -2, -1, -0.5, 0.5, 1, 2, 3.5))), colour=NA) + scale_fill_manual(values = CScale_dif(7), name="Scaled Values") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank(), legend.position = "bottom")
+```
+
+***
+
+## .- Factor 2: Population Density
+
+|       Population estimates for 2023 were obtained from official sources. To generate the population density values we have used the area of land included in the shapefile downloaded from the census.gov web. This values have been scaled as well.
+
+***
+
+```{r echo=TRUE}
+# Load population data
+cov_data <- read.csv("./Datos/co-est2023-alldata.csv")
+cov_data <- cov_data %>% select(STNAME, CTYNAME, POPESTIMATE2023) %>% mutate(STATE_NAME=STNAME, NAMELSAD=CTYNAME) %>% select(-STNAME, -CTYNAME)
+cov_data <- cov_data[!duplicated(cov_data), ]
+
+# Merge datasets
+us_counties <- left_join(us_counties, cov_data)
+us_counties$POPESTIMATE2023[us_counties$NAMELSAD=="Doña Ana County"] <- 225210
+us_counties$POP_DENS <- us_counties$POPESTIMATE2023/us_counties$ALAND
+us_counties$POP_DENS_Scale <- scale(log(us_counties$POP_DENS))
+
+summary(us_counties$POP_DENS_Scale)
+
+# Extract Population variable for use later
+POP <- us_counties$POPESTIMATE2023
+```
+
+```{r echo=FALSE}
+ggplot() + geom_sf(data=us_counties, aes(fill=cut_number(POP_DENS_Scale, 5)), col=NA) + scale_fill_manual(values = CScale_dif(5), name="Pop. Dens.") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank(), legend.position = "bottom")
+```
+
+***
+
+## .-Independent Spatial Effects
+
+|       In this case we need to simulate 4 different spatial effects using the function **rst()** from the package **SUMMER**.
+
+***
+
+```{r echo=TRUE, eval=TRUE}
+ind.ef <- rst(n=4, type = "s", type.s = "ICAR", scale.model = FALSE, Amat = W)
+
+ind.ef.g1 <- ind.ef[2, ]
+ind.ef.g2 <- ind.ef[1, ]
+ind.ef.g3 <- ind.ef[3, ]
+ind.ef.g4 <- ind.ef[4, ]
+
+save(ind.ef, file="./Datos/ind_ef.Rdata")
+```
+
+```{r echo=FALSE}
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(ind.ef[1, ], breaks=c(-5, -2.5, -1.5, -1, 1, 1.5, 2.5, 5))), colour=NA) + 
+  ggtitle("Sp Effect 1") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(ind.ef[2, ], breaks=c(-5, -2.5, -1.5, -1, 1, 1.5, 2.5, 5))), colour=NA) + 
+  ggtitle("Sp Effect 2") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(ind.ef[3, ], breaks=c(-5, -2.5, -1.5, -1, 1, 1.5, 2.5, 5))), colour=NA) + 
+  ggtitle("Sp Effect 3") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(ind.ef[4, ], breaks=c(-5, -2.5, -1.5, -1, 1, 1.5, 2.5, 5))), colour=NA) + 
+  ggtitle("Sp Effect 4") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+# .-No Spatial Effect
+
+|       In this case we are going to assign the values using only population and the heterogeneity effect simulated for each group.
+
+$$
+\begin{aligned}
+& \theta_1^i=\omega_1^i \\
+& \theta_2^i=\omega_2^i \\
+& \theta_3^i=\omega_3^i \\
+& \theta_4^i=\omega_4^i
+\end{aligned}
+$$
+
+## Groups with equal risks
+
+***
+
+```{r echo=TRUE}
+# Estimate expected values depending on the population of the county (equal for all model used)
+total_pob <- sum(POP)
+EXP <- rep((total_obs*POP)/(total_pob*4), 4)
+if(sum(EXP)!=total_obs){stop("Observed values and expected values do not match.")}
+
+# Estimate the total combination of population and risks
+total_pobrisk <- sum(POP * us_counties$group1_sim_risk + POP * us_counties$group2_sim_risk + 
+                       POP * us_counties$group3_sim_risk + POP * us_counties$group4_sim_risk)
+
+# Add observed values to sp object for ploting
+us_counties$OBS_M0_SIM_G1 <- round(total_obs*((POP * us_counties$group1_sim_risk)/(total_pobrisk)), 0)
+us_counties$OBS_M0_SIM_G2 <- round(total_obs*((POP * us_counties$group2_sim_risk)/(total_pobrisk)), 0)
+us_counties$OBS_M0_SIM_G3 <- round(total_obs*((POP * us_counties$group3_sim_risk)/(total_pobrisk)), 0)
+us_counties$OBS_M0_SIM_G4 <- round(total_obs*((POP * us_counties$group4_sim_risk)/(total_pobrisk)), 0)
+
+# Estimate underlying risk for each group
+g1_pobrisks <- us_counties$group1_sim_risk
+g2_pobrisks <- us_counties$group2_sim_risk
+g3_pobrisks <- us_counties$group3_sim_risk 
+g4_pobrisks <- us_counties$group4_sim_risk
+
+# Exponential of the underlying risk to match log of the linear predictor
+g1_pobrisks <- exp(g1_pobrisks)
+g2_pobrisks <- exp(g2_pobrisks)
+g3_pobrisks <- exp(g3_pobrisks)
+g4_pobrisks <- exp(g4_pobrisks)
+
+data_risk <- data.frame("M0_SIM"=c(g1_pobrisks, g2_pobrisks, g3_pobrisks, g4_pobrisks))
+
+# Estimate the total combination of population and risks
+total_pobrisk <- sum(POP * g1_pobrisks + POP * g2_pobrisks + POP * g3_pobrisks + POP * g4_pobrisks)
+
+# Add observed values to sp object for ploting
+us_counties$OBS_M0_SIM_G1 <- round(total_obs*((POP * g1_pobrisks)/(total_pobrisk)), 0)
+us_counties$OBS_M0_SIM_G2 <- round(total_obs*((POP * g2_pobrisks)/(total_pobrisk)), 0)
+us_counties$OBS_M0_SIM_G3 <- round(total_obs*((POP * g3_pobrisks)/(total_pobrisk)), 0)
+us_counties$OBS_M0_SIM_G4 <- round(total_obs*((POP * g4_pobrisks)/(total_pobrisk)), 0)
+
+# Create dataframe for M0 models and estimate observed values depending on risks
+M0_df <- data.frame("OBS_SIM"=NA, "OBS_DIF"=NA, "EXP"=EXP, TYPE = c(rep(c("G1", "G2", "G3", "G4"), each=nrow(us_counties))), "idx"=1:length(EXP))
+M0_df$OBS_SIM <- c(us_counties$OBS_M0_SIM_G1, us_counties$OBS_M0_SIM_G2, us_counties$OBS_M0_SIM_G3, us_counties$OBS_M0_SIM_G4)
+
+# Compensate the different numbers of observed and expected cases caused by decimals
+total_dif <- sum(EXP)-sum(M0_df$OBS_SIM)
+
+if(total_dif>0){
+  r_ids <- round(runif(total_dif, 1, nrow(M0_df)), 0)
+  M0_df$OBS_SIM[r_ids] <- M0_df$OBS_SIM[r_ids] + 1
+}else if(total_dif<0){
+  r_ids <- round(runif(abs(total_dif), 1, nrow(M0_df)), 0)
+  M0_df$OBS_SIM[r_ids] <- M0_df$OBS_SIM[r_ids] - 1
+}
+
+if(sum(M0_df$OBS_SIM)!=total_obs){stop("Observed values and expected values do not match.")}
+```
+
+```{r echo=FALSE}
+us_counties$OBS_M0_SIM_G1_rate <- (us_counties$OBS_M0_SIM_G1/POP)*100000
+us_counties$OBS_M0_SIM_G2_rate <- (us_counties$OBS_M0_SIM_G2/POP)*100000
+us_counties$OBS_M0_SIM_G3_rate <- (us_counties$OBS_M0_SIM_G3/POP)*100000
+us_counties$OBS_M0_SIM_G4_rate <- (us_counties$OBS_M0_SIM_G4/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(OBS_M0_SIM_G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(OBS_M0_SIM_G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(OBS_M0_SIM_G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(OBS_M0_SIM_G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+## Groups with different risks
+
+***
+
+```{r echo=TRUE}
+# Estimate the total combination of population and risks
+total_pobrisk <- sum(POP * us_counties$group1_dif_risk + POP * us_counties$group2_dif_risk + 
+                       POP * us_counties$group3_dif_risk + POP * us_counties$group4_dif_risk)
+
+# Add observed values to sp object for ploting
+us_counties$OBS_M0_DIF_G1 <- round(total_obs*((POP * us_counties$group1_dif_risk)/(total_pobrisk)), 0)
+us_counties$OBS_M0_DIF_G2 <- round(total_obs*((POP * us_counties$group2_dif_risk)/(total_pobrisk)), 0)
+us_counties$OBS_M0_DIF_G3 <- round(total_obs*((POP * us_counties$group3_dif_risk)/(total_pobrisk)), 0)
+us_counties$OBS_M0_DIF_G4 <- round(total_obs*((POP * us_counties$group4_dif_risk)/(total_pobrisk)), 0)
+
+# Estimate underlying risk for each group
+g1_pobrisks <- us_counties$group1_dif_risk
+g2_pobrisks <- us_counties$group2_dif_risk
+g3_pobrisks <- us_counties$group3_dif_risk 
+g4_pobrisks <- us_counties$group4_dif_risk
+
+# Exponential of the underlying risk to match log of the linear predictor
+g1_pobrisks <- exp(g1_pobrisks)
+g2_pobrisks <- exp(g2_pobrisks)
+g3_pobrisks <- exp(g3_pobrisks)
+g4_pobrisks <- exp(g4_pobrisks)
+
+data_risk$M0_DIF <- c(g1_pobrisks, g2_pobrisks, g3_pobrisks, g4_pobrisks)
+
+# Estimate the total combination of population and risks
+total_pobrisk <- sum(POP * g1_pobrisks + POP * g2_pobrisks + POP * g3_pobrisks + POP * g4_pobrisks)
+
+# Add observed values to sp object for ploting
+us_counties$OBS_M0_DIF_G1 <- round(total_obs*((POP * g1_pobrisks)/(total_pobrisk)), 0)
+us_counties$OBS_M0_DIF_G2 <- round(total_obs*((POP * g2_pobrisks)/(total_pobrisk)), 0)
+us_counties$OBS_M0_DIF_G3 <- round(total_obs*((POP * g3_pobrisks)/(total_pobrisk)), 0)
+us_counties$OBS_M0_DIF_G4 <- round(total_obs*((POP * g4_pobrisks)/(total_pobrisk)), 0)
+
+# Create dataframe for M0 models and estimate observed values depending on risks
+M0_df$OBS_DIF <- c(us_counties$OBS_M0_DIF_G1, us_counties$OBS_M0_DIF_G2, us_counties$OBS_M0_DIF_G3, us_counties$OBS_M0_DIF_G4)
+
+# Compensate the different numbers of observed and expected cases caused by decimals
+total_dif <- sum(EXP)-sum(M0_df$OBS_DIF)
+
+if(total_dif>0){
+  r_ids <- round(runif(total_dif, 1, nrow(M0_df)), 0)
+  M0_df$OBS_DIF[r_ids] <- M0_df$OBS_DIF[r_ids] + 1
+}else if(total_dif<0){
+  r_ids <- round(runif(abs(total_dif), 1, nrow(M0_df)), 0)
+  M0_df$OBS_DIF[r_ids] <- M0_df$OBS_DIF[r_ids] - 1
+}
+
+if(sum(M0_df$OBS_DIF)!=total_obs){stop("Observed values and expected values do not match.")}
+```
+
+```{r echo=FALSE}
+us_counties$OBS_M0_DIF_G1_rate <- (us_counties$OBS_M0_DIF_G1/POP)*100000
+us_counties$OBS_M0_DIF_G2_rate <- (us_counties$OBS_M0_DIF_G2/POP)*100000
+us_counties$OBS_M0_DIF_G3_rate <- (us_counties$OBS_M0_DIF_G3/POP)*100000
+us_counties$OBS_M0_DIF_G4_rate <- (us_counties$OBS_M0_DIF_G4/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(OBS_M0_DIF_G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(OBS_M0_DIF_G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(OBS_M0_DIF_G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(OBS_M0_DIF_G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+# .-Individual Spatial Effects
+
+|       In this case we need to simulate 4 different spatial effects using the function **rst()** from the package **SUMMER**. Each spatial effect will be combined with the underlying risk assigned to each county and each group, and used to distribute the number of observed cases. We will rescale the spatial effects to be between -1 and 1 so that the assigned risk groups dont go to far below .
+
+$$
+\begin{aligned}
+& \theta_1^i=\gamma_1^1 \omega_1^i + \gamma_2^1 \phi_1 \\
+& \theta_2^i=\gamma_1^2 \omega_2^i + \gamma_2^2 \phi_2 \\
+& \theta_3^i=\gamma_1^3 \omega_3^i + \gamma_2^3 \phi_3 \\
+& \theta_4^i=\gamma_1^4 \omega_4^i + \gamma_2^4 \phi_4
+\end{aligned}
+$$
+
+
+## Groups with equal risks {.tabset}
+
+***
+
+```{r echo=TRUE}
+# Estimate underlying risk for each group
+g1_pobrisks_v1 <- 1/2*us_counties$group1_sim_risk + 1/2*ind.ef.g2
+g2_pobrisks_v1 <- 1/2*us_counties$group2_sim_risk + 1/2*ind.ef.g1
+g3_pobrisks_v1 <- 1/2*us_counties$group3_sim_risk + 1/2*ind.ef.g3
+g4_pobrisks_v1 <- 1/2*us_counties$group4_sim_risk + 1/2*ind.ef.g4
+
+g1_pobrisks_v2 <- 2/3*us_counties$group1_sim_risk + 1/3*ind.ef.g2
+g2_pobrisks_v2 <- 2/3*us_counties$group2_sim_risk + 1/3*ind.ef.g1
+g3_pobrisks_v2 <- 2/3*us_counties$group3_sim_risk + 1/3*ind.ef.g3
+g4_pobrisks_v2 <- 2/3*us_counties$group4_sim_risk + 1/3*ind.ef.g4
+
+g1_pobrisks_v3 <- 1/3*us_counties$group1_sim_risk + 2/3*ind.ef.g2
+g2_pobrisks_v3 <- 1/3*us_counties$group2_sim_risk + 2/3*ind.ef.g1
+g3_pobrisks_v3 <- 1/3*us_counties$group3_sim_risk + 2/3*ind.ef.g3
+g4_pobrisks_v3 <- 1/3*us_counties$group4_sim_risk + 2/3*ind.ef.g4
+
+# Exponential of the underlying risk to match log of the linear predictor
+g1_pobrisks_v1 <- exp(g1_pobrisks_v1)
+g2_pobrisks_v1 <- exp(g2_pobrisks_v1)
+g3_pobrisks_v1 <- exp(g3_pobrisks_v1)
+g4_pobrisks_v1 <- exp(g4_pobrisks_v1)
+
+g1_pobrisks_v2 <- exp(g1_pobrisks_v2)
+g2_pobrisks_v2 <- exp(g2_pobrisks_v2)
+g3_pobrisks_v2 <- exp(g3_pobrisks_v2)
+g4_pobrisks_v2 <- exp(g4_pobrisks_v2)
+
+g1_pobrisks_v3 <- exp(g1_pobrisks_v3)
+g2_pobrisks_v3 <- exp(g2_pobrisks_v3)
+g3_pobrisks_v3 <- exp(g3_pobrisks_v3)
+g4_pobrisks_v3 <- exp(g4_pobrisks_v3)
+
+data_risk$M1_SIM_V1 <- c(g1_pobrisks_v1, g2_pobrisks_v1, g3_pobrisks_v1, g4_pobrisks_v1)
+data_risk$M1_SIM_V2 <- c(g1_pobrisks_v2, g2_pobrisks_v2, g3_pobrisks_v2, g4_pobrisks_v2)
+data_risk$M1_SIM_V3 <- c(g1_pobrisks_v3, g2_pobrisks_v3, g3_pobrisks_v3, g4_pobrisks_v3)
+
+# Estimate the total combination of population and risks
+total_pobrisk_v1 <- sum(POP * g1_pobrisks_v1 + POP * g2_pobrisks_v1 + POP * g3_pobrisks_v1 + POP * g4_pobrisks_v1)
+total_pobrisk_v2 <- sum(POP * g1_pobrisks_v2 + POP * g2_pobrisks_v2 + POP * g3_pobrisks_v2 + POP * g4_pobrisks_v2)
+total_pobrisk_v3 <- sum(POP * g1_pobrisks_v3 + POP * g2_pobrisks_v3 + POP * g3_pobrisks_v3 + POP * g4_pobrisks_v3)
+
+# Add observed values to sp object for ploting
+us_counties$OBS_M1_SIM_G1_v1 <- round(total_obs*((POP * g1_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M1_SIM_G2_v1 <- round(total_obs*((POP * g2_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M1_SIM_G3_v1 <- round(total_obs*((POP * g3_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M1_SIM_G4_v1 <- round(total_obs*((POP * g4_pobrisks_v1)/(total_pobrisk_v1)), 0)
+
+us_counties$OBS_M1_SIM_G1_v2 <- round(total_obs*((POP * g1_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M1_SIM_G2_v2 <- round(total_obs*((POP * g2_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M1_SIM_G3_v2 <- round(total_obs*((POP * g3_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M1_SIM_G4_v2 <- round(total_obs*((POP * g4_pobrisks_v2)/(total_pobrisk_v2)), 0)
+
+us_counties$OBS_M1_SIM_G1_v3 <- round(total_obs*((POP * g1_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M1_SIM_G2_v3 <- round(total_obs*((POP * g2_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M1_SIM_G3_v3 <- round(total_obs*((POP * g3_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M1_SIM_G4_v3 <- round(total_obs*((POP * g4_pobrisks_v3)/(total_pobrisk_v3)), 0)
+
+# Create dataframe for M0 models and estimate observed values depending on risks
+M1_df <- data.frame("OBS_SIM_v1"=NA, "OBS_DIF_v1"=NA, "OBS_SIM_v2"=NA, "OBS_DIF_v2"=NA, "OBS_SIM_v3"=NA, "OBS_DIF_v3"=NA, "EXP"=EXP, 
+                    TYPE = c(rep(c("G1", "G2", "G3", "G4"), each=nrow(us_counties))), "idx"=1:length(EXP))
+M1_df$OBS_SIM_v1 <- c(us_counties$OBS_M1_SIM_G1_v1, us_counties$OBS_M1_SIM_G2_v1, us_counties$OBS_M1_SIM_G3_v1, us_counties$OBS_M1_SIM_G4_v1)
+M1_df$OBS_SIM_v2 <- c(us_counties$OBS_M1_SIM_G1_v2, us_counties$OBS_M1_SIM_G2_v2, us_counties$OBS_M1_SIM_G3_v2, us_counties$OBS_M1_SIM_G4_v2)
+M1_df$OBS_SIM_v3 <- c(us_counties$OBS_M1_SIM_G1_v3, us_counties$OBS_M1_SIM_G2_v3, us_counties$OBS_M1_SIM_G3_v3, us_counties$OBS_M1_SIM_G4_v3)
+
+# Compensate the different numbers of observed and expected cases caused by decimals
+total_dif_v1 <- sum(EXP)-sum(M1_df$OBS_SIM_v1)
+total_dif_v2 <- sum(EXP)-sum(M1_df$OBS_SIM_v2)
+total_dif_v3 <- sum(EXP)-sum(M1_df$OBS_SIM_v3)
+
+if(total_dif_v1>0){
+  r_ids <- round(runif(total_dif_v1, 1, nrow(M1_df)), 0)
+  M1_df$OBS_SIM_v1[r_ids] <- M1_df$OBS_SIM_v1[r_ids] + 1
+}else if(total_dif_v1<0){
+  r_ids <- round(runif(abs(total_dif_v1), 1, nrow(M1_df)), 0)
+  M1_df$OBS_SIM_v1[r_ids] <- M1_df$OBS_SIM_v1[r_ids] - 1
+}
+
+if(total_dif_v2>0){
+  r_ids <- sample(nrow(M1_df), total_dif_v2)
+  M1_df$OBS_SIM_v2[r_ids] <- M1_df$OBS_SIM_v2[r_ids] + 1
+}else if(total_dif_v2<0){
+  r_ids <- round(runif(abs(total_dif_v2), 1, nrow(M1_df)), 0)
+  M1_df$OBS_SIM_v2[r_ids] <- M1_df$OBS_SIM_v2[r_ids] - 1
+}
+
+if(total_dif_v3>0){
+  r_ids <- round(runif(total_dif_v3, 1, nrow(M1_df)), 0)
+  M1_df$OBS_SIM_v3[r_ids] <- M1_df$OBS_SIM_v3[r_ids] + 1
+}else if(total_dif_v3<0){
+  r_ids <- round(runif(abs(total_dif_v3), 1, nrow(M1_df)), 0)
+  M1_df$OBS_SIM_v3[r_ids] <- M1_df$OBS_SIM_v3[r_ids] - 1
+}
+
+if(sum(M1_df$OBS_SIM_v1)!=total_obs){stop("Observed values and expected values do not match.")}
+if(sum(M1_df$OBS_SIM_v2)!=total_obs){stop("Observed values and expected values do not match.")}
+if(sum(M1_df$OBS_SIM_v3)!=total_obs){stop("Observed values and expected values do not match.")}
+```
+
+### V1
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M1_SIM_G1_v1/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M1_SIM_G2_v1/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M1_SIM_G3_v1/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M1_SIM_G4_v1/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+### V2
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M1_SIM_G1_v2/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M1_SIM_G2_v2/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M1_SIM_G3_v2/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M1_SIM_G4_v2/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+### V3
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M1_SIM_G1_v3/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M1_SIM_G2_v3/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M1_SIM_G3_v3/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M1_SIM_G4_v3/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+## Groups with different risks {.tabset}
+
+|       Just like in the previous section, we generate the same underlying risks by adding the underlying simulated risk for each county and group to each different spatial effect. The following figure represents the final rates after dividing the number of cases among the counties using the total risk assigned.
+
+***
+
+```{r echo=TRUE}
+# Estimate underlying risk for each group
+g1_pobrisks_v1 <- 1/2*us_counties$group1_dif_risk + 1/2*ind.ef.g2
+g2_pobrisks_v1 <- 1/2*us_counties$group2_dif_risk + 1/2*ind.ef.g1
+g3_pobrisks_v1 <- 1/2*us_counties$group3_dif_risk + 1/2*ind.ef.g3
+g4_pobrisks_v1 <- 1/2*us_counties$group4_dif_risk + 1/2*ind.ef.g4
+
+g1_pobrisks_v2 <- 2/3*us_counties$group1_dif_risk + 1/3*ind.ef.g2
+g2_pobrisks_v2 <- 2/3*us_counties$group2_dif_risk + 1/3*ind.ef.g1
+g3_pobrisks_v2 <- 2/3*us_counties$group3_dif_risk + 1/3*ind.ef.g3
+g4_pobrisks_v2 <- 2/3*us_counties$group4_dif_risk + 1/3*ind.ef.g4
+
+g1_pobrisks_v3 <- 1/3*us_counties$group1_dif_risk + 2/3*ind.ef.g2
+g2_pobrisks_v3 <- 1/3*us_counties$group2_dif_risk + 2/3*ind.ef.g1
+g3_pobrisks_v3 <- 1/3*us_counties$group3_dif_risk + 2/3*ind.ef.g3
+g4_pobrisks_v3 <- 1/3*us_counties$group4_dif_risk + 2/3*ind.ef.g4
+
+# Exponential of the underlying risk to match log of the linear predictor
+g1_pobrisks_v1 <- exp(g1_pobrisks_v1)
+g2_pobrisks_v1 <- exp(g2_pobrisks_v1)
+g3_pobrisks_v1 <- exp(g3_pobrisks_v1)
+g4_pobrisks_v1 <- exp(g4_pobrisks_v1)
+
+g1_pobrisks_v2 <- exp(g1_pobrisks_v2)
+g2_pobrisks_v2 <- exp(g2_pobrisks_v2)
+g3_pobrisks_v2 <- exp(g3_pobrisks_v2)
+g4_pobrisks_v2 <- exp(g4_pobrisks_v2)
+
+g1_pobrisks_v3 <- exp(g1_pobrisks_v3)
+g2_pobrisks_v3 <- exp(g2_pobrisks_v3)
+g3_pobrisks_v3 <- exp(g3_pobrisks_v3)
+g4_pobrisks_v3 <- exp(g4_pobrisks_v3)
+
+data_risk$M1_DIF_V1 <- c(g1_pobrisks_v1, g2_pobrisks_v1, g3_pobrisks_v1, g4_pobrisks_v1)
+data_risk$M1_DIF_V2 <- c(g1_pobrisks_v2, g2_pobrisks_v2, g3_pobrisks_v2, g4_pobrisks_v2)
+data_risk$M1_DIF_V3 <- c(g1_pobrisks_v3, g2_pobrisks_v3, g3_pobrisks_v3, g4_pobrisks_v3)
+
+# Estimate the total combination of population and risks
+total_pobrisk_v1 <- sum(POP * g1_pobrisks_v1 + POP * g2_pobrisks_v1 + POP * g3_pobrisks_v1 + POP * g4_pobrisks_v1)
+total_pobrisk_v2 <- sum(POP * g1_pobrisks_v2 + POP * g2_pobrisks_v2 + POP * g3_pobrisks_v2 + POP * g4_pobrisks_v2)
+total_pobrisk_v3 <- sum(POP * g1_pobrisks_v3 + POP * g2_pobrisks_v3 + POP * g3_pobrisks_v3 + POP * g4_pobrisks_v3)
+
+# Add observed values to sp object for ploting
+us_counties$OBS_M1_DIF_G1_v1 <- round(total_obs*((POP * g1_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M1_DIF_G2_v1 <- round(total_obs*((POP * g2_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M1_DIF_G3_v1 <- round(total_obs*((POP * g3_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M1_DIF_G4_v1 <- round(total_obs*((POP * g4_pobrisks_v1)/(total_pobrisk_v1)), 0)
+
+us_counties$OBS_M1_DIF_G1_v2 <- round(total_obs*((POP * g1_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M1_DIF_G2_v2 <- round(total_obs*((POP * g2_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M1_DIF_G3_v2 <- round(total_obs*((POP * g3_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M1_DIF_G4_v2 <- round(total_obs*((POP * g4_pobrisks_v2)/(total_pobrisk_v2)), 0)
+
+us_counties$OBS_M1_DIF_G1_v3 <- round(total_obs*((POP * g1_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M1_DIF_G2_v3 <- round(total_obs*((POP * g2_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M1_DIF_G3_v3 <- round(total_obs*((POP * g3_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M1_DIF_G4_v3 <- round(total_obs*((POP * g4_pobrisks_v3)/(total_pobrisk_v3)), 0)
+
+# Create dataframe for M0 models and estimate observed values depending on risks
+M1_df$OBS_DIF_v1 <- c(us_counties$OBS_M1_DIF_G1_v1, us_counties$OBS_M1_DIF_G2_v1, us_counties$OBS_M1_DIF_G3_v1, us_counties$OBS_M1_DIF_G4_v1)
+M1_df$OBS_DIF_v2 <- c(us_counties$OBS_M1_DIF_G1_v2, us_counties$OBS_M1_DIF_G2_v2, us_counties$OBS_M1_DIF_G3_v2, us_counties$OBS_M1_DIF_G4_v2)
+M1_df$OBS_DIF_v3 <- c(us_counties$OBS_M1_DIF_G1_v3, us_counties$OBS_M1_DIF_G2_v3, us_counties$OBS_M1_DIF_G3_v3, us_counties$OBS_M1_DIF_G4_v3)
+
+# Compensate the different numbers of observed and expected cases caused by decimals
+total_dif_v1 <- sum(EXP)-sum(M1_df$OBS_DIF_v1)
+total_dif_v2 <- sum(EXP)-sum(M1_df$OBS_DIF_v2)
+total_dif_v3 <- sum(EXP)-sum(M1_df$OBS_DIF_v3)
+
+if(total_dif_v1>0){
+  r_ids <- sample(nrow(M1_df), abs(total_dif_v1))
+  M1_df$OBS_DIF_v1[r_ids] <- M1_df$OBS_DIF_v1[r_ids] + 1
+}else if(total_dif_v1<0){
+  r_ids <- sample(nrow(M1_df), abs(total_dif_v1))
+  M1_df$OBS_DIF_v1[r_ids] <- M1_df$OBS_DIF_v1[r_ids] - 1
+}
+
+if(total_dif_v2>0){
+  r_ids <- sample(nrow(M1_df), abs(total_dif_v2))
+  M1_df$OBS_DIF_v2[r_ids] <- M1_df$OBS_DIF_v2[r_ids] + 1
+}else if(total_dif_v2<0){
+  r_ids <- sample(nrow(M1_df), abs(total_dif_v2))
+  M1_df$OBS_DIF_v2[r_ids] <- M1_df$OBS_DIF_v2[r_ids] - 1
+}
+
+if(total_dif_v3>0){
+  r_ids <- sample(nrow(M1_df), abs(total_dif_v3))
+  M1_df$OBS_DIF_v3[r_ids] <- M1_df$OBS_DIF_v3[r_ids] + 1
+}else if(total_dif_v3<0){
+  r_ids <- sample(nrow(M1_df), abs(total_dif_v3))
+  M1_df$OBS_DIF_v3[r_ids] <- M1_df$OBS_DIF_v3[r_ids] - 1
+}
+
+if(sum(M1_df$OBS_DIF_v1)!=total_obs){stop("Observed values and expected values do not match.")}
+if(sum(M1_df$OBS_DIF_v2)!=total_obs){stop("Observed values and expected values do not match.")}
+if(sum(M1_df$OBS_DIF_v3)!=total_obs){stop("Observed values and expected values do not match.")}
+```
+
+### V1
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M1_DIF_G1_v1/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M1_DIF_G2_v1/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M1_DIF_G3_v1/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M1_DIF_G4_v1/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+### V2
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M1_DIF_G1_v2/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M1_DIF_G2_v2/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M1_DIF_G3_v2/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M1_DIF_G4_v2/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+### V3
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M1_DIF_G1_v3/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M1_DIF_G2_v3/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M1_DIF_G3_v3/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M1_DIF_G4_v3/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+# .-Shared Spatial Effect
+
+$$
+\begin{aligned}
+& \theta_1^i=\gamma_1^1 \omega_1^i + \gamma_2^1 \phi_{11} \\
+& \theta_2^i=\gamma_1^2 \omega_2^i + \gamma_2^2 \phi_{11} \\
+& \theta_3^i=\gamma_1^3 \omega_3^i + \gamma_2^3 \phi_{11} \\
+& \theta_4^i=\gamma_1^4 \omega_4^i + \gamma_2^4 \phi_{11}
+\end{aligned}
+$$
+
+## Groups with equal risks {.tabset}
+
+***
+
+```{r echo=TRUE}
+# Estimate underlying risk for each group
+g1_pobrisks_v1 <- 1/2*us_counties$group1_sim_risk + 1/2*ind.ef.g2
+g2_pobrisks_v1 <- 1/2*us_counties$group2_sim_risk + 1/2*ind.ef.g2
+g3_pobrisks_v1 <- 1/2*us_counties$group3_sim_risk + 1/2*ind.ef.g2
+g4_pobrisks_v1 <- 1/2*us_counties$group4_sim_risk + 1/2*ind.ef.g2
+
+g1_pobrisks_v2 <- 2/3*us_counties$group1_sim_risk + 1/3*ind.ef.g2
+g2_pobrisks_v2 <- 2/3*us_counties$group2_sim_risk + 1/3*ind.ef.g2
+g3_pobrisks_v2 <- 2/3*us_counties$group3_sim_risk + 1/3*ind.ef.g2
+g4_pobrisks_v2 <- 2/3*us_counties$group4_sim_risk + 1/3*ind.ef.g2
+
+g1_pobrisks_v3 <- 1/3*us_counties$group1_sim_risk + 2/3*ind.ef.g2
+g2_pobrisks_v3 <- 1/3*us_counties$group2_sim_risk + 2/3*ind.ef.g2
+g3_pobrisks_v3 <- 1/3*us_counties$group3_sim_risk + 2/3*ind.ef.g2
+g4_pobrisks_v3 <- 1/3*us_counties$group4_sim_risk + 2/3*ind.ef.g2
+
+# Exponential of the underlying risk to match log of the linear predictor
+g1_pobrisks_v1 <- exp(g1_pobrisks_v1)
+g2_pobrisks_v1 <- exp(g2_pobrisks_v1)
+g3_pobrisks_v1 <- exp(g3_pobrisks_v1)
+g4_pobrisks_v1 <- exp(g4_pobrisks_v1)
+
+g1_pobrisks_v2 <- exp(g1_pobrisks_v2)
+g2_pobrisks_v2 <- exp(g2_pobrisks_v2)
+g3_pobrisks_v2 <- exp(g3_pobrisks_v2)
+g4_pobrisks_v2 <- exp(g4_pobrisks_v2)
+
+g1_pobrisks_v3 <- exp(g1_pobrisks_v3)
+g2_pobrisks_v3 <- exp(g2_pobrisks_v3)
+g3_pobrisks_v3 <- exp(g3_pobrisks_v3)
+g4_pobrisks_v3 <- exp(g4_pobrisks_v3)
+
+data_risk$M2_SIM_V1 <- c(g1_pobrisks_v1, g2_pobrisks_v1, g3_pobrisks_v1, g4_pobrisks_v1)
+data_risk$M2_SIM_V2 <- c(g1_pobrisks_v2, g2_pobrisks_v2, g3_pobrisks_v2, g4_pobrisks_v2)
+data_risk$M2_SIM_V3 <- c(g1_pobrisks_v3, g2_pobrisks_v3, g3_pobrisks_v3, g4_pobrisks_v3)
+
+# Estimate the total combination of population and risks
+total_pobrisk_v1 <- sum(POP * g1_pobrisks_v1 + POP * g2_pobrisks_v1 + POP * g3_pobrisks_v1 + POP * g4_pobrisks_v1)
+total_pobrisk_v2 <- sum(POP * g1_pobrisks_v2 + POP * g2_pobrisks_v2 + POP * g3_pobrisks_v2 + POP * g4_pobrisks_v2)
+total_pobrisk_v3 <- sum(POP * g1_pobrisks_v3 + POP * g2_pobrisks_v3 + POP * g3_pobrisks_v3 + POP * g4_pobrisks_v3)
+
+# Add observed values to sp object for ploting
+us_counties$OBS_M2_SIM_G1_v1 <- round(total_obs*((POP * g1_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M2_SIM_G2_v1 <- round(total_obs*((POP * g2_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M2_SIM_G3_v1 <- round(total_obs*((POP * g3_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M2_SIM_G4_v1 <- round(total_obs*((POP * g4_pobrisks_v1)/(total_pobrisk_v1)), 0)
+
+us_counties$OBS_M2_SIM_G1_v2 <- round(total_obs*((POP * g1_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M2_SIM_G2_v2 <- round(total_obs*((POP * g2_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M2_SIM_G3_v2 <- round(total_obs*((POP * g3_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M2_SIM_G4_v2 <- round(total_obs*((POP * g4_pobrisks_v2)/(total_pobrisk_v2)), 0)
+
+us_counties$OBS_M2_SIM_G1_v3 <- round(total_obs*((POP * g1_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M2_SIM_G2_v3 <- round(total_obs*((POP * g2_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M2_SIM_G3_v3 <- round(total_obs*((POP * g3_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M2_SIM_G4_v3 <- round(total_obs*((POP * g4_pobrisks_v3)/(total_pobrisk_v3)), 0)
+
+# Create dataframe for M0 models and estimate observed values depending on risks
+M2_df <- data.frame("OBS_SIM_v1"=NA, "OBS_DIF_v1"=NA, "OBS_SIM_v2"=NA, "OBS_DIF_v2"=NA, "OBS_SIM_v3"=NA, "OBS_DIF_v3"=NA,"EXP"=EXP, 
+                    TYPE = c(rep(c("G1", "G2", "G3", "G4"), each=nrow(us_counties))), "idx"=1:length(EXP))
+M2_df$OBS_SIM_v1 <- c(us_counties$OBS_M2_SIM_G1_v1, us_counties$OBS_M2_SIM_G2_v1, us_counties$OBS_M2_SIM_G3_v1, us_counties$OBS_M2_SIM_G4_v1)
+M2_df$OBS_SIM_v2 <- c(us_counties$OBS_M2_SIM_G1_v2, us_counties$OBS_M2_SIM_G2_v2, us_counties$OBS_M2_SIM_G3_v2, us_counties$OBS_M2_SIM_G4_v2)
+M2_df$OBS_SIM_v3 <- c(us_counties$OBS_M2_SIM_G1_v3, us_counties$OBS_M2_SIM_G2_v3, us_counties$OBS_M2_SIM_G3_v3, us_counties$OBS_M2_SIM_G4_v3)
+
+# Compensate the different numbers of observed and expected cases caused by decimals
+total_dif_v1 <- sum(EXP)-sum(M2_df$OBS_SIM_v1)
+total_dif_v2 <- sum(EXP)-sum(M2_df$OBS_SIM_v2)
+total_dif_v3 <- sum(EXP)-sum(M2_df$OBS_SIM_v3)
+
+if(total_dif_v1>0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v1))
+  M2_df$OBS_SIM_v1[r_ids] <- M2_df$OBS_SIM_v1[r_ids] + 1
+}else if(total_dif_v1<0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v1))
+  M2_df$OBS_SIM_v1[r_ids] <- M2_df$OBS_SIM_v1[r_ids] - 1
+}
+
+if(total_dif_v2>0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v2))
+  M2_df$OBS_SIM_v2[r_ids] <- M2_df$OBS_SIM_v2[r_ids] + 1
+}else if(total_dif_v2<0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v2))
+  M2_df$OBS_SIM_v2[r_ids] <- M2_df$OBS_SIM_v2[r_ids] - 1
+}
+
+if(total_dif_v3>0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v3))
+  M2_df$OBS_SIM_v3[r_ids] <- M2_df$OBS_SIM_v3[r_ids] + 1
+}else if(total_dif_v3<0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v3))
+  M2_df$OBS_SIM_v3[r_ids] <- M2_df$OBS_SIM_v3[r_ids] - 1
+}
+
+if(sum(M2_df$OBS_SIM_v1)!=total_obs){stop("Observed values and expected values do not match.")}
+if(sum(M2_df$OBS_SIM_v2)!=total_obs){stop("Observed values and expected values do not match.")}
+if(sum(M2_df$OBS_SIM_v3)!=total_obs){stop("Observed values and expected values do not match.")}
+```
+
+### V1
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M2_SIM_G1_v1/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M2_SIM_G2_v1/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M2_SIM_G3_v1/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M2_SIM_G4_v1/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+### V2
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M2_SIM_G1_v2/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M2_SIM_G2_v2/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M2_SIM_G3_v2/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M2_SIM_G4_v2/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+### V3
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M2_SIM_G1_v3/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M2_SIM_G2_v3/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M2_SIM_G3_v3/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M2_SIM_G4_v3/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+## Groups with different risks {.tabset}
+
+|       Just like in the previous section, we generate the same underlying risks by adding the underlying simulated risk for each county and group to each different spatial effect. The following figure represents the final rates after dividing the number of cases among the counties using the total risk assigned.
+
+***
+
+```{r echo=TRUE}
+# Estimate underlying risk for each group
+g1_pobrisks_v1 <- 1/2*us_counties$group1_dif_risk + 1/2*ind.ef.g2
+g2_pobrisks_v1 <- 1/2*us_counties$group2_dif_risk + 1/2*ind.ef.g2
+g3_pobrisks_v1 <- 1/2*us_counties$group3_dif_risk + 1/2*ind.ef.g2
+g4_pobrisks_v1 <- 1/2*us_counties$group4_dif_risk + 1/2*ind.ef.g2
+
+g1_pobrisks_v2 <- 2/3*us_counties$group1_dif_risk + 1/3*ind.ef.g2
+g2_pobrisks_v2 <- 2/3*us_counties$group2_dif_risk + 1/3*ind.ef.g2
+g3_pobrisks_v2 <- 2/3*us_counties$group3_dif_risk + 1/3*ind.ef.g2
+g4_pobrisks_v2 <- 2/3*us_counties$group4_dif_risk + 1/3*ind.ef.g2
+
+g1_pobrisks_v3 <- 1/3*us_counties$group1_dif_risk + 2/3*ind.ef.g2
+g2_pobrisks_v3 <- 1/3*us_counties$group2_dif_risk + 2/3*ind.ef.g2
+g3_pobrisks_v3 <- 1/3*us_counties$group3_dif_risk + 2/3*ind.ef.g2
+g4_pobrisks_v3 <- 1/3*us_counties$group4_dif_risk + 2/3*ind.ef.g2
+
+# Exponential of the underlying risk to match log of the linear predictor
+g1_pobrisks_v1 <- exp(g1_pobrisks_v1)
+g2_pobrisks_v1 <- exp(g2_pobrisks_v1)
+g3_pobrisks_v1 <- exp(g3_pobrisks_v1)
+g4_pobrisks_v1 <- exp(g4_pobrisks_v1)
+
+g1_pobrisks_v2 <- exp(g1_pobrisks_v2)
+g2_pobrisks_v2 <- exp(g2_pobrisks_v2)
+g3_pobrisks_v2 <- exp(g3_pobrisks_v2)
+g4_pobrisks_v2 <- exp(g4_pobrisks_v2)
+
+g1_pobrisks_v3 <- exp(g1_pobrisks_v3)
+g2_pobrisks_v3 <- exp(g2_pobrisks_v3)
+g3_pobrisks_v3 <- exp(g3_pobrisks_v3)
+g4_pobrisks_v3 <- exp(g4_pobrisks_v3)
+
+data_risk$M2_DIF_V1 <- c(g1_pobrisks_v1, g2_pobrisks_v1, g3_pobrisks_v1, g4_pobrisks_v1)
+data_risk$M2_DIF_V2 <- c(g1_pobrisks_v2, g2_pobrisks_v2, g3_pobrisks_v2, g4_pobrisks_v2)
+data_risk$M2_DIF_V3 <- c(g1_pobrisks_v3, g2_pobrisks_v3, g3_pobrisks_v3, g4_pobrisks_v3)
+
+# Estimate the total combination of population and risks
+total_pobrisk_v1 <- sum(POP * g1_pobrisks_v1 + POP * g2_pobrisks_v1 + POP * g3_pobrisks_v1 + POP * g4_pobrisks_v1)
+total_pobrisk_v2 <- sum(POP * g1_pobrisks_v2 + POP * g2_pobrisks_v2 + POP * g3_pobrisks_v2 + POP * g4_pobrisks_v2)
+total_pobrisk_v3 <- sum(POP * g1_pobrisks_v3 + POP * g2_pobrisks_v3 + POP * g3_pobrisks_v3 + POP * g4_pobrisks_v3)
+
+# Add observed values to sp object for ploting
+us_counties$OBS_M2_DIF_G1_v1 <- round(total_obs*((POP * g1_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M2_DIF_G2_v1 <- round(total_obs*((POP * g2_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M2_DIF_G3_v1 <- round(total_obs*((POP * g3_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M2_DIF_G4_v1 <- round(total_obs*((POP * g4_pobrisks_v1)/(total_pobrisk_v1)), 0)
+
+us_counties$OBS_M2_DIF_G1_v2 <- round(total_obs*((POP * g1_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M2_DIF_G2_v2 <- round(total_obs*((POP * g2_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M2_DIF_G3_v2 <- round(total_obs*((POP * g3_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M2_DIF_G4_v2 <- round(total_obs*((POP * g4_pobrisks_v2)/(total_pobrisk_v2)), 0)
+
+us_counties$OBS_M2_DIF_G1_v3 <- round(total_obs*((POP * g1_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M2_DIF_G2_v3 <- round(total_obs*((POP * g2_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M2_DIF_G3_v3 <- round(total_obs*((POP * g3_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M2_DIF_G4_v3 <- round(total_obs*((POP * g4_pobrisks_v3)/(total_pobrisk_v3)), 0)
+
+# Create dataframe for M0 models and estimate observed values depending on risks
+M2_df$OBS_DIF_v1 <- c(us_counties$OBS_M2_DIF_G1_v1, us_counties$OBS_M2_DIF_G2_v1, us_counties$OBS_M2_DIF_G3_v1, us_counties$OBS_M2_DIF_G4_v1)
+M2_df$OBS_DIF_v2 <- c(us_counties$OBS_M2_DIF_G1_v2, us_counties$OBS_M2_DIF_G2_v2, us_counties$OBS_M2_DIF_G3_v2, us_counties$OBS_M2_DIF_G4_v2)
+M2_df$OBS_DIF_v3 <- c(us_counties$OBS_M2_DIF_G1_v3, us_counties$OBS_M2_DIF_G2_v3, us_counties$OBS_M2_DIF_G3_v3, us_counties$OBS_M2_DIF_G4_v3)
+
+# Compensate the different numbers of observed and expected cases caused by decimals
+total_dif_v1 <- sum(EXP)-sum(M2_df$OBS_DIF_v1)
+total_dif_v2 <- sum(EXP)-sum(M2_df$OBS_DIF_v2)
+total_dif_v3 <- sum(EXP)-sum(M2_df$OBS_DIF_v3)
+
+if(total_dif_v1>0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v1))
+  M2_df$OBS_DIF_v1[r_ids] <- M2_df$OBS_DIF_v1[r_ids] + 1
+}else if(total_dif_v1<0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v1))
+  M2_df$OBS_DIF_v1[r_ids] <- M2_df$OBS_DIF_v1[r_ids] - 1
+}
+
+if(total_dif_v2>0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v2))
+  M2_df$OBS_DIF_v2[r_ids] <- M2_df$OBS_DIF_v2[r_ids] + 1
+}else if(total_dif_v2<0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v2))
+  M2_df$OBS_DIF_v2[r_ids] <- M2_df$OBS_DIF_v2[r_ids] - 1
+}
+
+if(total_dif_v3>0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v3))
+  M2_df$OBS_DIF_v3[r_ids] <- M2_df$OBS_DIF_v3[r_ids] + 1
+}else if(total_dif_v3<0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v3))
+  M2_df$OBS_DIF_v3[r_ids] <- M2_df$OBS_DIF_v3[r_ids] - 1
+}
+
+if(sum(M2_df$OBS_DIF_v1)!=total_obs){stop("Observed values and expected values do not match.")}
+if(sum(M2_df$OBS_DIF_v2)!=total_obs){stop("Observed values and expected values do not match.")}
+if(sum(M2_df$OBS_DIF_v3)!=total_obs){stop("Observed values and expected values do not match.")}
+```
+
+### V1
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M2_DIF_G1_v1/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M2_DIF_G2_v1/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M2_DIF_G3_v1/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M2_DIF_G4_v1/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+### V2
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M2_DIF_G1_v2/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M2_DIF_G2_v2/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M2_DIF_G3_v2/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M2_DIF_G4_v2/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+### V3
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M2_DIF_G1_v3/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M2_DIF_G2_v3/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M2_DIF_G3_v3/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M2_DIF_G4_v3/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+# .-Factor 2 Spatial Effect (Rural-Urban)
+
+$$
+\begin{aligned}
+& \theta_1^i=\gamma_1^1 \omega_1^i + \gamma_2^1 \phi_{11} \\
+& \theta_2^i=\gamma_1^2 \omega_2^i + \gamma_2^2 \phi_{11} \\
+& \theta_3^i=\gamma_1^3 \omega_3^i + \gamma_2^3 \phi_{11} + \gamma_3^3 \phi_{21} \\
+& \theta_4^i=\gamma_1^4 \omega_4^i + \gamma_2^4 \phi_{11} + \gamma_3^4 \phi_{21}
+\end{aligned}
+$$
+
+## Groups with equal risks {.tabset}
+
+***
+
+```{r echo=TRUE}
+# Estimate underlying risk for each group
+g1_pobrisks_v1 <- 1/2*us_counties$group1_sim_risk + 1/2*ind.ef.g2 
+g2_pobrisks_v1 <- 1/2*us_counties$group2_sim_risk + 1/2*ind.ef.g2
+g3_pobrisks_v1 <- 1/3*us_counties$group3_sim_risk + 1/3*ind.ef.g2 + 1/3*us_counties$POP_DENS_Scale
+g4_pobrisks_v1 <- 1/3*us_counties$group4_sim_risk + 1/3*ind.ef.g2 + 1/3*us_counties$POP_DENS_Scale
+
+g1_pobrisks_v2 <- 2/3*us_counties$group1_sim_risk + 1/3*ind.ef.g2 
+g2_pobrisks_v2 <- 2/3*us_counties$group2_sim_risk + 1/3*ind.ef.g2
+g3_pobrisks_v2 <- 14/25*us_counties$group3_sim_risk + 7/25*ind.ef.g2 + 4/25*us_counties$POP_DENS_Scale
+g4_pobrisks_v2 <- 14/25*us_counties$group4_sim_risk + 7/25*ind.ef.g2 + 4/25*us_counties$POP_DENS_Scale
+
+g1_pobrisks_v3 <- 1/3*us_counties$group1_sim_risk + 2/3*ind.ef.g2 
+g2_pobrisks_v3 <- 1/3*us_counties$group2_sim_risk + 2/3*ind.ef.g2
+g3_pobrisks_v3 <- 4/25*us_counties$group3_sim_risk + 7/25*ind.ef.g2 + 14/25*us_counties$POP_DENS_Scale
+g4_pobrisks_v3 <- 4/25*us_counties$group4_sim_risk + 7/25*ind.ef.g2 + 14/25*us_counties$POP_DENS_Scale
+
+# Exponential of the underlying risk to match log of the linear predictor
+g1_pobrisks_v1 <- exp(g1_pobrisks_v1)
+g2_pobrisks_v1 <- exp(g2_pobrisks_v1)
+g3_pobrisks_v1 <- exp(g3_pobrisks_v1)
+g4_pobrisks_v1 <- exp(g4_pobrisks_v1)
+
+g1_pobrisks_v2 <- exp(g1_pobrisks_v2)
+g2_pobrisks_v2 <- exp(g2_pobrisks_v2)
+g3_pobrisks_v2 <- exp(g3_pobrisks_v2)
+g4_pobrisks_v2 <- exp(g4_pobrisks_v2)
+
+g1_pobrisks_v3 <- exp(g1_pobrisks_v3)
+g2_pobrisks_v3 <- exp(g2_pobrisks_v3)
+g3_pobrisks_v3 <- exp(g3_pobrisks_v3)
+g4_pobrisks_v3 <- exp(g4_pobrisks_v3)
+
+data_risk$M3_SIM_V1 <- c(g1_pobrisks_v1, g2_pobrisks_v1, g3_pobrisks_v1, g4_pobrisks_v1)
+data_risk$M3_SIM_V2 <- c(g1_pobrisks_v2, g2_pobrisks_v2, g3_pobrisks_v2, g4_pobrisks_v2)
+data_risk$M3_SIM_V3 <- c(g1_pobrisks_v3, g2_pobrisks_v3, g3_pobrisks_v3, g4_pobrisks_v3)
+
+# Estimate the total combination of population and risks
+total_pobrisk_v1 <- sum(POP * g1_pobrisks_v1 + POP * g2_pobrisks_v1 + POP * g3_pobrisks_v1 + POP * g4_pobrisks_v1)
+total_pobrisk_v2 <- sum(POP * g1_pobrisks_v2 + POP * g2_pobrisks_v2 + POP * g3_pobrisks_v2 + POP * g4_pobrisks_v2)
+total_pobrisk_v3 <- sum(POP * g1_pobrisks_v3 + POP * g2_pobrisks_v3 + POP * g3_pobrisks_v3 + POP * g4_pobrisks_v3)
+
+# Add observed values to sp object for ploting
+us_counties$OBS_M3_SIM_G1_v1 <- round(total_obs*((POP * g1_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M3_SIM_G2_v1 <- round(total_obs*((POP * g2_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M3_SIM_G3_v1 <- round(total_obs*((POP * g3_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M3_SIM_G4_v1 <- round(total_obs*((POP * g4_pobrisks_v1)/(total_pobrisk_v1)), 0)
+
+us_counties$OBS_M3_SIM_G1_v2 <- round(total_obs*((POP * g1_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M3_SIM_G2_v2 <- round(total_obs*((POP * g2_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M3_SIM_G3_v2 <- round(total_obs*((POP * g3_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M3_SIM_G4_v2 <- round(total_obs*((POP * g4_pobrisks_v2)/(total_pobrisk_v2)), 0)
+
+us_counties$OBS_M3_SIM_G1_v3 <- round(total_obs*((POP * g1_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M3_SIM_G2_v3 <- round(total_obs*((POP * g2_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M3_SIM_G3_v3 <- round(total_obs*((POP * g3_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M3_SIM_G4_v3 <- round(total_obs*((POP * g4_pobrisks_v3)/(total_pobrisk_v3)), 0)
+
+# Create dataframe for M0 models and estimate observed values depending on risks
+M3_df <- data.frame("OBS_SIM_v1"=NA, "OBS_DIF_v1"=NA, "OBS_SIM_v2"=NA, "OBS_DIF_v2"=NA, "OBS_SIM_v3"=NA, "OBS_DIF_v3"=NA, "EXP"=EXP, 
+                    TYPE = c(rep(c("G1", "G2", "G3", "G4"), each=nrow(us_counties))), "idx"=1:length(EXP))
+M3_df$OBS_SIM_v1 <- c(us_counties$OBS_M3_SIM_G1_v1, us_counties$OBS_M3_SIM_G2_v1, us_counties$OBS_M3_SIM_G3_v1, us_counties$OBS_M3_SIM_G4_v1)
+M3_df$OBS_SIM_v2 <- c(us_counties$OBS_M3_SIM_G1_v2, us_counties$OBS_M3_SIM_G2_v2, us_counties$OBS_M3_SIM_G3_v2, us_counties$OBS_M3_SIM_G4_v2)
+M3_df$OBS_SIM_v3 <- c(us_counties$OBS_M3_SIM_G1_v3, us_counties$OBS_M3_SIM_G2_v3, us_counties$OBS_M3_SIM_G3_v3, us_counties$OBS_M3_SIM_G4_v3)
+
+# Compensate the different numbers of observed and expected cases caused by decimals
+total_dif_v1 <- sum(EXP)-sum(M3_df$OBS_SIM_v1)
+total_dif_v2 <- sum(EXP)-sum(M3_df$OBS_SIM_v2)
+total_dif_v3 <- sum(EXP)-sum(M3_df$OBS_SIM_v3)
+
+if(total_dif_v1>0){
+  r_ids <- sample(1:nrow(M3_df), abs(total_dif_v1))
+  M3_df$OBS_SIM_v1[r_ids] <- M3_df$OBS_SIM_v1[r_ids] + 1
+}else if(total_dif_v1<0){
+  r_ids <- sample(1:nrow(M3_df), abs(total_dif_v1))
+  M3_df$OBS_SIM_v1[r_ids] <- M3_df$OBS_SIM_v1[r_ids] - 1
+}
+
+if(total_dif_v2>0){
+  r_ids <- sample(1:nrow(M3_df), abs(total_dif_v2))
+  M3_df$OBS_SIM_v2[r_ids] <- M3_df$OBS_SIM_v2[r_ids] + 1
+}else if(total_dif_v2<0){
+  r_ids <- sample(1:nrow(M3_df), abs(total_dif_v2))
+  M3_df$OBS_SIM_v2[r_ids] <- M3_df$OBS_SIM_v2[r_ids] - 1
+}
+
+if(total_dif_v3>0){
+  r_ids <- sample(1:nrow(M3_df), abs(total_dif_v3))
+  M3_df$OBS_SIM_v3[r_ids] <- M3_df$OBS_SIM_v3[r_ids] + 1
+}else if(total_dif_v3<0){
+  r_ids <- sample(1:nrow(M3_df), abs(total_dif_v3))
+  M3_df$OBS_SIM_v3[r_ids] <- M3_df$OBS_SIM_v3[r_ids] - 1
+}
+
+if(sum(M3_df$OBS_SIM_v1)!=total_obs){stop("Observed values and expected values do not match.")}
+if(sum(M3_df$OBS_SIM_v2)!=total_obs){stop("Observed values and expected values do not match.")}
+if(sum(M3_df$OBS_SIM_v3)!=total_obs){stop("Observed values and expected values do not match.")}
+```
+
+### V1
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M3_SIM_G1_v1/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M3_SIM_G2_v1/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M3_SIM_G3_v1/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M3_SIM_G4_v1/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+### V2
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M3_SIM_G1_v2/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M3_SIM_G2_v2/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M3_SIM_G3_v2/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M3_SIM_G4_v2/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+### V3
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M3_SIM_G1_v3/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M3_SIM_G2_v3/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M3_SIM_G3_v3/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M3_SIM_G4_v3/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+## Groups with different risks {.tabset}
+
+|       Just like in the previous section, we generate the same underlying risks by adding the underlying simulated risk for each county and group to each different spatial effect. The following figure represents the final rates after dividing the number of cases among the counties using the total risk assigned.
+
+***
+
+```{r echo=TRUE}
+# Estimate underlying risk for each group
+g1_pobrisks_v1 <- 1/2*us_counties$group1_dif_risk + 1/2*ind.ef.g2 
+g2_pobrisks_v1 <- 1/2*us_counties$group2_dif_risk + 1/2*ind.ef.g2
+g3_pobrisks_v1 <- 1/3*us_counties$group3_dif_risk + 1/3*ind.ef.g2 + 1/3*us_counties$POP_DENS_Scale
+g4_pobrisks_v1 <- 1/3*us_counties$group4_dif_risk + 1/3*ind.ef.g2 + 1/3*us_counties$POP_DENS_Scale
+
+g1_pobrisks_v2 <- 2/3*us_counties$group1_dif_risk + 1/3*ind.ef.g2 
+g2_pobrisks_v2 <- 2/3*us_counties$group2_dif_risk + 1/3*ind.ef.g2
+g3_pobrisks_v2 <- 14/25*us_counties$group3_dif_risk + 7/25*ind.ef.g2 + 4/25*us_counties$POP_DENS_Scale
+g4_pobrisks_v2 <- 14/25*us_counties$group4_dif_risk + 7/25*ind.ef.g2 + 4/25*us_counties$POP_DENS_Scale
+
+g1_pobrisks_v3 <- 1/3*us_counties$group1_dif_risk + 2/3*ind.ef.g2 
+g2_pobrisks_v3 <- 1/3*us_counties$group2_dif_risk + 2/3*ind.ef.g2
+g3_pobrisks_v3 <- 4/25*us_counties$group3_dif_risk + 7/25*ind.ef.g2 + 14/25*us_counties$POP_DENS_Scale
+g4_pobrisks_v3 <- 4/25*us_counties$group4_dif_risk + 7/25*ind.ef.g2 + 14/25*us_counties$POP_DENS_Scale
+
+# Exponential of the underlying risk to match log of the linear predictor
+g1_pobrisks_v1 <- exp(g1_pobrisks_v1)
+g2_pobrisks_v1 <- exp(g2_pobrisks_v1)
+g3_pobrisks_v1 <- exp(g3_pobrisks_v1)
+g4_pobrisks_v1 <- exp(g4_pobrisks_v1)
+
+g1_pobrisks_v2 <- exp(g1_pobrisks_v2)
+g2_pobrisks_v2 <- exp(g2_pobrisks_v2)
+g3_pobrisks_v2 <- exp(g3_pobrisks_v2)
+g4_pobrisks_v2 <- exp(g4_pobrisks_v2)
+
+g1_pobrisks_v3 <- exp(g1_pobrisks_v3)
+g2_pobrisks_v3 <- exp(g2_pobrisks_v3)
+g3_pobrisks_v3 <- exp(g3_pobrisks_v3)
+g4_pobrisks_v3 <- exp(g4_pobrisks_v3)
+
+data_risk$M3_DIF_V1 <- c(g1_pobrisks_v1, g2_pobrisks_v1, g3_pobrisks_v1, g4_pobrisks_v1)
+data_risk$M3_DIF_V2 <- c(g1_pobrisks_v2, g2_pobrisks_v2, g3_pobrisks_v2, g4_pobrisks_v2)
+data_risk$M3_DIF_V3 <- c(g1_pobrisks_v3, g2_pobrisks_v3, g3_pobrisks_v3, g4_pobrisks_v3)
+
+# Estimate the total combination of population and risks
+total_pobrisk_v1 <- sum(POP * g1_pobrisks_v1 + POP * g2_pobrisks_v1 + POP * g3_pobrisks_v1 + POP * g4_pobrisks_v1)
+total_pobrisk_v2 <- sum(POP * g1_pobrisks_v2 + POP * g2_pobrisks_v2 + POP * g3_pobrisks_v2 + POP * g4_pobrisks_v2)
+total_pobrisk_v3 <- sum(POP * g1_pobrisks_v3 + POP * g2_pobrisks_v3 + POP * g3_pobrisks_v3 + POP * g4_pobrisks_v3)
+
+# Add observed values to sp object for ploting
+us_counties$OBS_M3_DIF_G1_v1 <- round(total_obs*((POP * g1_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M3_DIF_G2_v1 <- round(total_obs*((POP * g2_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M3_DIF_G3_v1 <- round(total_obs*((POP * g3_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M3_DIF_G4_v1 <- round(total_obs*((POP * g4_pobrisks_v1)/(total_pobrisk_v1)), 0)
+
+us_counties$OBS_M3_DIF_G1_v2 <- round(total_obs*((POP * g1_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M3_DIF_G2_v2 <- round(total_obs*((POP * g2_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M3_DIF_G3_v2 <- round(total_obs*((POP * g3_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M3_DIF_G4_v2 <- round(total_obs*((POP * g4_pobrisks_v2)/(total_pobrisk_v2)), 0)
+
+us_counties$OBS_M3_DIF_G1_v3 <- round(total_obs*((POP * g1_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M3_DIF_G2_v3 <- round(total_obs*((POP * g2_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M3_DIF_G3_v3 <- round(total_obs*((POP * g3_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M3_DIF_G4_v3 <- round(total_obs*((POP * g4_pobrisks_v3)/(total_pobrisk_v3)), 0)
+
+# Create dataframe for M0 models and estimate observed values depending on risks
+M3_df$OBS_DIF_v1 <- c(us_counties$OBS_M3_DIF_G1_v1, us_counties$OBS_M3_DIF_G2_v1, us_counties$OBS_M3_DIF_G3_v1, us_counties$OBS_M3_DIF_G4_v1)
+M3_df$OBS_DIF_v2 <- c(us_counties$OBS_M3_DIF_G1_v2, us_counties$OBS_M3_DIF_G2_v2, us_counties$OBS_M3_DIF_G3_v2, us_counties$OBS_M3_DIF_G4_v2)
+M3_df$OBS_DIF_v3 <- c(us_counties$OBS_M3_DIF_G1_v3, us_counties$OBS_M3_DIF_G2_v3, us_counties$OBS_M3_DIF_G3_v3, us_counties$OBS_M3_DIF_G4_v3)
+
+# Compensate the different numbers of observed and expected cases caused by decimals
+total_dif_v1 <- sum(EXP)-sum(M3_df$OBS_DIF_v1)
+total_dif_v2 <- sum(EXP)-sum(M3_df$OBS_DIF_v2)
+total_dif_v3 <- sum(EXP)-sum(M3_df$OBS_DIF_v3)
+
+if(total_dif_v1>0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v1))
+  M3_df$OBS_DIF_v1[r_ids] <- M3_df$OBS_DIF_v1[r_ids] + 1
+}else if(total_dif_v1<0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v1))
+  M3_df$OBS_DIF_v1[r_ids] <- M3_df$OBS_DIF_v1[r_ids] - 1
+}
+
+if(total_dif_v2>0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v2))
+  M3_df$OBS_DIF_v2[r_ids] <- M3_df$OBS_DIF_v2[r_ids] + 1
+}else if(total_dif_v2<0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v2))
+  M3_df$OBS_DIF_v2[r_ids] <- M3_df$OBS_DIF_v2[r_ids] - 1
+}
+
+if(total_dif_v3>0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v3))
+  M3_df$OBS_DIF_v3[r_ids] <- M3_df$OBS_DIF_v3[r_ids] + 1
+}else if(total_dif_v3<0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v3))
+  M3_df$OBS_DIF_v3[r_ids] <- M3_df$OBS_DIF_v3[r_ids] - 1
+}
+
+if(sum(M3_df$OBS_DIF_v1)!=total_obs){stop("Observed values and expected values do not match.")}
+if(sum(M3_df$OBS_DIF_v2)!=total_obs){stop("Observed values and expected values do not match.")}
+if(sum(M3_df$OBS_DIF_v3)!=total_obs){stop("Observed values and expected values do not match.")}
+```
+
+### V1
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M3_DIF_G1_v1/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M3_DIF_G2_v1/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M3_DIF_G3_v1/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M3_DIF_G4_v1/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+### V2
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M3_DIF_G1_v2/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M3_DIF_G2_v2/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M3_DIF_G3_v2/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M3_DIF_G4_v2/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+### V3
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M3_DIF_G1_v3/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M3_DIF_G2_v3/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M3_DIF_G3_v3/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M3_DIF_G4_v3/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+# .-Factor 2 Spatial Effect (North-South)
+
+$$
+\begin{aligned}
+& \theta_1^i=\gamma_1^1 \omega_1^i + \gamma_2^1 \phi_{11} \\
+& \theta_2^i=\gamma_1^2 \omega_2^i + \gamma_2^2 \phi_{11} + \gamma_3^2 \phi_{12} \\
+& \theta_3^i=\gamma_1^3 \omega_3^i + \gamma_2^3 \phi_{11} \\
+& \theta_4^i=\gamma_1^4 \omega_4^i + \gamma_2^4 \phi_{11} + \gamma_3^4 \phi_{12} 
+\end{aligned}
+$$
+
+## Groups with equal risks {.tabset}
+
+***
+
+```{r echo=TRUE}
+# Estimate underlying risk for each group
+g1_pobrisks_v1 <- 1/3*us_counties$group1_sim_risk + 1/3*ind.ef.g2 + 1/3*us_counties$Temp_Scale
+g2_pobrisks_v1 <- 1/2*us_counties$group2_sim_risk + 1/2*ind.ef.g2
+g3_pobrisks_v1 <- 1/3*us_counties$group3_sim_risk + 1/3*ind.ef.g2 + 1/3*us_counties$Temp_Scale
+g4_pobrisks_v1 <- 1/2*us_counties$group4_sim_risk + 1/2*ind.ef.g2
+
+g1_pobrisks_v2 <- 14/25*us_counties$group1_sim_risk + 7/25*ind.ef.g2 + 4/25*us_counties$Temp_Scale
+g2_pobrisks_v2 <- 2/3*us_counties$group2_sim_risk + 1/3*ind.ef.g2
+g3_pobrisks_v2 <- 14/25*us_counties$group3_sim_risk + 7/25*ind.ef.g2 + 4/25*us_counties$Temp_Scale
+g4_pobrisks_v2 <- 2/3*us_counties$group4_sim_risk + 1/3*ind.ef.g2
+
+g1_pobrisks_v3 <- 4/25*us_counties$group1_sim_risk + 7/25*ind.ef.g2 + 14/25*us_counties$Temp_Scale
+g2_pobrisks_v3 <- 1/3*us_counties$group2_sim_risk + 2/3*ind.ef.g2
+g3_pobrisks_v3 <- 4/25*us_counties$group3_sim_risk + 7/25*ind.ef.g2 + 14/25*us_counties$Temp_Scale
+g4_pobrisks_v3 <- 1/3*us_counties$group4_sim_risk + 2/3*ind.ef.g2
+
+# Exponential of the underlying risk to match log of the linear predictor
+g1_pobrisks_v1 <- exp(g1_pobrisks_v1)
+g2_pobrisks_v1 <- exp(g2_pobrisks_v1)
+g3_pobrisks_v1 <- exp(g3_pobrisks_v1)
+g4_pobrisks_v1 <- exp(g4_pobrisks_v1)
+
+g1_pobrisks_v2 <- exp(g1_pobrisks_v2)
+g2_pobrisks_v2 <- exp(g2_pobrisks_v2)
+g3_pobrisks_v2 <- exp(g3_pobrisks_v2)
+g4_pobrisks_v2 <- exp(g4_pobrisks_v2)
+
+g1_pobrisks_v3 <- exp(g1_pobrisks_v3)
+g2_pobrisks_v3 <- exp(g2_pobrisks_v3)
+g3_pobrisks_v3 <- exp(g3_pobrisks_v3)
+g4_pobrisks_v3 <- exp(g4_pobrisks_v3)
+
+data_risk$M4_SIM_V1 <- c(g1_pobrisks_v1, g2_pobrisks_v1, g3_pobrisks_v1, g4_pobrisks_v1)
+data_risk$M4_SIM_V2 <- c(g1_pobrisks_v2, g2_pobrisks_v2, g3_pobrisks_v2, g4_pobrisks_v2)
+data_risk$M4_SIM_V3 <- c(g1_pobrisks_v3, g2_pobrisks_v3, g3_pobrisks_v3, g4_pobrisks_v3)
+
+# Estimate the total combination of population and risks
+total_pobrisk_v1 <- sum(POP * g1_pobrisks_v1 + POP * g2_pobrisks_v1 + POP * g3_pobrisks_v1 + POP * g4_pobrisks_v1)
+total_pobrisk_v2 <- sum(POP * g1_pobrisks_v2 + POP * g2_pobrisks_v2 + POP * g3_pobrisks_v2 + POP * g4_pobrisks_v2)
+total_pobrisk_v3 <- sum(POP * g1_pobrisks_v3 + POP * g2_pobrisks_v3 + POP * g3_pobrisks_v3 + POP * g4_pobrisks_v3)
+
+# Add observed values to sp object for ploting
+us_counties$OBS_M4_SIM_G1_v1 <- round(total_obs*((POP * g1_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M4_SIM_G2_v1 <- round(total_obs*((POP * g2_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M4_SIM_G3_v1 <- round(total_obs*((POP * g3_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M4_SIM_G4_v1 <- round(total_obs*((POP * g4_pobrisks_v1)/(total_pobrisk_v1)), 0)
+
+us_counties$OBS_M4_SIM_G1_v2 <- round(total_obs*((POP * g1_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M4_SIM_G2_v2 <- round(total_obs*((POP * g2_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M4_SIM_G3_v2 <- round(total_obs*((POP * g3_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M4_SIM_G4_v2 <- round(total_obs*((POP * g4_pobrisks_v2)/(total_pobrisk_v2)), 0)
+
+us_counties$OBS_M4_SIM_G1_v3 <- round(total_obs*((POP * g1_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M4_SIM_G2_v3 <- round(total_obs*((POP * g2_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M4_SIM_G3_v3 <- round(total_obs*((POP * g3_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M4_SIM_G4_v3 <- round(total_obs*((POP * g4_pobrisks_v3)/(total_pobrisk_v3)), 0)
+
+# Create dataframe for M0 models and estimate observed values depending on risks
+M4_df <- data.frame("OBS_SIM_v1"=NA, "OBS_DIF_v1"=NA, "OBS_SIM_v2"=NA, "OBS_DIF_v2"=NA, "OBS_SIM_v3"=NA, "OBS_DIF_v3"=NA, "EXP"=EXP, 
+                    TYPE = c(rep(c("G1", "G2", "G3", "G4"), each=nrow(us_counties))), "idx"=1:length(EXP))
+M4_df$OBS_SIM_v1 <- c(us_counties$OBS_M4_SIM_G1_v1, us_counties$OBS_M4_SIM_G2_v1, us_counties$OBS_M4_SIM_G3_v1, us_counties$OBS_M4_SIM_G4_v1)
+M4_df$OBS_SIM_v2 <- c(us_counties$OBS_M4_SIM_G1_v2, us_counties$OBS_M4_SIM_G2_v2, us_counties$OBS_M4_SIM_G3_v2, us_counties$OBS_M4_SIM_G4_v2)
+M4_df$OBS_SIM_v3 <- c(us_counties$OBS_M4_SIM_G1_v3, us_counties$OBS_M4_SIM_G2_v3, us_counties$OBS_M4_SIM_G3_v3, us_counties$OBS_M4_SIM_G4_v3)
+
+# Compensate the different numbers of observed and expected cases caused by decimals
+total_dif_v1 <- sum(EXP)-sum(M4_df$OBS_SIM_v1)
+total_dif_v2 <- sum(EXP)-sum(M4_df$OBS_SIM_v2)
+total_dif_v3 <- sum(EXP)-sum(M4_df$OBS_SIM_v3)
+
+if(total_dif_v1>0){
+  r_ids <- sample(1:nrow(M4_df), abs(total_dif_v1))
+  M4_df$OBS_SIM_v1[r_ids] <- M4_df$OBS_SIM_v1[r_ids] + 1
+}else if(total_dif_v1<0){
+  r_ids <- sample(1:nrow(M4_df), abs(total_dif_v1))
+  M4_df$OBS_SIM_v1[r_ids] <- M4_df$OBS_SIM_v1[r_ids] - 1
+}
+
+if(total_dif_v2>0){
+  r_ids <- sample(1:nrow(M4_df), abs(total_dif_v2))
+  M4_df$OBS_SIM_v2[r_ids] <- M4_df$OBS_SIM_v2[r_ids] + 1
+}else if(total_dif_v2<0){
+  r_ids <- sample(1:nrow(M4_df), abs(total_dif_v2))
+  M4_df$OBS_SIM_v2[r_ids] <- M4_df$OBS_SIM_v2[r_ids] - 1
+}
+
+if(total_dif_v3>0){
+  r_ids <- sample(1:nrow(M4_df), abs(total_dif_v3))
+  M4_df$OBS_SIM_v3[r_ids] <- M4_df$OBS_SIM_v3[r_ids] + 1
+}else if(total_dif_v3<0){
+  r_ids <- sample(1:nrow(M4_df), abs(total_dif_v3))
+  M4_df$OBS_SIM_v3[r_ids] <- M4_df$OBS_SIM_v3[r_ids] - 1
+}
+
+if(sum(M4_df$OBS_SIM_v1)!=total_obs){stop("Observed values and expected values do not match.")}
+if(sum(M4_df$OBS_SIM_v2)!=total_obs){stop("Observed values and expected values do not match.")}
+if(sum(M4_df$OBS_SIM_v3)!=total_obs){stop("Observed values and expected values do not match.")}
+```
+
+### V1
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M4_SIM_G1_v1/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M4_SIM_G2_v1/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M4_SIM_G3_v1/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M4_SIM_G4_v1/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+### V2
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M4_SIM_G1_v2/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M4_SIM_G2_v2/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M4_SIM_G3_v2/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M4_SIM_G4_v2/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+### V3
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M4_SIM_G1_v3/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M4_SIM_G2_v3/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M4_SIM_G3_v3/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M4_SIM_G4_v3/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+## Groups with different risks {.tabset}
+
+|       Just like in the previous section, we generate the same underlying risks by adding the underlying simulated risk for each county and group to each different spatial effect. The following figure represents the final rates after dividing the number of cases among the counties using the total risk assigned.
+
+***
+
+```{r echo=TRUE}
+# Estimate underlying risk for each group
+g1_pobrisks_v1 <- 1/3*us_counties$group1_dif_risk + 1/3*ind.ef.g2 + 1/3*us_counties$Temp_Scale
+g2_pobrisks_v1 <- 1/2*us_counties$group2_dif_risk + 1/2*ind.ef.g2
+g3_pobrisks_v1 <- 1/3*us_counties$group3_dif_risk + 1/3*ind.ef.g2 + 1/3*us_counties$Temp_Scale
+g4_pobrisks_v1 <- 1/2*us_counties$group4_dif_risk + 1/2*ind.ef.g2
+
+g1_pobrisks_v2 <- 14/25*us_counties$group1_dif_risk + 7/25*ind.ef.g2 + 4/25*us_counties$Temp_Scale
+g2_pobrisks_v2 <- 2/3*us_counties$group2_dif_risk + 1/3*ind.ef.g2
+g3_pobrisks_v2 <- 14/25*us_counties$group3_dif_risk + 7/25*ind.ef.g2 + 4/25*us_counties$Temp_Scale
+g4_pobrisks_v2 <- 2/3*us_counties$group4_dif_risk + 1/3*ind.ef.g2
+
+g1_pobrisks_v3 <- 4/25*us_counties$group1_dif_risk + 7/25*ind.ef.g2 + 14/25*us_counties$Temp_Scale
+g2_pobrisks_v3 <- 1/3*us_counties$group2_dif_risk + 2/3*ind.ef.g2
+g3_pobrisks_v3 <- 4/25*us_counties$group3_dif_risk + 7/25*ind.ef.g2 + 14/25*us_counties$Temp_Scale
+g4_pobrisks_v3 <- 1/3*us_counties$group4_dif_risk + 2/3*ind.ef.g2
+
+# Exponential of the underlying risk to match log of the linear predictor
+g1_pobrisks_v1 <- exp(g1_pobrisks_v1)
+g2_pobrisks_v1 <- exp(g2_pobrisks_v1)
+g3_pobrisks_v1 <- exp(g3_pobrisks_v1)
+g4_pobrisks_v1 <- exp(g4_pobrisks_v1)
+
+g1_pobrisks_v2 <- exp(g1_pobrisks_v2)
+g2_pobrisks_v2 <- exp(g2_pobrisks_v2)
+g3_pobrisks_v2 <- exp(g3_pobrisks_v2)
+g4_pobrisks_v2 <- exp(g4_pobrisks_v2)
+
+g1_pobrisks_v3 <- exp(g1_pobrisks_v3)
+g2_pobrisks_v3 <- exp(g2_pobrisks_v3)
+g3_pobrisks_v3 <- exp(g3_pobrisks_v3)
+g4_pobrisks_v3 <- exp(g4_pobrisks_v3)
+
+data_risk$M4_DIF_V1 <- c(g1_pobrisks_v1, g2_pobrisks_v1, g3_pobrisks_v1, g4_pobrisks_v1)
+data_risk$M4_DIF_V2 <- c(g1_pobrisks_v2, g2_pobrisks_v2, g3_pobrisks_v2, g4_pobrisks_v2)
+data_risk$M4_DIF_V3 <- c(g1_pobrisks_v3, g2_pobrisks_v3, g3_pobrisks_v3, g4_pobrisks_v3)
+
+# Estimate the total combination of population and risks
+total_pobrisk_v1 <- sum(POP * g1_pobrisks_v1 + POP * g2_pobrisks_v1 + POP * g3_pobrisks_v1 + POP * g4_pobrisks_v1)
+total_pobrisk_v2 <- sum(POP * g1_pobrisks_v2 + POP * g2_pobrisks_v2 + POP * g3_pobrisks_v2 + POP * g4_pobrisks_v2)
+total_pobrisk_v3 <- sum(POP * g1_pobrisks_v3 + POP * g2_pobrisks_v3 + POP * g3_pobrisks_v3 + POP * g4_pobrisks_v3)
+
+# Add observed values to sp object for ploting
+us_counties$OBS_M4_DIF_G1_v1 <- round(total_obs*((POP * g1_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M4_DIF_G2_v1 <- round(total_obs*((POP * g2_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M4_DIF_G3_v1 <- round(total_obs*((POP * g3_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M4_DIF_G4_v1 <- round(total_obs*((POP * g4_pobrisks_v1)/(total_pobrisk_v1)), 0)
+
+us_counties$OBS_M4_DIF_G1_v2 <- round(total_obs*((POP * g1_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M4_DIF_G2_v2 <- round(total_obs*((POP * g2_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M4_DIF_G3_v2 <- round(total_obs*((POP * g3_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M4_DIF_G4_v2 <- round(total_obs*((POP * g4_pobrisks_v2)/(total_pobrisk_v2)), 0)
+
+us_counties$OBS_M4_DIF_G1_v3 <- round(total_obs*((POP * g1_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M4_DIF_G2_v3 <- round(total_obs*((POP * g2_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M4_DIF_G3_v3 <- round(total_obs*((POP * g3_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M4_DIF_G4_v3 <- round(total_obs*((POP * g4_pobrisks_v3)/(total_pobrisk_v3)), 0)
+
+# Create dataframe for M0 models and estimate observed values depending on risks
+M4_df$OBS_DIF_v1 <- c(us_counties$OBS_M4_DIF_G1_v1, us_counties$OBS_M4_DIF_G2_v1, us_counties$OBS_M4_DIF_G3_v1, us_counties$OBS_M4_DIF_G4_v1)
+M4_df$OBS_DIF_v2 <- c(us_counties$OBS_M4_DIF_G1_v2, us_counties$OBS_M4_DIF_G2_v2, us_counties$OBS_M4_DIF_G3_v2, us_counties$OBS_M4_DIF_G4_v2)
+M4_df$OBS_DIF_v3 <- c(us_counties$OBS_M4_DIF_G1_v3, us_counties$OBS_M4_DIF_G2_v3, us_counties$OBS_M4_DIF_G3_v3, us_counties$OBS_M4_DIF_G4_v3)
+
+# Compensate the different numbers of observed and expected cases caused by decimals
+total_dif_v1 <- sum(EXP)-sum(M4_df$OBS_DIF_v1)
+total_dif_v2 <- sum(EXP)-sum(M4_df$OBS_DIF_v2)
+total_dif_v3 <- sum(EXP)-sum(M4_df$OBS_DIF_v3)
+
+if(total_dif_v1>0){
+  r_ids <- sample(1:nrow(M4_df), abs(total_dif_v1))
+  M4_df$OBS_DIF_v1[r_ids] <- M4_df$OBS_DIF_v1[r_ids] + 1
+}else if(total_dif_v1<0){
+  r_ids <- sample(1:nrow(M4_df), abs(total_dif_v1))
+  M4_df$OBS_DIF_v1[r_ids] <- M4_df$OBS_DIF_v1[r_ids] - 1
+}
+
+if(total_dif_v2>0){
+  r_ids <- sample(1:nrow(M4_df), abs(total_dif_v2))
+  M4_df$OBS_DIF_v2[r_ids] <- M4_df$OBS_DIF_v2[r_ids] + 1
+}else if(total_dif_v2<0){
+  r_ids <- sample(1:nrow(M4_df), abs(total_dif_v2))
+  M4_df$OBS_DIF_v2[r_ids] <- M4_df$OBS_DIF_v2[r_ids] - 1
+}
+
+if(total_dif_v3>0){
+  r_ids <- sample(1:nrow(M4_df), abs(total_dif_v3))
+  M4_df$OBS_DIF_v3[r_ids] <- M4_df$OBS_DIF_v3[r_ids] + 1
+}else if(total_dif_v3<0){
+  r_ids <- sample(1:nrow(M4_df), abs(total_dif_v3))
+  M4_df$OBS_DIF_v3[r_ids] <- M4_df$OBS_DIF_v3[r_ids] - 1
+}
+
+if(sum(M4_df$OBS_DIF_v1)!=total_obs){stop("Observed values and expected values do not match.")}
+if(sum(M4_df$OBS_DIF_v2)!=total_obs){stop("Observed values and expected values do not match.")}
+if(sum(M4_df$OBS_DIF_v3)!=total_obs){stop("Observed values and expected values do not match.")}
+```
+
+### V1
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M4_DIF_G1_v1/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M4_DIF_G2_v1/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M4_DIF_G3_v1/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M4_DIF_G4_v1/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+### V2
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M4_DIF_G1_v2/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M4_DIF_G2_v2/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M4_DIF_G3_v2/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M4_DIF_G4_v2/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+### V3
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M4_DIF_G1_v3/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M4_DIF_G2_v3/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M4_DIF_G3_v3/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M4_DIF_G4_v3/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+# .-Factor 1 + Factor 2
+
+$$
+\begin{aligned}
+& \theta_1^i=\gamma_1^1 \omega_1^i + \gamma_2^1 \phi_{11} \\
+& \theta_2^i=\gamma_1^2 \omega_2^i + \gamma_2^2 \phi_{11} + \gamma_3^2 \phi_{12} \\
+& \theta_3^i=\gamma_1^3 \omega_3^i + \gamma_2^3 \phi_{11} + \gamma_3^3 \phi_{21} \\
+& \theta_4^i=\gamma_1^4 \omega_4^i + \gamma_2^4 \phi_{11} + \gamma_3^4 \phi_{12} + \gamma_4^4 \phi_{21}
+\end{aligned}
+$$
+
+## Groups with equal risks {.tabset}
+
+***
+
+```{r echo=TRUE}
+# Estimate underlying risk for each group
+g1_pobrisks_v1 <- 1/3*us_counties$group1_sim_risk + 1/3*ind.ef.g2 + 1/3*us_counties$Temp_Scale
+g2_pobrisks_v1 <- 1/2*us_counties$group2_sim_risk + 1/2*ind.ef.g2
+g3_pobrisks_v1 <- 1/4*us_counties$group3_sim_risk + 1/4*ind.ef.g2 + 1/4*us_counties$POP_DENS_Scale + 1/4*us_counties$Temp_Scale
+g4_pobrisks_v1 <- 1/3*us_counties$group4_sim_risk + 1/3*ind.ef.g2 + 1/3*us_counties$POP_DENS_Scale
+
+g1_pobrisks_v2 <- 14/25*us_counties$group1_sim_risk + 7/25*ind.ef.g2 + 4/25*us_counties$Temp_Scale
+g2_pobrisks_v2 <- 2/3*us_counties$group2_sim_risk + 1/3*ind.ef.g2
+g3_pobrisks_v2 <- 53/100*us_counties$group3_sim_risk + 26/100*ind.ef.g2 + 13/100*us_counties$POP_DENS_Scale + 8/100*us_counties$Temp_Scale
+g4_pobrisks_v2 <- 14/25*us_counties$group4_sim_risk + 7/25*ind.ef.g2 + 4/25*us_counties$POP_DENS_Scale
+
+g1_pobrisks_v3 <- 4/25*us_counties$group1_sim_risk + 7/25*ind.ef.g2 + 14/25*us_counties$Temp_Scale
+g2_pobrisks_v3 <- 1/3*us_counties$group2_sim_risk + 2/3*ind.ef.g2
+g3_pobrisks_v3 <- 8/100*us_counties$group3_sim_risk + 53/100*ind.ef.g2 + 26/100*us_counties$POP_DENS_Scale + 13/100*us_counties$Temp_Scale
+g4_pobrisks_v3 <- 4/25*us_counties$group4_sim_risk + 7/25*ind.ef.g2 + 14/25*us_counties$POP_DENS_Scale
+
+# Exponential of the underlying risk to match log of the linear predictor
+g1_pobrisks_v1 <- exp(g1_pobrisks_v1)
+g2_pobrisks_v1 <- exp(g2_pobrisks_v1)
+g3_pobrisks_v1 <- exp(g3_pobrisks_v1)
+g4_pobrisks_v1 <- exp(g4_pobrisks_v1)
+
+g1_pobrisks_v2 <- exp(g1_pobrisks_v2)
+g2_pobrisks_v2 <- exp(g2_pobrisks_v2)
+g3_pobrisks_v2 <- exp(g3_pobrisks_v2)
+g4_pobrisks_v2 <- exp(g4_pobrisks_v2)
+
+g1_pobrisks_v3 <- exp(g1_pobrisks_v3)
+g2_pobrisks_v3 <- exp(g2_pobrisks_v3)
+g3_pobrisks_v3 <- exp(g3_pobrisks_v3)
+g4_pobrisks_v3 <- exp(g4_pobrisks_v3)
+
+data_risk$M5_SIM_V1 <- c(g1_pobrisks_v1, g2_pobrisks_v1, g3_pobrisks_v1, g4_pobrisks_v1)
+data_risk$M5_SIM_V2 <- c(g1_pobrisks_v2, g2_pobrisks_v2, g3_pobrisks_v2, g4_pobrisks_v2)
+data_risk$M5_SIM_V3 <- c(g1_pobrisks_v3, g2_pobrisks_v3, g3_pobrisks_v3, g4_pobrisks_v3)
+
+# Estimate the total combination of population and risks
+total_pobrisk_v1 <- sum(POP * g1_pobrisks_v1 + POP * g2_pobrisks_v1 + POP * g3_pobrisks_v1 + POP * g4_pobrisks_v1)
+total_pobrisk_v2 <- sum(POP * g1_pobrisks_v2 + POP * g2_pobrisks_v2 + POP * g3_pobrisks_v2 + POP * g4_pobrisks_v2)
+total_pobrisk_v3 <- sum(POP * g1_pobrisks_v3 + POP * g2_pobrisks_v3 + POP * g3_pobrisks_v3 + POP * g4_pobrisks_v3)
+
+# Add observed values to sp object for ploting
+us_counties$OBS_M5_SIM_G1_v1 <- round(total_obs*((POP * g1_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M5_SIM_G2_v1 <- round(total_obs*((POP * g2_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M5_SIM_G3_v1 <- round(total_obs*((POP * g3_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M5_SIM_G4_v1 <- round(total_obs*((POP * g4_pobrisks_v1)/(total_pobrisk_v1)), 0)
+
+us_counties$OBS_M5_SIM_G1_v2 <- round(total_obs*((POP * g1_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M5_SIM_G2_v2 <- round(total_obs*((POP * g2_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M5_SIM_G3_v2 <- round(total_obs*((POP * g3_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M5_SIM_G4_v2 <- round(total_obs*((POP * g4_pobrisks_v2)/(total_pobrisk_v2)), 0)
+
+us_counties$OBS_M5_SIM_G1_v3 <- round(total_obs*((POP * g1_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M5_SIM_G2_v3 <- round(total_obs*((POP * g2_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M5_SIM_G3_v3 <- round(total_obs*((POP * g3_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M5_SIM_G4_v3 <- round(total_obs*((POP * g4_pobrisks_v3)/(total_pobrisk_v3)), 0)
+
+# Create dataframe for M0 models and estimate observed values depending on risks
+M5_df <- data.frame("OBS_SIM_v1"=NA, "OBS_DIF_v1"=NA, "OBS_SIM_v2"=NA, "OBS_DIF_v2"=NA, "OBS_SIM_v3"=NA, "OBS_DIF_v3"=NA, "EXP"=EXP, 
+                    TYPE = c(rep(c("G1", "G2", "G3", "G4"), each=nrow(us_counties))), "idx"=1:length(EXP))
+M5_df$OBS_SIM_v1 <- c(us_counties$OBS_M5_SIM_G1_v1, us_counties$OBS_M5_SIM_G2_v1, us_counties$OBS_M5_SIM_G3_v1, us_counties$OBS_M5_SIM_G4_v1)
+M5_df$OBS_SIM_v2 <- c(us_counties$OBS_M5_SIM_G1_v2, us_counties$OBS_M5_SIM_G2_v2, us_counties$OBS_M5_SIM_G3_v2, us_counties$OBS_M5_SIM_G4_v2)
+M5_df$OBS_SIM_v3 <- c(us_counties$OBS_M5_SIM_G1_v3, us_counties$OBS_M5_SIM_G2_v3, us_counties$OBS_M5_SIM_G3_v3, us_counties$OBS_M5_SIM_G4_v3)
+
+# Compensate the different numbers of observed and expected cases caused by decimals
+total_dif_v1 <- sum(EXP)-sum(M5_df$OBS_SIM_v1)
+total_dif_v2 <- sum(EXP)-sum(M5_df$OBS_SIM_v2)
+total_dif_v3 <- sum(EXP)-sum(M5_df$OBS_SIM_v3)
+
+if(total_dif_v1>0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v1))
+  M5_df$OBS_SIM_v1[r_ids] <- M5_df$OBS_SIM_v1[r_ids] + 1
+}else if(total_dif_v1<0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v1))
+  M5_df$OBS_SIM_v1[r_ids] <- M5_df$OBS_SIM_v1[r_ids] - 1
+}
+
+if(total_dif_v2>0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v2))
+  M5_df$OBS_SIM_v2[r_ids] <- M5_df$OBS_SIM_v2[r_ids] + 1
+}else if(total_dif_v2<0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v2))
+  M5_df$OBS_SIM_v2[r_ids] <- M5_df$OBS_SIM_v2[r_ids] - 1
+}
+
+if(total_dif_v3>0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v3))
+  M5_df$OBS_SIM_v3[r_ids] <- M5_df$OBS_SIM_v3[r_ids] + 1
+}else if(total_dif_v3<0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v3))
+  M5_df$OBS_SIM_v3[r_ids] <- M5_df$OBS_SIM_v3[r_ids] - 1
+}
+
+if(sum(M5_df$OBS_SIM_v1)!=total_obs){stop("Observed values and expected values do not match.")}
+if(sum(M5_df$OBS_SIM_v2)!=total_obs){stop("Observed values and expected values do not match.")}
+if(sum(M5_df$OBS_SIM_v3)!=total_obs){stop("Observed values and expected values do not match.")}
+```
+
+### V1
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M5_SIM_G1_v1/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M5_SIM_G2_v1/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M5_SIM_G3_v1/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M5_SIM_G4_v1/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+### V2
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M5_SIM_G1_v2/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M5_SIM_G2_v2/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M5_SIM_G3_v2/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M5_SIM_G4_v2/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+### V3
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M5_SIM_G1_v3/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M5_SIM_G2_v3/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M5_SIM_G3_v3/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M5_SIM_G4_v3/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+## Groups with different risks {.tabset}
+
+|       Just like in the previous section, we generate the same underlying risks by adding the underlying simulated risk for each county and group to each different spatial effect. The following figure represents the final rates after dividing the number of cases among the counties using the total risk assigned.
+
+***
+
+```{r echo=TRUE}
+# Estimate underlying risk for each group
+g1_pobrisks_v1 <- 1/3*us_counties$group1_dif_risk + 1/3*ind.ef.g2 + 1/3*us_counties$Temp_Scale
+g2_pobrisks_v1 <- 1/2*us_counties$group2_dif_risk + 1/2*ind.ef.g2
+g3_pobrisks_v1 <- 1/4*us_counties$group3_dif_risk + 1/4*ind.ef.g2 + 1/4*us_counties$POP_DENS_Scale + 1/4*us_counties$Temp_Scale
+g4_pobrisks_v1 <- 1/3*us_counties$group4_dif_risk + 1/3*ind.ef.g2 + 1/3*us_counties$POP_DENS_Scale
+
+g1_pobrisks_v2 <- 14/25*us_counties$group1_dif_risk + 7/25*ind.ef.g2 + 4/25*us_counties$Temp_Scale
+g2_pobrisks_v2 <- 2/3*us_counties$group2_dif_risk + 1/3*ind.ef.g2
+g3_pobrisks_v2 <- 53/100*us_counties$group3_dif_risk + 26/100*ind.ef.g2 + 13/100*us_counties$POP_DENS_Scale + 8/100*us_counties$Temp_Scale
+g4_pobrisks_v2 <- 14/25*us_counties$group4_dif_risk + 7/25*ind.ef.g2 + 4/25*us_counties$POP_DENS_Scale
+
+g1_pobrisks_v3 <- 4/25*us_counties$group1_dif_risk + 7/25*ind.ef.g2 + 14/25*us_counties$Temp_Scale
+g2_pobrisks_v3 <- 1/3*us_counties$group2_dif_risk + 2/3*ind.ef.g2
+g3_pobrisks_v3 <- 8/100*us_counties$group3_dif_risk + 53/100*ind.ef.g2 + 26/100*us_counties$POP_DENS_Scale + 13/100*us_counties$Temp_Scale
+g4_pobrisks_v3 <- 4/25*us_counties$group4_dif_risk + 7/25*ind.ef.g2 + 14/25*us_counties$POP_DENS_Scale
+
+# Exponential of the underlying risk to match log of the linear predictor
+g1_pobrisks_v1 <- exp(g1_pobrisks_v1)
+g2_pobrisks_v1 <- exp(g2_pobrisks_v1)
+g3_pobrisks_v1 <- exp(g3_pobrisks_v1)
+g4_pobrisks_v1 <- exp(g4_pobrisks_v1)
+
+g1_pobrisks_v2 <- exp(g1_pobrisks_v2)
+g2_pobrisks_v2 <- exp(g2_pobrisks_v2)
+g3_pobrisks_v2 <- exp(g3_pobrisks_v2)
+g4_pobrisks_v2 <- exp(g4_pobrisks_v2)
+
+g1_pobrisks_v3 <- exp(g1_pobrisks_v3)
+g2_pobrisks_v3 <- exp(g2_pobrisks_v3)
+g3_pobrisks_v3 <- exp(g3_pobrisks_v3)
+g4_pobrisks_v3 <- exp(g4_pobrisks_v3)
+
+data_risk$M5_DIF_V1 <- c(g1_pobrisks_v1, g2_pobrisks_v1, g3_pobrisks_v1, g4_pobrisks_v1)
+data_risk$M5_DIF_V2 <- c(g1_pobrisks_v2, g2_pobrisks_v2, g3_pobrisks_v2, g4_pobrisks_v2)
+data_risk$M5_DIF_V3 <- c(g1_pobrisks_v3, g2_pobrisks_v3, g3_pobrisks_v3, g4_pobrisks_v3)
+
+# Estimate the total combination of population and risks
+total_pobrisk_v1 <- sum(POP * g1_pobrisks_v1 + POP * g2_pobrisks_v1 + POP * g3_pobrisks_v1 + POP * g4_pobrisks_v1)
+total_pobrisk_v2 <- sum(POP * g1_pobrisks_v2 + POP * g2_pobrisks_v2 + POP * g3_pobrisks_v2 + POP * g4_pobrisks_v2)
+total_pobrisk_v3 <- sum(POP * g1_pobrisks_v3 + POP * g2_pobrisks_v3 + POP * g3_pobrisks_v3 + POP * g4_pobrisks_v3)
+
+# Add observed values to sp object for ploting
+us_counties$OBS_M5_DIF_G1_v1 <- round(total_obs*((POP * g1_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M5_DIF_G2_v1 <- round(total_obs*((POP * g2_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M5_DIF_G3_v1 <- round(total_obs*((POP * g3_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M5_DIF_G4_v1 <- round(total_obs*((POP * g4_pobrisks_v1)/(total_pobrisk_v1)), 0)
+
+us_counties$OBS_M5_DIF_G1_v2 <- round(total_obs*((POP * g1_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M5_DIF_G2_v2 <- round(total_obs*((POP * g2_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M5_DIF_G3_v2 <- round(total_obs*((POP * g3_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M5_DIF_G4_v2 <- round(total_obs*((POP * g4_pobrisks_v2)/(total_pobrisk_v2)), 0)
+
+us_counties$OBS_M5_DIF_G1_v3 <- round(total_obs*((POP * g1_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M5_DIF_G2_v3 <- round(total_obs*((POP * g2_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M5_DIF_G3_v3 <- round(total_obs*((POP * g3_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M5_DIF_G4_v3 <- round(total_obs*((POP * g4_pobrisks_v3)/(total_pobrisk_v3)), 0)
+
+# Create dataframe for M0 models and estimate observed values depending on risks
+M5_df$OBS_DIF_v1 <- c(us_counties$OBS_M5_DIF_G1_v1, us_counties$OBS_M5_DIF_G2_v1, us_counties$OBS_M5_DIF_G3_v1, us_counties$OBS_M5_DIF_G4_v1)
+M5_df$OBS_DIF_v2 <- c(us_counties$OBS_M5_DIF_G1_v2, us_counties$OBS_M5_DIF_G2_v2, us_counties$OBS_M5_DIF_G3_v2, us_counties$OBS_M5_DIF_G4_v2)
+M5_df$OBS_DIF_v3 <- c(us_counties$OBS_M5_DIF_G1_v3, us_counties$OBS_M5_DIF_G2_v3, us_counties$OBS_M5_DIF_G3_v3, us_counties$OBS_M5_DIF_G4_v3)
+
+# Compensate the different numbers of observed and expected cases caused by decimals
+total_dif_v1 <- sum(EXP)-sum(M5_df$OBS_DIF_v1)
+total_dif_v2 <- sum(EXP)-sum(M5_df$OBS_DIF_v2)
+total_dif_v3 <- sum(EXP)-sum(M5_df$OBS_DIF_v3)
+
+if(total_dif_v1>0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v1))
+  M5_df$OBS_DIF_v1[r_ids] <- M5_df$OBS_DIF_v1[r_ids] + 1
+}else if(total_dif_v1<0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v1))
+  M5_df$OBS_DIF_v1[r_ids] <- M5_df$OBS_DIF_v1[r_ids] - 1
+}
+
+if(total_dif_v2>0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v2))
+  M5_df$OBS_DIF_v2[r_ids] <- M5_df$OBS_DIF_v2[r_ids] + 1
+}else if(total_dif_v2<0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v2))
+  M5_df$OBS_DIF_v2[r_ids] <- M5_df$OBS_DIF_v2[r_ids] - 1
+}
+
+if(total_dif_v3>0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v3))
+  M5_df$OBS_DIF_v3[r_ids] <- M5_df$OBS_DIF_v3[r_ids] + 1
+}else if(total_dif_v3<0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v3))
+  M5_df$OBS_DIF_v3[r_ids] <- M5_df$OBS_DIF_v3[r_ids] - 1
+}
+
+if(sum(M5_df$OBS_DIF_v1)!=total_obs){stop("Observed values and expected values do not match.")}
+if(sum(M5_df$OBS_DIF_v2)!=total_obs){stop("Observed values and expected values do not match.")}
+if(sum(M5_df$OBS_DIF_v3)!=total_obs){stop("Observed values and expected values do not match.")}
+```
+
+### V1
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M5_DIF_G1_v1/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M5_DIF_G2_v1/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M5_DIF_G3_v1/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M5_DIF_G4_v1/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+### V2
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M5_DIF_G1_v2/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M5_DIF_G2_v2/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M5_DIF_G3_v2/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M5_DIF_G4_v2/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+### V3
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M5_DIF_G1_v3/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M5_DIF_G2_v3/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M5_DIF_G3_v3/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M5_DIF_G4_v3/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+# .-Factor 1 * Factor 2
+
+$$
+\begin{aligned}
+& \theta_1^i=\gamma_1^1 \omega_1^i + \gamma_2^1 \phi_{11} \\
+& \theta_2^i=\gamma_1^2 \omega_2^i + \gamma_2^2 \phi_{11} + \gamma_3^2 \phi_{12} \\
+& \theta_3^i=\gamma_1^3 \omega_3^i + \gamma_2^3 \phi_{11} + \gamma_3^3 \phi_{21} + \gamma_4^4 \phi_{21}\\
+& \theta_4^i=\gamma_1^4 \omega_4^i + \gamma_2^4 \phi_{11} + \gamma_3^4 \phi_{12} + \gamma_4^4 \phi_{22}
+\end{aligned}
+$$
+
+## Groups with equal risks {.tabset}
+
+***
+
+```{r echo=TRUE}
+# Estimate underlying risk for each group
+g1_pobrisks_v1 <- 1/3*us_counties$group1_sim_risk + 1/3*ind.ef.g2 + 1/3*us_counties$Temp_Scale
+g2_pobrisks_v1 <- 1/2*us_counties$group2_sim_risk + 1/2*ind.ef.g2
+g3_pobrisks_v1 <- 1/4*us_counties$group3_sim_risk + 1/4*ind.ef.g2 + 1/4*ind.ef.g1 + 1/4*us_counties$Temp_Scale
+g4_pobrisks_v1 <- 1/3*us_counties$group4_sim_risk + 1/3*ind.ef.g2 + 1/3*us_counties$POP_DENS_Scale
+
+g1_pobrisks_v2 <- 14/25*us_counties$group1_sim_risk + 7/25*ind.ef.g2 + 4/25*us_counties$Temp_Scale
+g2_pobrisks_v2 <- 2/3*us_counties$group2_sim_risk + 1/3*ind.ef.g2
+g3_pobrisks_v2 <- 53/100*us_counties$group3_sim_risk + 26/100*ind.ef.g2 + 13/100*ind.ef.g1 + 8/100*us_counties$Temp_Scale
+g4_pobrisks_v2 <- 14/25*us_counties$group4_sim_risk + 7/25*ind.ef.g2 + 4/25*us_counties$POP_DENS_Scale
+
+g1_pobrisks_v3 <- 4/25*us_counties$group1_sim_risk + 7/25*ind.ef.g2 + 14/25*us_counties$Temp_Scale
+g2_pobrisks_v3 <- 1/3*us_counties$group2_sim_risk + 2/3*ind.ef.g2
+g3_pobrisks_v3 <- 8/100*us_counties$group3_sim_risk + 53/100*ind.ef.g2 + 26/100*ind.ef.g1 + 13/100*us_counties$Temp_Scale
+g4_pobrisks_v3 <- 4/25*us_counties$group4_sim_risk + 7/25*ind.ef.g2 + 14/25*us_counties$POP_DENS_Scale
+
+# Exponential of the underlying risk to match log of the linear predictor
+g1_pobrisks_v1 <- exp(g1_pobrisks_v1)
+g2_pobrisks_v1 <- exp(g2_pobrisks_v1)
+g3_pobrisks_v1 <- exp(g3_pobrisks_v1)
+g4_pobrisks_v1 <- exp(g4_pobrisks_v1)
+
+g1_pobrisks_v2 <- exp(g1_pobrisks_v2)
+g2_pobrisks_v2 <- exp(g2_pobrisks_v2)
+g3_pobrisks_v2 <- exp(g3_pobrisks_v2)
+g4_pobrisks_v2 <- exp(g4_pobrisks_v2)
+
+g1_pobrisks_v3 <- exp(g1_pobrisks_v3)
+g2_pobrisks_v3 <- exp(g2_pobrisks_v3)
+g3_pobrisks_v3 <- exp(g3_pobrisks_v3)
+g4_pobrisks_v3 <- exp(g4_pobrisks_v3)
+
+data_risk$M6_SIM_V1 <- c(g1_pobrisks_v1, g2_pobrisks_v1, g3_pobrisks_v1, g4_pobrisks_v1)
+data_risk$M6_SIM_V2 <- c(g1_pobrisks_v2, g2_pobrisks_v2, g3_pobrisks_v2, g4_pobrisks_v2)
+data_risk$M6_SIM_V3 <- c(g1_pobrisks_v3, g2_pobrisks_v3, g3_pobrisks_v3, g4_pobrisks_v3)
+
+# Estimate the total combination of population and risks
+total_pobrisk_v1 <- sum(POP * g1_pobrisks_v1 + POP * g2_pobrisks_v1 + POP * g3_pobrisks_v1 + POP * g4_pobrisks_v1)
+total_pobrisk_v2 <- sum(POP * g1_pobrisks_v2 + POP * g2_pobrisks_v2 + POP * g3_pobrisks_v2 + POP * g4_pobrisks_v2)
+total_pobrisk_v3 <- sum(POP * g1_pobrisks_v3 + POP * g2_pobrisks_v3 + POP * g3_pobrisks_v3 + POP * g4_pobrisks_v3)
+
+# Add observed values to sp object for ploting
+us_counties$OBS_M6_SIM_G1_v1 <- round(total_obs*((POP * g1_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M6_SIM_G2_v1 <- round(total_obs*((POP * g2_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M6_SIM_G3_v1 <- round(total_obs*((POP * g3_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M6_SIM_G4_v1 <- round(total_obs*((POP * g4_pobrisks_v1)/(total_pobrisk_v1)), 0)
+
+us_counties$OBS_M6_SIM_G1_v2 <- round(total_obs*((POP * g1_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M6_SIM_G2_v2 <- round(total_obs*((POP * g2_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M6_SIM_G3_v2 <- round(total_obs*((POP * g3_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M6_SIM_G4_v2 <- round(total_obs*((POP * g4_pobrisks_v2)/(total_pobrisk_v2)), 0)
+
+us_counties$OBS_M6_SIM_G1_v3 <- round(total_obs*((POP * g1_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M6_SIM_G2_v3 <- round(total_obs*((POP * g2_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M6_SIM_G3_v3 <- round(total_obs*((POP * g3_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M6_SIM_G4_v3 <- round(total_obs*((POP * g4_pobrisks_v3)/(total_pobrisk_v3)), 0)
+
+# Create dataframe for M0 models and estimate observed values depending on risks
+M6_df <- data.frame("OBS_SIM_v1"=NA, "OBS_DIF_v1"=NA, "OBS_SIM_v2"=NA, "OBS_DIF_v2"=NA, "OBS_SIM_v3"=NA, "OBS_DIF_v3"=NA, "EXP"=EXP, 
+                    TYPE = c(rep(c("G1", "G2", "G3", "G4"), each=nrow(us_counties))), "idx"=1:length(EXP))
+M6_df$OBS_SIM_v1 <- c(us_counties$OBS_M6_SIM_G1_v1, us_counties$OBS_M6_SIM_G2_v1, us_counties$OBS_M6_SIM_G3_v1, us_counties$OBS_M6_SIM_G4_v1)
+M6_df$OBS_SIM_v2 <- c(us_counties$OBS_M6_SIM_G1_v2, us_counties$OBS_M6_SIM_G2_v2, us_counties$OBS_M6_SIM_G3_v2, us_counties$OBS_M6_SIM_G4_v2)
+M6_df$OBS_SIM_v3 <- c(us_counties$OBS_M6_SIM_G1_v3, us_counties$OBS_M6_SIM_G2_v3, us_counties$OBS_M6_SIM_G3_v3, us_counties$OBS_M6_SIM_G4_v3)
+
+# Compensate the different numbers of observed and expected cases caused by decimals
+total_dif_v1 <- sum(EXP)-sum(M6_df$OBS_SIM_v1)
+total_dif_v2 <- sum(EXP)-sum(M6_df$OBS_SIM_v2)
+total_dif_v3 <- sum(EXP)-sum(M6_df$OBS_SIM_v3)
+
+if(total_dif_v1>0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v1))
+  M6_df$OBS_SIM_v1[r_ids] <- M6_df$OBS_SIM_v1[r_ids] + 1
+}else if(total_dif_v1<0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v1))
+  M6_df$OBS_SIM_v1[r_ids] <- M6_df$OBS_SIM_v1[r_ids] - 1
+}
+
+if(total_dif_v2>0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v2))
+  M6_df$OBS_SIM_v2[r_ids] <- M6_df$OBS_SIM_v2[r_ids] + 1
+}else if(total_dif_v2<0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v2))
+  M6_df$OBS_SIM_v2[r_ids] <- M6_df$OBS_SIM_v2[r_ids] - 1
+}
+
+if(total_dif_v3>0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v3))
+  M6_df$OBS_SIM_v3[r_ids] <- M6_df$OBS_SIM_v3[r_ids] + 1
+}else if(total_dif_v3<0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v3))
+  M6_df$OBS_SIM_v3[r_ids] <- M6_df$OBS_SIM_v3[r_ids] - 1
+}
+
+if(sum(M6_df$OBS_SIM_v1)!=total_obs){stop("Observed values and expected values do not match.")}
+if(sum(M6_df$OBS_SIM_v2)!=total_obs){stop("Observed values and expected values do not match.")}
+if(sum(M6_df$OBS_SIM_v3)!=total_obs){stop("Observed values and expected values do not match.")}
+```
+
+### V1
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M6_SIM_G1_v1/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M6_SIM_G2_v1/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M6_SIM_G3_v1/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M6_SIM_G4_v1/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+### V2
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M6_SIM_G1_v2/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M6_SIM_G2_v2/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M6_SIM_G3_v2/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M6_SIM_G4_v2/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+### V3
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M6_SIM_G1_v3/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M6_SIM_G2_v3/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M6_SIM_G3_v3/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M6_SIM_G4_v3/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+## Groups with different risks {.tabset}
+
+|       Just like in the previous section, we generate the same underlying risks by adding the underlying simulated risk for each county and group to each different spatial effect. The following figure represents the final rates after dividing the number of cases among the counties using the total risk assigned.
+
+***
+
+```{r echo=TRUE}
+# Estimate underlying risk for each group
+g1_pobrisks_v1 <- 1/3*us_counties$group1_dif_risk + 1/3*ind.ef.g2 + 1/3*us_counties$Temp_Scale
+g2_pobrisks_v1 <- 1/2*us_counties$group2_dif_risk + 1/2*ind.ef.g2
+g3_pobrisks_v1 <- 1/4*us_counties$group3_dif_risk + 1/4*ind.ef.g2 + 1/4*ind.ef.g1 + 1/4*us_counties$Temp_Scale
+g4_pobrisks_v1 <- 1/3*us_counties$group4_dif_risk + 1/3*ind.ef.g2 + 1/3*us_counties$POP_DENS_Scale
+
+g1_pobrisks_v2 <- 14/25*us_counties$group1_dif_risk + 7/25*ind.ef.g2 + 4/25*us_counties$Temp_Scale
+g2_pobrisks_v2 <- 2/3*us_counties$group2_dif_risk + 1/3*ind.ef.g2
+g3_pobrisks_v2 <- 53/100*us_counties$group3_dif_risk + 26/100*ind.ef.g2 + 13/100*ind.ef.g1 + 8/100*us_counties$Temp_Scale
+g4_pobrisks_v2 <- 14/25*us_counties$group4_dif_risk + 7/25*ind.ef.g2 + 4/25*us_counties$POP_DENS_Scale
+
+g1_pobrisks_v3 <- 4/25*us_counties$group1_dif_risk + 7/25*ind.ef.g2 + 14/25*us_counties$Temp_Scale
+g2_pobrisks_v3 <- 1/3*us_counties$group2_dif_risk + 2/3*ind.ef.g2
+g3_pobrisks_v3 <- 8/100*us_counties$group3_dif_risk + 53/100*ind.ef.g2 + 26/100*ind.ef.g1 + 13/100*us_counties$Temp_Scale
+g4_pobrisks_v3 <- 4/25*us_counties$group4_dif_risk + 7/25*ind.ef.g2 + 14/25*us_counties$POP_DENS_Scale
+
+# Exponential of the underlying risk to match log of the linear predictor
+g1_pobrisks_v1 <- exp(g1_pobrisks_v1)
+g2_pobrisks_v1 <- exp(g2_pobrisks_v1)
+g3_pobrisks_v1 <- exp(g3_pobrisks_v1)
+g4_pobrisks_v1 <- exp(g4_pobrisks_v1)
+
+g1_pobrisks_v2 <- exp(g1_pobrisks_v2)
+g2_pobrisks_v2 <- exp(g2_pobrisks_v2)
+g3_pobrisks_v2 <- exp(g3_pobrisks_v2)
+g4_pobrisks_v2 <- exp(g4_pobrisks_v2)
+
+g1_pobrisks_v3 <- exp(g1_pobrisks_v3)
+g2_pobrisks_v3 <- exp(g2_pobrisks_v3)
+g3_pobrisks_v3 <- exp(g3_pobrisks_v3)
+g4_pobrisks_v3 <- exp(g4_pobrisks_v3)
+
+data_risk$M6_DIF_V1 <- c(g1_pobrisks_v1, g2_pobrisks_v1, g3_pobrisks_v1, g4_pobrisks_v1)
+data_risk$M6_DIF_V2 <- c(g1_pobrisks_v2, g2_pobrisks_v2, g3_pobrisks_v2, g4_pobrisks_v2)
+data_risk$M6_DIF_V3 <- c(g1_pobrisks_v3, g2_pobrisks_v3, g3_pobrisks_v3, g4_pobrisks_v3)
+
+# Estimate the total combination of population and risks
+total_pobrisk_v1 <- sum(POP * g1_pobrisks_v1 + POP * g2_pobrisks_v1 + POP * g3_pobrisks_v1 + POP * g4_pobrisks_v1)
+total_pobrisk_v2 <- sum(POP * g1_pobrisks_v2 + POP * g2_pobrisks_v2 + POP * g3_pobrisks_v2 + POP * g4_pobrisks_v2)
+total_pobrisk_v3 <- sum(POP * g1_pobrisks_v3 + POP * g2_pobrisks_v3 + POP * g3_pobrisks_v3 + POP * g4_pobrisks_v3)
+
+# Add observed values to sp object for ploting
+us_counties$OBS_M6_DIF_G1_v1 <- round(total_obs*((POP * g1_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M6_DIF_G2_v1 <- round(total_obs*((POP * g2_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M6_DIF_G3_v1 <- round(total_obs*((POP * g3_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M6_DIF_G4_v1 <- round(total_obs*((POP * g4_pobrisks_v1)/(total_pobrisk_v1)), 0)
+
+us_counties$OBS_M6_DIF_G1_v2 <- round(total_obs*((POP * g1_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M6_DIF_G2_v2 <- round(total_obs*((POP * g2_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M6_DIF_G3_v2 <- round(total_obs*((POP * g3_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M6_DIF_G4_v2 <- round(total_obs*((POP * g4_pobrisks_v2)/(total_pobrisk_v2)), 0)
+
+us_counties$OBS_M6_DIF_G1_v3 <- round(total_obs*((POP * g1_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M6_DIF_G2_v3 <- round(total_obs*((POP * g2_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M6_DIF_G3_v3 <- round(total_obs*((POP * g3_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M6_DIF_G4_v3 <- round(total_obs*((POP * g4_pobrisks_v3)/(total_pobrisk_v3)), 0)
+
+# Create dataframe for M0 models and estimate observed values depending on risks
+M6_df$OBS_DIF_v1 <- c(us_counties$OBS_M6_DIF_G1_v1, us_counties$OBS_M6_DIF_G2_v1, us_counties$OBS_M6_DIF_G3_v1, us_counties$OBS_M6_DIF_G4_v1)
+M6_df$OBS_DIF_v2 <- c(us_counties$OBS_M6_DIF_G1_v2, us_counties$OBS_M6_DIF_G2_v2, us_counties$OBS_M6_DIF_G3_v2, us_counties$OBS_M6_DIF_G4_v2)
+M6_df$OBS_DIF_v3 <- c(us_counties$OBS_M6_DIF_G1_v3, us_counties$OBS_M6_DIF_G2_v3, us_counties$OBS_M6_DIF_G3_v3, us_counties$OBS_M6_DIF_G4_v3)
+
+# Compensate the different numbers of observed and expected cases caused by decimals
+total_dif_v1 <- sum(EXP)-sum(M6_df$OBS_DIF_v1)
+total_dif_v2 <- sum(EXP)-sum(M6_df$OBS_DIF_v2)
+total_dif_v3 <- sum(EXP)-sum(M6_df$OBS_DIF_v3)
+
+if(total_dif_v1>0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v1))
+  M6_df$OBS_DIF_v1[r_ids] <- M6_df$OBS_DIF_v1[r_ids] + 1
+}else if(total_dif_v1<0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v1))
+  M6_df$OBS_DIF_v1[r_ids] <- M6_df$OBS_DIF_v1[r_ids] - 1
+}
+
+if(total_dif_v2>0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v2))
+  M6_df$OBS_DIF_v2[r_ids] <- M6_df$OBS_DIF_v2[r_ids] + 1
+}else if(total_dif_v2<0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v2))
+  M6_df$OBS_DIF_v2[r_ids] <- M6_df$OBS_DIF_v2[r_ids] - 1
+}
+
+if(total_dif_v3>0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v3))
+  M6_df$OBS_DIF_v3[r_ids] <- M6_df$OBS_DIF_v3[r_ids] + 1
+}else if(total_dif_v3<0){
+  r_ids <- sample(1:nrow(M2_df), abs(total_dif_v3))
+  M6_df$OBS_DIF_v3[r_ids] <- M6_df$OBS_DIF_v3[r_ids] - 1
+}
+
+if(sum(M6_df$OBS_DIF_v1)!=total_obs){stop("Observed values and expected values do not match.")}
+if(sum(M6_df$OBS_DIF_v2)!=total_obs){stop("Observed values and expected values do not match.")}
+if(sum(M6_df$OBS_DIF_v3)!=total_obs){stop("Observed values and expected values do not match.")}
+```
+
+### V1
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M6_DIF_G1_v1/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M6_DIF_G2_v1/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M6_DIF_G3_v1/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M6_DIF_G4_v1/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+### V2
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M6_DIF_G1_v2/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M6_DIF_G2_v2/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M6_DIF_G3_v2/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M6_DIF_G4_v2/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+### V3
+
+```{r echo=FALSE}
+us_counties$G1_rate <- (us_counties$OBS_M6_DIF_G1_v3/POP)*100000
+us_counties$G2_rate <- (us_counties$OBS_M6_DIF_G2_v3/POP)*100000
+us_counties$G3_rate <- (us_counties$OBS_M6_DIF_G3_v3/POP)*100000
+us_counties$G4_rate <- (us_counties$OBS_M6_DIF_G4_v3/POP)*100000
+
+fig1 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G1_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 1 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig2 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G2_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 2 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig3 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G3_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 3 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+fig4 <- ggplot() + geom_sf(data=us_counties, aes(fill=cut(G4_rate, breaks=c(-Inf, 100, 150, 200, 250, 300, 500, Inf))), colour=NA) + 
+  ggtitle("Group 4 - Obs.") + scale_fill_manual(values = CScale_dif2(7), name="Rate per 100.000") + 
+  theme(axis.text.x=element_blank(),  axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+
+***
+
+# .-Save Data
+
+|       Lastly, we save all the necessary objects that we will be using in the analysis part and the results part.
+
+```{r echo=TRUE}
+save(M0_df, M1_df, M2_df, M3_df, M4_df, M5_df, M6_df, W, graph, us_counties, file="./Datos/sim_data.Rdata")
+
+sp_object <- us_counties %>% select(geometry, NAME, NAMELSAD, 
+                                    group1_dif_risk, group2_dif_risk, group3_dif_risk, group4_dif_risk, group1_sim_risk, group2_sim_risk, group3_sim_risk, group4_sim_risk, 
+                                    Temp_Scale, POP_DENS_Scale)
+sp_object$ind.ef.g2 <- ind.ef.g2
+sp_object$ind.ef.g1 <- ind.ef.g1
+sp_object$ind.ef.g3 <- ind.ef.g3
+sp_object$ind.ef.g4 <- ind.ef.g4
+save(sp_object, file="./Datos/sp_object.Rdata")
+save(data_risk, file="./Datos/risk_sim.Rdata")
+```
+
+***
+
+```{r}
+
+```
+
+
+<br>
+
+<div/>
+
+<div class="tocify-extend-page" data-unique="tocify-extend-page" style="height: 0;"></div>
