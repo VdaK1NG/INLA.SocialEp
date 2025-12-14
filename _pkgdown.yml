@@ -2,10 +2,11 @@ url: https://vdak1ng.github.io/INLA.SocialEp/
 template:
   bootstrap: 5
 articles:
-- title: Data Simulation
-  navbar: Data Simulation
 - title: Vignettes
   navbar: Vignettes
+  contents:
+  - simulation
+  - introduction
 authors:
   Pablo Escobar-Hernández:
     href: https://github.com/VdaK1NG
@@ -47,5 +48,11 @@ reference:
   contents: inla.full.graph
 - title: Package Data
 - subtitle: Datasets
-- subtitle: Simulated Datasets
+  desc: |
+    Several datasets for simulating data.
+  contents:
+  - pop_data_us_23
+  - temp_data_us_23
+  - us_county_23
+  - sim_sp_ef
 
