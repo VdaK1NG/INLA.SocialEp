@@ -2993,11 +2993,6 @@ save(data_risk, file="./Datos/risk_sim.Rdata")
 
 ***
 
-```{r}
-
-```
-
-
 <br>
 
 <div/>
