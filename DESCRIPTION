@@ -9,7 +9,7 @@ Authors@R: c(
 Description: Package that includes a series of functions acting as a wrapper for several disease mapping methods applied to social epidemiology on INLA.
 BugReports: https://github.com/VdaK1NG/INLA.SocialEp/issues
 License: MIT + file LICENSE
-URL: https://github.com/VdaK1NG/INLA.SocialEp 
+URL: https://github.com/VdaK1NG/INLA.SocialEp, https://vdak1ng.github.io/INLA.SocialEp/
 Depends:
     R (>= 4.1.0)
 Imports:
