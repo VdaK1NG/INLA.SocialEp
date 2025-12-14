@@ -30,6 +30,7 @@ vignette: >
 ```{r echo=FALSE}
 knitr::opts_chunk$set(echo = FALSE, stop = FALSE, message = FALSE, fig.align = "center", fig.width = 12)
 options(knitr.kable.NA = '---') # Celdas vacías en la tabla se rellenan con ---
+install.packages("INLA",repos=c(getOption("repos"),INLA="https://inla.r-inla-download.org/R/stable"), dep=TRUE)
 ```
 
 ```{r fig.width=1, warning=FALSE, message=FALSE}
