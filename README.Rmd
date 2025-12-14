@@ -42,19 +42,13 @@ remotes::install_github("VdaK1NG/INLA.SocialEp")
 
 ### Dependencies
 
-```{r deps, echo = FALSE, message = FALSE, warning = FALSE, eval = FALSE}
-library(dplyr)
-description <- utils::packageDescription('INLA.SocialEp',
-                                         fields = c('Imports', 'Suggests'))
-deps <- lapply(names(description),
-               function (x) {
-                 paste0('- ', x, ': ',
-                        description[[x]] %>%
-                          gsub("\n", " ", .))}
-               ) %>%
-  unlist() %>%
-  paste(., collapse = '\n')
-```
+**-Imports**: dplyr, ggraph, spdep, ggplot2, gridExtra, broom, sf, tidyr, scales, SUMMER
+
+***
+
+**-Suggests**: assertthat, doFuture, forcats
+
+***
 
 ## Usage
 
@@ -81,7 +75,7 @@ To cite `INLA.SocialEp` in publications, use:
 
 A BibTeX entry for LaTeX users is:
 
-```{r cite_bibtex, echo = FALSE, comment = '', results = 'asis', eval = FALSE}
+```{r cite_bibtex, echo = FALSE, comment = '', results = 'asis', eval = TRUE}
 cat("```\n", format(citation('INLA.SocialEp'), style = 'bibtex'), "\n```")
 ```
 
