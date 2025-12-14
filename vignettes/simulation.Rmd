@@ -8,23 +8,6 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-<style type="text/css">
-.main-container {
-  max-width: 1800px !important;
-  margin-left: auto;
-  margin-right: auto;
-}
-</style>
-
-<style>
-.list-group-item.active, .list-group-item.active:focus, .list-group-item.active:hover {
-    z-index: 2;
-    color: #fff;
-    background-color: #133BF2;
-    border-color: #133BF2;
-}
-</style>
-
 <div style="text-align: justify">
 
 ```{r echo=FALSE}
