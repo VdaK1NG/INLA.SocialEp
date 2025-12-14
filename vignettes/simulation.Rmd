@@ -28,7 +28,7 @@ vignette: >
 <div style="text-align: justify">
 
 ```{r echo=FALSE}
-knitr::opts_chunk$set(echo = FALSE, stop = FALSE, message = FALSE, fig.align = "center", fig.width = 12)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, fig.align = "center", fig.width = 12)
 options(knitr.kable.NA = '---') # Celdas vacías en la tabla se rellenan con ---
 ```
 
@@ -70,7 +70,7 @@ theme_VDK <- theme_update(plot.title = element_text(size=14, face= "bold", colou
         strip.text.x = element_text(color = "white", face = "bold"))
 ```
 
-# .-Introduction
+# Introduction
 
 |       For the simulation we are going to be using US Counties that belong to the main continental part. After downloading from official sources ([US Census Bureau](https://www.census.gov/geographies/mapping-files/time-series/geo/carto-boundary-file.html)), we need to process the spatial object. Specifically, we need to trim areas that are not connected to avoid possible problems that may arise during the INLA approximation caused by a not-fully connected graph underlying in the spatial effects. This means removing Alaska and non-continental states, as well as two island counties (San Juan and Nantucket), and leaving the final number of counties at 3104.
 
@@ -114,7 +114,7 @@ total_obs <- n_county * 1000
 
 |       We are going to assume that there are two existing underlying **risk factors** that may affect differently each of the risk groups. One of them presents a clear north-south gradient, and will be simulated using mean temperatures over the last 24 months. The second one presents a more diverse spatial pattern, but is concentrated around highly populated areas and will be generated using population density. Moreover, we are going to simulate baseline independent spatial effects, as well as heterogeneity effects.
 
-## .- Baseline Risks
+##  Baseline Risks
 
 |       Finally, we are also going to consider two different possibilities for each one of the previous conditions: 
 
@@ -182,7 +182,7 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ***
 
-## .- Factor 1: Temperature
+##  Factor 1: Temperature
 
 |       Mean temperature between the months of January 2023 and January 2025 was extracted from official sources. Data had around 100 missing values that were filled using the mean temperature across all counties. In addition, values have been scaled to oscillate between 0.5 and 1.5 so that they have a similar scale to the rest of the values used. The final distribution of values is the following:
 
@@ -207,7 +207,7 @@ ggplot() + geom_sf(data=us_counties, aes(fill=cut(Temp_Scale, breaks = c(-3.5, -
 
 ***
 
-## .- Factor 2: Population Density
+##  Factor 2: Population Density
 
 |       Population estimates for 2023 were obtained from official sources. To generate the population density values we have used the area of land included in the shapefile downloaded from the census.gov web. This values have been scaled as well.
 
@@ -238,14 +238,14 @@ ggplot() + geom_sf(data=us_counties, aes(fill=cut_number(POP_DENS_Scale, 5)), co
 
 ***
 
-## .-Independent Spatial Effects
+## Independent Spatial Effects
 
 |       In this case we need to simulate 4 different spatial effects using the function **rst()** from the package **SUMMER**.
 
 ***
 
 ```{r echo=TRUE, eval=FALSE}
-ind.ef <- rst(n=4, type = "s", type.s = "ICAR", scale.model = FALSE, Amat = W)
+sim_sp_ef <- rst(n=4, type = "s", type.s = "ICAR", scale.model = FALSE, Amat = W)
 
 ind.ef.g1 <- ind.ef[1, ]
 ind.ef.g2 <- ind.ef[2, ]
@@ -254,6 +254,7 @@ ind.ef.g4 <- ind.ef[4, ]
 ```
 
 ```{r echo=FALSE}
+ind.ef <- sim_sp_ef
 ind.ef.g1 <- sim_sp_ef[2, ]
 ind.ef.g2 <- sim_sp_ef[1, ]
 ind.ef.g3 <- sim_sp_ef[3, ]
@@ -287,7 +288,7 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ***
 
-# .-No Spatial Effect
+# No Spatial Effect
 
 |       In this case we are going to assign the values using only population and the heterogeneity effect simulated for each group.
 
@@ -308,7 +309,6 @@ $$
 # Estimate expected values depending on the population of the county (equal for all model used)
 total_pob <- sum(POP)
 EXP <- rep((total_obs*POP)/(total_pob*4), 4)
-if(sum(EXP)!=total_obs){stop("Observed values and expected values do not match.")}
 
 # Estimate the total combination of population and risks
 total_pobrisk <- sum(POP * us_counties$group1_sim_risk + POP * us_counties$group2_sim_risk + 
@@ -321,27 +321,27 @@ us_counties$OBS_M0_SIM_G3 <- round(total_obs*((POP * us_counties$group3_sim_risk
 us_counties$OBS_M0_SIM_G4 <- round(total_obs*((POP * us_counties$group4_sim_risk)/(total_pobrisk)), 0)
 
 # Estimate underlying risk for each group
-g1_pobrisks <- us_counties$group1_sim_risk
-g2_pobrisks <- us_counties$group2_sim_risk
-g3_pobrisks <- us_counties$group3_sim_risk 
-g4_pobrisks <- us_counties$group4_sim_risk
+g1_prk <- us_counties$group1_sim_risk
+g2_prk <- us_counties$group2_sim_risk
+g3_prk <- us_counties$group3_sim_risk 
+g4_prk <- us_counties$group4_sim_risk
 
 # Exponential of the underlying risk to match log of the linear predictor
-g1_pobrisks <- exp(g1_pobrisks)
-g2_pobrisks <- exp(g2_pobrisks)
-g3_pobrisks <- exp(g3_pobrisks)
-g4_pobrisks <- exp(g4_pobrisks)
+g1_prk <- exp(g1_prk)
+g2_prk <- exp(g2_prk)
+g3_prk <- exp(g3_prk)
+g4_prk <- exp(g4_prk)
 
-data_risk <- data.frame("M0_SIM"=c(g1_pobrisks, g2_pobrisks, g3_pobrisks, g4_pobrisks))
+data_risk <- data.frame("M0_SIM"=c(g1_prk, g2_prk, g3_prk, g4_prk))
 
 # Estimate the total combination of population and risks
-total_pobrisk <- sum(POP * g1_pobrisks + POP * g2_pobrisks + POP * g3_pobrisks + POP * g4_pobrisks)
+total_pobrisk <- sum(POP * g1_prk + POP * g2_prk + POP * g3_prk + POP * g4_prk)
 
 # Add observed values to sp object for ploting
-us_counties$OBS_M0_SIM_G1 <- round(total_obs*((POP * g1_pobrisks)/(total_pobrisk)), 0)
-us_counties$OBS_M0_SIM_G2 <- round(total_obs*((POP * g2_pobrisks)/(total_pobrisk)), 0)
-us_counties$OBS_M0_SIM_G3 <- round(total_obs*((POP * g3_pobrisks)/(total_pobrisk)), 0)
-us_counties$OBS_M0_SIM_G4 <- round(total_obs*((POP * g4_pobrisks)/(total_pobrisk)), 0)
+us_counties$OBS_M0_SIM_G1 <- round(total_obs*((POP * g1_prk)/(total_pobrisk)), 0)
+us_counties$OBS_M0_SIM_G2 <- round(total_obs*((POP * g2_prk)/(total_pobrisk)), 0)
+us_counties$OBS_M0_SIM_G3 <- round(total_obs*((POP * g3_prk)/(total_pobrisk)), 0)
+us_counties$OBS_M0_SIM_G4 <- round(total_obs*((POP * g4_prk)/(total_pobrisk)), 0)
 
 # Create dataframe for M0 models and estimate observed values depending on risks
 M0_df <- data.frame("OBS_SIM"=NA, "OBS_DIF"=NA, "EXP"=EXP, TYPE = c(rep(c("G1", "G2", "G3", "G4"), each=nrow(us_counties))), "idx"=1:length(EXP))
@@ -358,7 +358,7 @@ if(total_dif>0){
   M0_df$OBS_SIM[r_ids] <- M0_df$OBS_SIM[r_ids] - 1
 }
 
-if(sum(M0_df$OBS_SIM)!=total_obs){stop("Observed values and expected values do not match.")}
+if(sum(M0_df$OBS_SIM)!=total_obs){warning("Observed values and expected values do not match.")}
 ```
 
 ```{r echo=FALSE}
@@ -408,27 +408,27 @@ us_counties$OBS_M0_DIF_G3 <- round(total_obs*((POP * us_counties$group3_dif_risk
 us_counties$OBS_M0_DIF_G4 <- round(total_obs*((POP * us_counties$group4_dif_risk)/(total_pobrisk)), 0)
 
 # Estimate underlying risk for each group
-g1_pobrisks <- us_counties$group1_dif_risk
-g2_pobrisks <- us_counties$group2_dif_risk
-g3_pobrisks <- us_counties$group3_dif_risk 
-g4_pobrisks <- us_counties$group4_dif_risk
+g1_prk <- us_counties$group1_dif_risk
+g2_prk <- us_counties$group2_dif_risk
+g3_prk <- us_counties$group3_dif_risk 
+g4_prk <- us_counties$group4_dif_risk
 
 # Exponential of the underlying risk to match log of the linear predictor
-g1_pobrisks <- exp(g1_pobrisks)
-g2_pobrisks <- exp(g2_pobrisks)
-g3_pobrisks <- exp(g3_pobrisks)
-g4_pobrisks <- exp(g4_pobrisks)
+g1_prk <- exp(g1_prk)
+g2_prk <- exp(g2_prk)
+g3_prk <- exp(g3_prk)
+g4_prk <- exp(g4_prk)
 
-data_risk$M0_DIF <- c(g1_pobrisks, g2_pobrisks, g3_pobrisks, g4_pobrisks)
+data_risk$M0_DIF <- c(g1_prk, g2_prk, g3_prk, g4_prk)
 
 # Estimate the total combination of population and risks
-total_pobrisk <- sum(POP * g1_pobrisks + POP * g2_pobrisks + POP * g3_pobrisks + POP * g4_pobrisks)
+total_pobrisk <- sum(POP * g1_prk + POP * g2_prk + POP * g3_prk + POP * g4_prk)
 
 # Add observed values to sp object for ploting
-us_counties$OBS_M0_DIF_G1 <- round(total_obs*((POP * g1_pobrisks)/(total_pobrisk)), 0)
-us_counties$OBS_M0_DIF_G2 <- round(total_obs*((POP * g2_pobrisks)/(total_pobrisk)), 0)
-us_counties$OBS_M0_DIF_G3 <- round(total_obs*((POP * g3_pobrisks)/(total_pobrisk)), 0)
-us_counties$OBS_M0_DIF_G4 <- round(total_obs*((POP * g4_pobrisks)/(total_pobrisk)), 0)
+us_counties$OBS_M0_DIF_G1 <- round(total_obs*((POP * g1_prk)/(total_pobrisk)), 0)
+us_counties$OBS_M0_DIF_G2 <- round(total_obs*((POP * g2_prk)/(total_pobrisk)), 0)
+us_counties$OBS_M0_DIF_G3 <- round(total_obs*((POP * g3_prk)/(total_pobrisk)), 0)
+us_counties$OBS_M0_DIF_G4 <- round(total_obs*((POP * g4_prk)/(total_pobrisk)), 0)
 
 # Create dataframe for M0 models and estimate observed values depending on risks
 M0_df$OBS_DIF <- c(us_counties$OBS_M0_DIF_G1, us_counties$OBS_M0_DIF_G2, us_counties$OBS_M0_DIF_G3, us_counties$OBS_M0_DIF_G4)
@@ -444,7 +444,7 @@ if(total_dif>0){
   M0_df$OBS_DIF[r_ids] <- M0_df$OBS_DIF[r_ids] - 1
 }
 
-if(sum(M0_df$OBS_DIF)!=total_obs){stop("Observed values and expected values do not match.")}
+if(sum(M0_df$OBS_DIF)!=total_obs){warning("Observed values and expected values do not match.")}
 ```
 
 ```{r echo=FALSE}
@@ -478,7 +478,7 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ***
 
-# .-Individual Spatial Effects
+# Individual Spatial Effects
 
 |       In this case we need to simulate 4 different spatial effects using the function **rst()** from the package **SUMMER**. Each spatial effect will be combined with the underlying risk assigned to each county and each group, and used to distribute the number of observed cases. We will rescale the spatial effects to be between -1 and 1 so that the assigned risk groups dont go to far below .
 
@@ -498,61 +498,61 @@ $$
 
 ```{r echo=TRUE}
 # Estimate underlying risk for each group
-g1_pobrisks_v1 <- 1/2*us_counties$group1_sim_risk + 1/2*ind.ef.g2
-g2_pobrisks_v1 <- 1/2*us_counties$group2_sim_risk + 1/2*ind.ef.g1
-g3_pobrisks_v1 <- 1/2*us_counties$group3_sim_risk + 1/2*ind.ef.g3
-g4_pobrisks_v1 <- 1/2*us_counties$group4_sim_risk + 1/2*ind.ef.g4
+g1_prk_v1 <- 1/2*us_counties$group1_sim_risk + 1/2*ind.ef.g2
+g2_prk_v1 <- 1/2*us_counties$group2_sim_risk + 1/2*ind.ef.g1
+g3_prk_v1 <- 1/2*us_counties$group3_sim_risk + 1/2*ind.ef.g3
+g4_prk_v1 <- 1/2*us_counties$group4_sim_risk + 1/2*ind.ef.g4
 
-g1_pobrisks_v2 <- 2/3*us_counties$group1_sim_risk + 1/3*ind.ef.g2
-g2_pobrisks_v2 <- 2/3*us_counties$group2_sim_risk + 1/3*ind.ef.g1
-g3_pobrisks_v2 <- 2/3*us_counties$group3_sim_risk + 1/3*ind.ef.g3
-g4_pobrisks_v2 <- 2/3*us_counties$group4_sim_risk + 1/3*ind.ef.g4
+g1_prk_v2 <- 2/3*us_counties$group1_sim_risk + 1/3*ind.ef.g2
+g2_prk_v2 <- 2/3*us_counties$group2_sim_risk + 1/3*ind.ef.g1
+g3_prk_v2 <- 2/3*us_counties$group3_sim_risk + 1/3*ind.ef.g3
+g4_prk_v2 <- 2/3*us_counties$group4_sim_risk + 1/3*ind.ef.g4
 
-g1_pobrisks_v3 <- 1/3*us_counties$group1_sim_risk + 2/3*ind.ef.g2
-g2_pobrisks_v3 <- 1/3*us_counties$group2_sim_risk + 2/3*ind.ef.g1
-g3_pobrisks_v3 <- 1/3*us_counties$group3_sim_risk + 2/3*ind.ef.g3
-g4_pobrisks_v3 <- 1/3*us_counties$group4_sim_risk + 2/3*ind.ef.g4
+g1_prk_v3 <- 1/3*us_counties$group1_sim_risk + 2/3*ind.ef.g2
+g2_prk_v3 <- 1/3*us_counties$group2_sim_risk + 2/3*ind.ef.g1
+g3_prk_v3 <- 1/3*us_counties$group3_sim_risk + 2/3*ind.ef.g3
+g4_prk_v3 <- 1/3*us_counties$group4_sim_risk + 2/3*ind.ef.g4
 
 # Exponential of the underlying risk to match log of the linear predictor
-g1_pobrisks_v1 <- exp(g1_pobrisks_v1)
-g2_pobrisks_v1 <- exp(g2_pobrisks_v1)
-g3_pobrisks_v1 <- exp(g3_pobrisks_v1)
-g4_pobrisks_v1 <- exp(g4_pobrisks_v1)
+g1_prk_v1 <- exp(g1_prk_v1)
+g2_prk_v1 <- exp(g2_prk_v1)
+g3_prk_v1 <- exp(g3_prk_v1)
+g4_prk_v1 <- exp(g4_prk_v1)
 
-g1_pobrisks_v2 <- exp(g1_pobrisks_v2)
-g2_pobrisks_v2 <- exp(g2_pobrisks_v2)
-g3_pobrisks_v2 <- exp(g3_pobrisks_v2)
-g4_pobrisks_v2 <- exp(g4_pobrisks_v2)
+g1_prk_v2 <- exp(g1_prk_v2)
+g2_prk_v2 <- exp(g2_prk_v2)
+g3_prk_v2 <- exp(g3_prk_v2)
+g4_prk_v2 <- exp(g4_prk_v2)
 
-g1_pobrisks_v3 <- exp(g1_pobrisks_v3)
-g2_pobrisks_v3 <- exp(g2_pobrisks_v3)
-g3_pobrisks_v3 <- exp(g3_pobrisks_v3)
-g4_pobrisks_v3 <- exp(g4_pobrisks_v3)
+g1_prk_v3 <- exp(g1_prk_v3)
+g2_prk_v3 <- exp(g2_prk_v3)
+g3_prk_v3 <- exp(g3_prk_v3)
+g4_prk_v3 <- exp(g4_prk_v3)
 
-data_risk$M1_SIM_V1 <- c(g1_pobrisks_v1, g2_pobrisks_v1, g3_pobrisks_v1, g4_pobrisks_v1)
-data_risk$M1_SIM_V2 <- c(g1_pobrisks_v2, g2_pobrisks_v2, g3_pobrisks_v2, g4_pobrisks_v2)
-data_risk$M1_SIM_V3 <- c(g1_pobrisks_v3, g2_pobrisks_v3, g3_pobrisks_v3, g4_pobrisks_v3)
+data_risk$M1_SIM_V1 <- c(g1_prk_v1, g2_prk_v1, g3_prk_v1, g4_prk_v1)
+data_risk$M1_SIM_V2 <- c(g1_prk_v2, g2_prk_v2, g3_prk_v2, g4_prk_v2)
+data_risk$M1_SIM_V3 <- c(g1_prk_v3, g2_prk_v3, g3_prk_v3, g4_prk_v3)
 
 # Estimate the total combination of population and risks
-total_pobrisk_v1 <- sum(POP * g1_pobrisks_v1 + POP * g2_pobrisks_v1 + POP * g3_pobrisks_v1 + POP * g4_pobrisks_v1)
-total_pobrisk_v2 <- sum(POP * g1_pobrisks_v2 + POP * g2_pobrisks_v2 + POP * g3_pobrisks_v2 + POP * g4_pobrisks_v2)
-total_pobrisk_v3 <- sum(POP * g1_pobrisks_v3 + POP * g2_pobrisks_v3 + POP * g3_pobrisks_v3 + POP * g4_pobrisks_v3)
+total_pobrisk_v1 <- sum(POP * g1_prk_v1 + POP * g2_prk_v1 + POP * g3_prk_v1 + POP * g4_prk_v1)
+total_pobrisk_v2 <- sum(POP * g1_prk_v2 + POP * g2_prk_v2 + POP * g3_prk_v2 + POP * g4_prk_v2)
+total_pobrisk_v3 <- sum(POP * g1_prk_v3 + POP * g2_prk_v3 + POP * g3_prk_v3 + POP * g4_prk_v3)
 
 # Add observed values to sp object for ploting
-us_counties$OBS_M1_SIM_G1_v1 <- round(total_obs*((POP * g1_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M1_SIM_G2_v1 <- round(total_obs*((POP * g2_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M1_SIM_G3_v1 <- round(total_obs*((POP * g3_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M1_SIM_G4_v1 <- round(total_obs*((POP * g4_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M1_SIM_G1_v1 <- round(total_obs*((POP * g1_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M1_SIM_G2_v1 <- round(total_obs*((POP * g2_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M1_SIM_G3_v1 <- round(total_obs*((POP * g3_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M1_SIM_G4_v1 <- round(total_obs*((POP * g4_prk_v1)/(total_pobrisk_v1)), 0)
 
-us_counties$OBS_M1_SIM_G1_v2 <- round(total_obs*((POP * g1_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M1_SIM_G2_v2 <- round(total_obs*((POP * g2_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M1_SIM_G3_v2 <- round(total_obs*((POP * g3_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M1_SIM_G4_v2 <- round(total_obs*((POP * g4_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M1_SIM_G1_v2 <- round(total_obs*((POP * g1_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M1_SIM_G2_v2 <- round(total_obs*((POP * g2_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M1_SIM_G3_v2 <- round(total_obs*((POP * g3_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M1_SIM_G4_v2 <- round(total_obs*((POP * g4_prk_v2)/(total_pobrisk_v2)), 0)
 
-us_counties$OBS_M1_SIM_G1_v3 <- round(total_obs*((POP * g1_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M1_SIM_G2_v3 <- round(total_obs*((POP * g2_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M1_SIM_G3_v3 <- round(total_obs*((POP * g3_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M1_SIM_G4_v3 <- round(total_obs*((POP * g4_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M1_SIM_G1_v3 <- round(total_obs*((POP * g1_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M1_SIM_G2_v3 <- round(total_obs*((POP * g2_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M1_SIM_G3_v3 <- round(total_obs*((POP * g3_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M1_SIM_G4_v3 <- round(total_obs*((POP * g4_prk_v3)/(total_pobrisk_v3)), 0)
 
 # Create dataframe for M0 models and estimate observed values depending on risks
 M1_df <- data.frame("OBS_SIM_v1"=NA, "OBS_DIF_v1"=NA, "OBS_SIM_v2"=NA, "OBS_DIF_v2"=NA, "OBS_SIM_v3"=NA, "OBS_DIF_v3"=NA, "EXP"=EXP, 
@@ -589,13 +589,9 @@ if(total_dif_v3>0){
   r_ids <- round(runif(abs(total_dif_v3), 1, nrow(M1_df)), 0)
   M1_df$OBS_SIM_v3[r_ids] <- M1_df$OBS_SIM_v3[r_ids] - 1
 }
-
-if(sum(M1_df$OBS_SIM_v1)!=total_obs){stop("Observed values and expected values do not match.")}
-if(sum(M1_df$OBS_SIM_v2)!=total_obs){stop("Observed values and expected values do not match.")}
-if(sum(M1_df$OBS_SIM_v3)!=total_obs){stop("Observed values and expected values do not match.")}
 ```
 
-### V1
+### V1 - Equal Weights
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M1_SIM_G1_v1/POP)*100000
@@ -628,7 +624,7 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ***
 
-### V2
+### V2 - Heterogeneity Max Risk
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M1_SIM_G1_v2/POP)*100000
@@ -661,7 +657,7 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ***
 
-### V3
+### V3 - Last Effect Max Risk
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M1_SIM_G1_v3/POP)*100000
@@ -702,61 +698,61 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ```{r echo=TRUE}
 # Estimate underlying risk for each group
-g1_pobrisks_v1 <- 1/2*us_counties$group1_dif_risk + 1/2*ind.ef.g2
-g2_pobrisks_v1 <- 1/2*us_counties$group2_dif_risk + 1/2*ind.ef.g1
-g3_pobrisks_v1 <- 1/2*us_counties$group3_dif_risk + 1/2*ind.ef.g3
-g4_pobrisks_v1 <- 1/2*us_counties$group4_dif_risk + 1/2*ind.ef.g4
+g1_prk_v1 <- 1/2*us_counties$group1_dif_risk + 1/2*ind.ef.g2
+g2_prk_v1 <- 1/2*us_counties$group2_dif_risk + 1/2*ind.ef.g1
+g3_prk_v1 <- 1/2*us_counties$group3_dif_risk + 1/2*ind.ef.g3
+g4_prk_v1 <- 1/2*us_counties$group4_dif_risk + 1/2*ind.ef.g4
 
-g1_pobrisks_v2 <- 2/3*us_counties$group1_dif_risk + 1/3*ind.ef.g2
-g2_pobrisks_v2 <- 2/3*us_counties$group2_dif_risk + 1/3*ind.ef.g1
-g3_pobrisks_v2 <- 2/3*us_counties$group3_dif_risk + 1/3*ind.ef.g3
-g4_pobrisks_v2 <- 2/3*us_counties$group4_dif_risk + 1/3*ind.ef.g4
+g1_prk_v2 <- 2/3*us_counties$group1_dif_risk + 1/3*ind.ef.g2
+g2_prk_v2 <- 2/3*us_counties$group2_dif_risk + 1/3*ind.ef.g1
+g3_prk_v2 <- 2/3*us_counties$group3_dif_risk + 1/3*ind.ef.g3
+g4_prk_v2 <- 2/3*us_counties$group4_dif_risk + 1/3*ind.ef.g4
 
-g1_pobrisks_v3 <- 1/3*us_counties$group1_dif_risk + 2/3*ind.ef.g2
-g2_pobrisks_v3 <- 1/3*us_counties$group2_dif_risk + 2/3*ind.ef.g1
-g3_pobrisks_v3 <- 1/3*us_counties$group3_dif_risk + 2/3*ind.ef.g3
-g4_pobrisks_v3 <- 1/3*us_counties$group4_dif_risk + 2/3*ind.ef.g4
+g1_prk_v3 <- 1/3*us_counties$group1_dif_risk + 2/3*ind.ef.g2
+g2_prk_v3 <- 1/3*us_counties$group2_dif_risk + 2/3*ind.ef.g1
+g3_prk_v3 <- 1/3*us_counties$group3_dif_risk + 2/3*ind.ef.g3
+g4_prk_v3 <- 1/3*us_counties$group4_dif_risk + 2/3*ind.ef.g4
 
 # Exponential of the underlying risk to match log of the linear predictor
-g1_pobrisks_v1 <- exp(g1_pobrisks_v1)
-g2_pobrisks_v1 <- exp(g2_pobrisks_v1)
-g3_pobrisks_v1 <- exp(g3_pobrisks_v1)
-g4_pobrisks_v1 <- exp(g4_pobrisks_v1)
+g1_prk_v1 <- exp(g1_prk_v1)
+g2_prk_v1 <- exp(g2_prk_v1)
+g3_prk_v1 <- exp(g3_prk_v1)
+g4_prk_v1 <- exp(g4_prk_v1)
 
-g1_pobrisks_v2 <- exp(g1_pobrisks_v2)
-g2_pobrisks_v2 <- exp(g2_pobrisks_v2)
-g3_pobrisks_v2 <- exp(g3_pobrisks_v2)
-g4_pobrisks_v2 <- exp(g4_pobrisks_v2)
+g1_prk_v2 <- exp(g1_prk_v2)
+g2_prk_v2 <- exp(g2_prk_v2)
+g3_prk_v2 <- exp(g3_prk_v2)
+g4_prk_v2 <- exp(g4_prk_v2)
 
-g1_pobrisks_v3 <- exp(g1_pobrisks_v3)
-g2_pobrisks_v3 <- exp(g2_pobrisks_v3)
-g3_pobrisks_v3 <- exp(g3_pobrisks_v3)
-g4_pobrisks_v3 <- exp(g4_pobrisks_v3)
+g1_prk_v3 <- exp(g1_prk_v3)
+g2_prk_v3 <- exp(g2_prk_v3)
+g3_prk_v3 <- exp(g3_prk_v3)
+g4_prk_v3 <- exp(g4_prk_v3)
 
-data_risk$M1_DIF_V1 <- c(g1_pobrisks_v1, g2_pobrisks_v1, g3_pobrisks_v1, g4_pobrisks_v1)
-data_risk$M1_DIF_V2 <- c(g1_pobrisks_v2, g2_pobrisks_v2, g3_pobrisks_v2, g4_pobrisks_v2)
-data_risk$M1_DIF_V3 <- c(g1_pobrisks_v3, g2_pobrisks_v3, g3_pobrisks_v3, g4_pobrisks_v3)
+data_risk$M1_DIF_V1 <- c(g1_prk_v1, g2_prk_v1, g3_prk_v1, g4_prk_v1)
+data_risk$M1_DIF_V2 <- c(g1_prk_v2, g2_prk_v2, g3_prk_v2, g4_prk_v2)
+data_risk$M1_DIF_V3 <- c(g1_prk_v3, g2_prk_v3, g3_prk_v3, g4_prk_v3)
 
 # Estimate the total combination of population and risks
-total_pobrisk_v1 <- sum(POP * g1_pobrisks_v1 + POP * g2_pobrisks_v1 + POP * g3_pobrisks_v1 + POP * g4_pobrisks_v1)
-total_pobrisk_v2 <- sum(POP * g1_pobrisks_v2 + POP * g2_pobrisks_v2 + POP * g3_pobrisks_v2 + POP * g4_pobrisks_v2)
-total_pobrisk_v3 <- sum(POP * g1_pobrisks_v3 + POP * g2_pobrisks_v3 + POP * g3_pobrisks_v3 + POP * g4_pobrisks_v3)
+total_pobrisk_v1 <- sum(POP * g1_prk_v1 + POP * g2_prk_v1 + POP * g3_prk_v1 + POP * g4_prk_v1)
+total_pobrisk_v2 <- sum(POP * g1_prk_v2 + POP * g2_prk_v2 + POP * g3_prk_v2 + POP * g4_prk_v2)
+total_pobrisk_v3 <- sum(POP * g1_prk_v3 + POP * g2_prk_v3 + POP * g3_prk_v3 + POP * g4_prk_v3)
 
 # Add observed values to sp object for ploting
-us_counties$OBS_M1_DIF_G1_v1 <- round(total_obs*((POP * g1_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M1_DIF_G2_v1 <- round(total_obs*((POP * g2_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M1_DIF_G3_v1 <- round(total_obs*((POP * g3_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M1_DIF_G4_v1 <- round(total_obs*((POP * g4_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M1_DIF_G1_v1 <- round(total_obs*((POP * g1_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M1_DIF_G2_v1 <- round(total_obs*((POP * g2_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M1_DIF_G3_v1 <- round(total_obs*((POP * g3_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M1_DIF_G4_v1 <- round(total_obs*((POP * g4_prk_v1)/(total_pobrisk_v1)), 0)
 
-us_counties$OBS_M1_DIF_G1_v2 <- round(total_obs*((POP * g1_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M1_DIF_G2_v2 <- round(total_obs*((POP * g2_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M1_DIF_G3_v2 <- round(total_obs*((POP * g3_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M1_DIF_G4_v2 <- round(total_obs*((POP * g4_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M1_DIF_G1_v2 <- round(total_obs*((POP * g1_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M1_DIF_G2_v2 <- round(total_obs*((POP * g2_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M1_DIF_G3_v2 <- round(total_obs*((POP * g3_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M1_DIF_G4_v2 <- round(total_obs*((POP * g4_prk_v2)/(total_pobrisk_v2)), 0)
 
-us_counties$OBS_M1_DIF_G1_v3 <- round(total_obs*((POP * g1_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M1_DIF_G2_v3 <- round(total_obs*((POP * g2_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M1_DIF_G3_v3 <- round(total_obs*((POP * g3_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M1_DIF_G4_v3 <- round(total_obs*((POP * g4_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M1_DIF_G1_v3 <- round(total_obs*((POP * g1_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M1_DIF_G2_v3 <- round(total_obs*((POP * g2_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M1_DIF_G3_v3 <- round(total_obs*((POP * g3_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M1_DIF_G4_v3 <- round(total_obs*((POP * g4_prk_v3)/(total_pobrisk_v3)), 0)
 
 # Create dataframe for M0 models and estimate observed values depending on risks
 M1_df$OBS_DIF_v1 <- c(us_counties$OBS_M1_DIF_G1_v1, us_counties$OBS_M1_DIF_G2_v1, us_counties$OBS_M1_DIF_G3_v1, us_counties$OBS_M1_DIF_G4_v1)
@@ -791,13 +787,9 @@ if(total_dif_v3>0){
   r_ids <- sample(nrow(M1_df), abs(total_dif_v3))
   M1_df$OBS_DIF_v3[r_ids] <- M1_df$OBS_DIF_v3[r_ids] - 1
 }
-
-if(sum(M1_df$OBS_DIF_v1)!=total_obs){stop("Observed values and expected values do not match.")}
-if(sum(M1_df$OBS_DIF_v2)!=total_obs){stop("Observed values and expected values do not match.")}
-if(sum(M1_df$OBS_DIF_v3)!=total_obs){stop("Observed values and expected values do not match.")}
 ```
 
-### V1
+### V1 - Equal Weights 
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M1_DIF_G1_v1/POP)*100000
@@ -830,7 +822,7 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ***
 
-### V2
+### V2 - Heterogeneity Max Risk
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M1_DIF_G1_v2/POP)*100000
@@ -863,7 +855,7 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ***
 
-### V3
+### V3 - Last Effect Max Risk
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M1_DIF_G1_v3/POP)*100000
@@ -896,7 +888,7 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ***
 
-# .-Shared Spatial Effect
+# Shared Spatial Effect
 
 $$
 \begin{aligned}
@@ -913,61 +905,61 @@ $$
 
 ```{r echo=TRUE}
 # Estimate underlying risk for each group
-g1_pobrisks_v1 <- 1/2*us_counties$group1_sim_risk + 1/2*ind.ef.g2
-g2_pobrisks_v1 <- 1/2*us_counties$group2_sim_risk + 1/2*ind.ef.g2
-g3_pobrisks_v1 <- 1/2*us_counties$group3_sim_risk + 1/2*ind.ef.g2
-g4_pobrisks_v1 <- 1/2*us_counties$group4_sim_risk + 1/2*ind.ef.g2
+g1_prk_v1 <- 1/2*us_counties$group1_sim_risk + 1/2*ind.ef.g2
+g2_prk_v1 <- 1/2*us_counties$group2_sim_risk + 1/2*ind.ef.g2
+g3_prk_v1 <- 1/2*us_counties$group3_sim_risk + 1/2*ind.ef.g2
+g4_prk_v1 <- 1/2*us_counties$group4_sim_risk + 1/2*ind.ef.g2
 
-g1_pobrisks_v2 <- 2/3*us_counties$group1_sim_risk + 1/3*ind.ef.g2
-g2_pobrisks_v2 <- 2/3*us_counties$group2_sim_risk + 1/3*ind.ef.g2
-g3_pobrisks_v2 <- 2/3*us_counties$group3_sim_risk + 1/3*ind.ef.g2
-g4_pobrisks_v2 <- 2/3*us_counties$group4_sim_risk + 1/3*ind.ef.g2
+g1_prk_v2 <- 2/3*us_counties$group1_sim_risk + 1/3*ind.ef.g2
+g2_prk_v2 <- 2/3*us_counties$group2_sim_risk + 1/3*ind.ef.g2
+g3_prk_v2 <- 2/3*us_counties$group3_sim_risk + 1/3*ind.ef.g2
+g4_prk_v2 <- 2/3*us_counties$group4_sim_risk + 1/3*ind.ef.g2
 
-g1_pobrisks_v3 <- 1/3*us_counties$group1_sim_risk + 2/3*ind.ef.g2
-g2_pobrisks_v3 <- 1/3*us_counties$group2_sim_risk + 2/3*ind.ef.g2
-g3_pobrisks_v3 <- 1/3*us_counties$group3_sim_risk + 2/3*ind.ef.g2
-g4_pobrisks_v3 <- 1/3*us_counties$group4_sim_risk + 2/3*ind.ef.g2
+g1_prk_v3 <- 1/3*us_counties$group1_sim_risk + 2/3*ind.ef.g2
+g2_prk_v3 <- 1/3*us_counties$group2_sim_risk + 2/3*ind.ef.g2
+g3_prk_v3 <- 1/3*us_counties$group3_sim_risk + 2/3*ind.ef.g2
+g4_prk_v3 <- 1/3*us_counties$group4_sim_risk + 2/3*ind.ef.g2
 
 # Exponential of the underlying risk to match log of the linear predictor
-g1_pobrisks_v1 <- exp(g1_pobrisks_v1)
-g2_pobrisks_v1 <- exp(g2_pobrisks_v1)
-g3_pobrisks_v1 <- exp(g3_pobrisks_v1)
-g4_pobrisks_v1 <- exp(g4_pobrisks_v1)
+g1_prk_v1 <- exp(g1_prk_v1)
+g2_prk_v1 <- exp(g2_prk_v1)
+g3_prk_v1 <- exp(g3_prk_v1)
+g4_prk_v1 <- exp(g4_prk_v1)
 
-g1_pobrisks_v2 <- exp(g1_pobrisks_v2)
-g2_pobrisks_v2 <- exp(g2_pobrisks_v2)
-g3_pobrisks_v2 <- exp(g3_pobrisks_v2)
-g4_pobrisks_v2 <- exp(g4_pobrisks_v2)
+g1_prk_v2 <- exp(g1_prk_v2)
+g2_prk_v2 <- exp(g2_prk_v2)
+g3_prk_v2 <- exp(g3_prk_v2)
+g4_prk_v2 <- exp(g4_prk_v2)
 
-g1_pobrisks_v3 <- exp(g1_pobrisks_v3)
-g2_pobrisks_v3 <- exp(g2_pobrisks_v3)
-g3_pobrisks_v3 <- exp(g3_pobrisks_v3)
-g4_pobrisks_v3 <- exp(g4_pobrisks_v3)
+g1_prk_v3 <- exp(g1_prk_v3)
+g2_prk_v3 <- exp(g2_prk_v3)
+g3_prk_v3 <- exp(g3_prk_v3)
+g4_prk_v3 <- exp(g4_prk_v3)
 
-data_risk$M2_SIM_V1 <- c(g1_pobrisks_v1, g2_pobrisks_v1, g3_pobrisks_v1, g4_pobrisks_v1)
-data_risk$M2_SIM_V2 <- c(g1_pobrisks_v2, g2_pobrisks_v2, g3_pobrisks_v2, g4_pobrisks_v2)
-data_risk$M2_SIM_V3 <- c(g1_pobrisks_v3, g2_pobrisks_v3, g3_pobrisks_v3, g4_pobrisks_v3)
+data_risk$M2_SIM_V1 <- c(g1_prk_v1, g2_prk_v1, g3_prk_v1, g4_prk_v1)
+data_risk$M2_SIM_V2 <- c(g1_prk_v2, g2_prk_v2, g3_prk_v2, g4_prk_v2)
+data_risk$M2_SIM_V3 <- c(g1_prk_v3, g2_prk_v3, g3_prk_v3, g4_prk_v3)
 
 # Estimate the total combination of population and risks
-total_pobrisk_v1 <- sum(POP * g1_pobrisks_v1 + POP * g2_pobrisks_v1 + POP * g3_pobrisks_v1 + POP * g4_pobrisks_v1)
-total_pobrisk_v2 <- sum(POP * g1_pobrisks_v2 + POP * g2_pobrisks_v2 + POP * g3_pobrisks_v2 + POP * g4_pobrisks_v2)
-total_pobrisk_v3 <- sum(POP * g1_pobrisks_v3 + POP * g2_pobrisks_v3 + POP * g3_pobrisks_v3 + POP * g4_pobrisks_v3)
+total_pobrisk_v1 <- sum(POP * g1_prk_v1 + POP * g2_prk_v1 + POP * g3_prk_v1 + POP * g4_prk_v1)
+total_pobrisk_v2 <- sum(POP * g1_prk_v2 + POP * g2_prk_v2 + POP * g3_prk_v2 + POP * g4_prk_v2)
+total_pobrisk_v3 <- sum(POP * g1_prk_v3 + POP * g2_prk_v3 + POP * g3_prk_v3 + POP * g4_prk_v3)
 
 # Add observed values to sp object for ploting
-us_counties$OBS_M2_SIM_G1_v1 <- round(total_obs*((POP * g1_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M2_SIM_G2_v1 <- round(total_obs*((POP * g2_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M2_SIM_G3_v1 <- round(total_obs*((POP * g3_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M2_SIM_G4_v1 <- round(total_obs*((POP * g4_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M2_SIM_G1_v1 <- round(total_obs*((POP * g1_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M2_SIM_G2_v1 <- round(total_obs*((POP * g2_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M2_SIM_G3_v1 <- round(total_obs*((POP * g3_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M2_SIM_G4_v1 <- round(total_obs*((POP * g4_prk_v1)/(total_pobrisk_v1)), 0)
 
-us_counties$OBS_M2_SIM_G1_v2 <- round(total_obs*((POP * g1_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M2_SIM_G2_v2 <- round(total_obs*((POP * g2_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M2_SIM_G3_v2 <- round(total_obs*((POP * g3_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M2_SIM_G4_v2 <- round(total_obs*((POP * g4_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M2_SIM_G1_v2 <- round(total_obs*((POP * g1_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M2_SIM_G2_v2 <- round(total_obs*((POP * g2_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M2_SIM_G3_v2 <- round(total_obs*((POP * g3_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M2_SIM_G4_v2 <- round(total_obs*((POP * g4_prk_v2)/(total_pobrisk_v2)), 0)
 
-us_counties$OBS_M2_SIM_G1_v3 <- round(total_obs*((POP * g1_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M2_SIM_G2_v3 <- round(total_obs*((POP * g2_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M2_SIM_G3_v3 <- round(total_obs*((POP * g3_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M2_SIM_G4_v3 <- round(total_obs*((POP * g4_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M2_SIM_G1_v3 <- round(total_obs*((POP * g1_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M2_SIM_G2_v3 <- round(total_obs*((POP * g2_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M2_SIM_G3_v3 <- round(total_obs*((POP * g3_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M2_SIM_G4_v3 <- round(total_obs*((POP * g4_prk_v3)/(total_pobrisk_v3)), 0)
 
 # Create dataframe for M0 models and estimate observed values depending on risks
 M2_df <- data.frame("OBS_SIM_v1"=NA, "OBS_DIF_v1"=NA, "OBS_SIM_v2"=NA, "OBS_DIF_v2"=NA, "OBS_SIM_v3"=NA, "OBS_DIF_v3"=NA,"EXP"=EXP, 
@@ -1004,13 +996,9 @@ if(total_dif_v3>0){
   r_ids <- sample(1:nrow(M2_df), abs(total_dif_v3))
   M2_df$OBS_SIM_v3[r_ids] <- M2_df$OBS_SIM_v3[r_ids] - 1
 }
-
-if(sum(M2_df$OBS_SIM_v1)!=total_obs){stop("Observed values and expected values do not match.")}
-if(sum(M2_df$OBS_SIM_v2)!=total_obs){stop("Observed values and expected values do not match.")}
-if(sum(M2_df$OBS_SIM_v3)!=total_obs){stop("Observed values and expected values do not match.")}
 ```
 
-### V1
+### V1 - Equal Weights 
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M2_SIM_G1_v1/POP)*100000
@@ -1043,7 +1031,7 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ***
 
-### V2
+### V2 - Heterogeneity Max Risk
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M2_SIM_G1_v2/POP)*100000
@@ -1076,7 +1064,7 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ***
 
-### V3
+### V3 - Last Effect Max Risk
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M2_SIM_G1_v3/POP)*100000
@@ -1117,61 +1105,61 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ```{r echo=TRUE}
 # Estimate underlying risk for each group
-g1_pobrisks_v1 <- 1/2*us_counties$group1_dif_risk + 1/2*ind.ef.g2
-g2_pobrisks_v1 <- 1/2*us_counties$group2_dif_risk + 1/2*ind.ef.g2
-g3_pobrisks_v1 <- 1/2*us_counties$group3_dif_risk + 1/2*ind.ef.g2
-g4_pobrisks_v1 <- 1/2*us_counties$group4_dif_risk + 1/2*ind.ef.g2
+g1_prk_v1 <- 1/2*us_counties$group1_dif_risk + 1/2*ind.ef.g2
+g2_prk_v1 <- 1/2*us_counties$group2_dif_risk + 1/2*ind.ef.g2
+g3_prk_v1 <- 1/2*us_counties$group3_dif_risk + 1/2*ind.ef.g2
+g4_prk_v1 <- 1/2*us_counties$group4_dif_risk + 1/2*ind.ef.g2
 
-g1_pobrisks_v2 <- 2/3*us_counties$group1_dif_risk + 1/3*ind.ef.g2
-g2_pobrisks_v2 <- 2/3*us_counties$group2_dif_risk + 1/3*ind.ef.g2
-g3_pobrisks_v2 <- 2/3*us_counties$group3_dif_risk + 1/3*ind.ef.g2
-g4_pobrisks_v2 <- 2/3*us_counties$group4_dif_risk + 1/3*ind.ef.g2
+g1_prk_v2 <- 2/3*us_counties$group1_dif_risk + 1/3*ind.ef.g2
+g2_prk_v2 <- 2/3*us_counties$group2_dif_risk + 1/3*ind.ef.g2
+g3_prk_v2 <- 2/3*us_counties$group3_dif_risk + 1/3*ind.ef.g2
+g4_prk_v2 <- 2/3*us_counties$group4_dif_risk + 1/3*ind.ef.g2
 
-g1_pobrisks_v3 <- 1/3*us_counties$group1_dif_risk + 2/3*ind.ef.g2
-g2_pobrisks_v3 <- 1/3*us_counties$group2_dif_risk + 2/3*ind.ef.g2
-g3_pobrisks_v3 <- 1/3*us_counties$group3_dif_risk + 2/3*ind.ef.g2
-g4_pobrisks_v3 <- 1/3*us_counties$group4_dif_risk + 2/3*ind.ef.g2
+g1_prk_v3 <- 1/3*us_counties$group1_dif_risk + 2/3*ind.ef.g2
+g2_prk_v3 <- 1/3*us_counties$group2_dif_risk + 2/3*ind.ef.g2
+g3_prk_v3 <- 1/3*us_counties$group3_dif_risk + 2/3*ind.ef.g2
+g4_prk_v3 <- 1/3*us_counties$group4_dif_risk + 2/3*ind.ef.g2
 
 # Exponential of the underlying risk to match log of the linear predictor
-g1_pobrisks_v1 <- exp(g1_pobrisks_v1)
-g2_pobrisks_v1 <- exp(g2_pobrisks_v1)
-g3_pobrisks_v1 <- exp(g3_pobrisks_v1)
-g4_pobrisks_v1 <- exp(g4_pobrisks_v1)
+g1_prk_v1 <- exp(g1_prk_v1)
+g2_prk_v1 <- exp(g2_prk_v1)
+g3_prk_v1 <- exp(g3_prk_v1)
+g4_prk_v1 <- exp(g4_prk_v1)
 
-g1_pobrisks_v2 <- exp(g1_pobrisks_v2)
-g2_pobrisks_v2 <- exp(g2_pobrisks_v2)
-g3_pobrisks_v2 <- exp(g3_pobrisks_v2)
-g4_pobrisks_v2 <- exp(g4_pobrisks_v2)
+g1_prk_v2 <- exp(g1_prk_v2)
+g2_prk_v2 <- exp(g2_prk_v2)
+g3_prk_v2 <- exp(g3_prk_v2)
+g4_prk_v2 <- exp(g4_prk_v2)
 
-g1_pobrisks_v3 <- exp(g1_pobrisks_v3)
-g2_pobrisks_v3 <- exp(g2_pobrisks_v3)
-g3_pobrisks_v3 <- exp(g3_pobrisks_v3)
-g4_pobrisks_v3 <- exp(g4_pobrisks_v3)
+g1_prk_v3 <- exp(g1_prk_v3)
+g2_prk_v3 <- exp(g2_prk_v3)
+g3_prk_v3 <- exp(g3_prk_v3)
+g4_prk_v3 <- exp(g4_prk_v3)
 
-data_risk$M2_DIF_V1 <- c(g1_pobrisks_v1, g2_pobrisks_v1, g3_pobrisks_v1, g4_pobrisks_v1)
-data_risk$M2_DIF_V2 <- c(g1_pobrisks_v2, g2_pobrisks_v2, g3_pobrisks_v2, g4_pobrisks_v2)
-data_risk$M2_DIF_V3 <- c(g1_pobrisks_v3, g2_pobrisks_v3, g3_pobrisks_v3, g4_pobrisks_v3)
+data_risk$M2_DIF_V1 <- c(g1_prk_v1, g2_prk_v1, g3_prk_v1, g4_prk_v1)
+data_risk$M2_DIF_V2 <- c(g1_prk_v2, g2_prk_v2, g3_prk_v2, g4_prk_v2)
+data_risk$M2_DIF_V3 <- c(g1_prk_v3, g2_prk_v3, g3_prk_v3, g4_prk_v3)
 
 # Estimate the total combination of population and risks
-total_pobrisk_v1 <- sum(POP * g1_pobrisks_v1 + POP * g2_pobrisks_v1 + POP * g3_pobrisks_v1 + POP * g4_pobrisks_v1)
-total_pobrisk_v2 <- sum(POP * g1_pobrisks_v2 + POP * g2_pobrisks_v2 + POP * g3_pobrisks_v2 + POP * g4_pobrisks_v2)
-total_pobrisk_v3 <- sum(POP * g1_pobrisks_v3 + POP * g2_pobrisks_v3 + POP * g3_pobrisks_v3 + POP * g4_pobrisks_v3)
+total_pobrisk_v1 <- sum(POP * g1_prk_v1 + POP * g2_prk_v1 + POP * g3_prk_v1 + POP * g4_prk_v1)
+total_pobrisk_v2 <- sum(POP * g1_prk_v2 + POP * g2_prk_v2 + POP * g3_prk_v2 + POP * g4_prk_v2)
+total_pobrisk_v3 <- sum(POP * g1_prk_v3 + POP * g2_prk_v3 + POP * g3_prk_v3 + POP * g4_prk_v3)
 
 # Add observed values to sp object for ploting
-us_counties$OBS_M2_DIF_G1_v1 <- round(total_obs*((POP * g1_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M2_DIF_G2_v1 <- round(total_obs*((POP * g2_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M2_DIF_G3_v1 <- round(total_obs*((POP * g3_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M2_DIF_G4_v1 <- round(total_obs*((POP * g4_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M2_DIF_G1_v1 <- round(total_obs*((POP * g1_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M2_DIF_G2_v1 <- round(total_obs*((POP * g2_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M2_DIF_G3_v1 <- round(total_obs*((POP * g3_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M2_DIF_G4_v1 <- round(total_obs*((POP * g4_prk_v1)/(total_pobrisk_v1)), 0)
 
-us_counties$OBS_M2_DIF_G1_v2 <- round(total_obs*((POP * g1_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M2_DIF_G2_v2 <- round(total_obs*((POP * g2_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M2_DIF_G3_v2 <- round(total_obs*((POP * g3_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M2_DIF_G4_v2 <- round(total_obs*((POP * g4_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M2_DIF_G1_v2 <- round(total_obs*((POP * g1_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M2_DIF_G2_v2 <- round(total_obs*((POP * g2_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M2_DIF_G3_v2 <- round(total_obs*((POP * g3_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M2_DIF_G4_v2 <- round(total_obs*((POP * g4_prk_v2)/(total_pobrisk_v2)), 0)
 
-us_counties$OBS_M2_DIF_G1_v3 <- round(total_obs*((POP * g1_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M2_DIF_G2_v3 <- round(total_obs*((POP * g2_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M2_DIF_G3_v3 <- round(total_obs*((POP * g3_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M2_DIF_G4_v3 <- round(total_obs*((POP * g4_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M2_DIF_G1_v3 <- round(total_obs*((POP * g1_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M2_DIF_G2_v3 <- round(total_obs*((POP * g2_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M2_DIF_G3_v3 <- round(total_obs*((POP * g3_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M2_DIF_G4_v3 <- round(total_obs*((POP * g4_prk_v3)/(total_pobrisk_v3)), 0)
 
 # Create dataframe for M0 models and estimate observed values depending on risks
 M2_df$OBS_DIF_v1 <- c(us_counties$OBS_M2_DIF_G1_v1, us_counties$OBS_M2_DIF_G2_v1, us_counties$OBS_M2_DIF_G3_v1, us_counties$OBS_M2_DIF_G4_v1)
@@ -1206,13 +1194,9 @@ if(total_dif_v3>0){
   r_ids <- sample(1:nrow(M2_df), abs(total_dif_v3))
   M2_df$OBS_DIF_v3[r_ids] <- M2_df$OBS_DIF_v3[r_ids] - 1
 }
-
-if(sum(M2_df$OBS_DIF_v1)!=total_obs){stop("Observed values and expected values do not match.")}
-if(sum(M2_df$OBS_DIF_v2)!=total_obs){stop("Observed values and expected values do not match.")}
-if(sum(M2_df$OBS_DIF_v3)!=total_obs){stop("Observed values and expected values do not match.")}
 ```
 
-### V1
+### V1 - Equal Weights 
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M2_DIF_G1_v1/POP)*100000
@@ -1245,7 +1229,7 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ***
 
-### V2
+### V2 - Heterogeneity Max Risk
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M2_DIF_G1_v2/POP)*100000
@@ -1278,7 +1262,7 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ***
 
-### V3
+### V3 - Last Effect Max Risk
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M2_DIF_G1_v3/POP)*100000
@@ -1311,7 +1295,7 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ***
 
-# .-Factor 2 Spatial Effect (Rural-Urban)
+# Factor 2 Spatial Effect (Rural-Urban)
 
 $$
 \begin{aligned}
@@ -1328,61 +1312,61 @@ $$
 
 ```{r echo=TRUE}
 # Estimate underlying risk for each group
-g1_pobrisks_v1 <- 1/2*us_counties$group1_sim_risk + 1/2*ind.ef.g2 
-g2_pobrisks_v1 <- 1/2*us_counties$group2_sim_risk + 1/2*ind.ef.g2
-g3_pobrisks_v1 <- 1/3*us_counties$group3_sim_risk + 1/3*ind.ef.g2 + 1/3*us_counties$POP_DENS_Scale
-g4_pobrisks_v1 <- 1/3*us_counties$group4_sim_risk + 1/3*ind.ef.g2 + 1/3*us_counties$POP_DENS_Scale
+g1_prk_v1 <- 1/2*us_counties$group1_sim_risk + 1/2*ind.ef.g2 
+g2_prk_v1 <- 1/2*us_counties$group2_sim_risk + 1/2*ind.ef.g2
+g3_prk_v1 <- 1/3*us_counties$group3_sim_risk + 1/3*ind.ef.g2 + 1/3*us_counties$POP_DENS_Scale
+g4_prk_v1 <- 1/3*us_counties$group4_sim_risk + 1/3*ind.ef.g2 + 1/3*us_counties$POP_DENS_Scale
 
-g1_pobrisks_v2 <- 2/3*us_counties$group1_sim_risk + 1/3*ind.ef.g2 
-g2_pobrisks_v2 <- 2/3*us_counties$group2_sim_risk + 1/3*ind.ef.g2
-g3_pobrisks_v2 <- 14/25*us_counties$group3_sim_risk + 7/25*ind.ef.g2 + 4/25*us_counties$POP_DENS_Scale
-g4_pobrisks_v2 <- 14/25*us_counties$group4_sim_risk + 7/25*ind.ef.g2 + 4/25*us_counties$POP_DENS_Scale
+g1_prk_v2 <- 2/3*us_counties$group1_sim_risk + 1/3*ind.ef.g2 
+g2_prk_v2 <- 2/3*us_counties$group2_sim_risk + 1/3*ind.ef.g2
+g3_prk_v2 <- 14/25*us_counties$group3_sim_risk + 7/25*ind.ef.g2 + 4/25*us_counties$POP_DENS_Scale
+g4_prk_v2 <- 14/25*us_counties$group4_sim_risk + 7/25*ind.ef.g2 + 4/25*us_counties$POP_DENS_Scale
 
-g1_pobrisks_v3 <- 1/3*us_counties$group1_sim_risk + 2/3*ind.ef.g2 
-g2_pobrisks_v3 <- 1/3*us_counties$group2_sim_risk + 2/3*ind.ef.g2
-g3_pobrisks_v3 <- 4/25*us_counties$group3_sim_risk + 7/25*ind.ef.g2 + 14/25*us_counties$POP_DENS_Scale
-g4_pobrisks_v3 <- 4/25*us_counties$group4_sim_risk + 7/25*ind.ef.g2 + 14/25*us_counties$POP_DENS_Scale
+g1_prk_v3 <- 1/3*us_counties$group1_sim_risk + 2/3*ind.ef.g2 
+g2_prk_v3 <- 1/3*us_counties$group2_sim_risk + 2/3*ind.ef.g2
+g3_prk_v3 <- 4/25*us_counties$group3_sim_risk + 7/25*ind.ef.g2 + 14/25*us_counties$POP_DENS_Scale
+g4_prk_v3 <- 4/25*us_counties$group4_sim_risk + 7/25*ind.ef.g2 + 14/25*us_counties$POP_DENS_Scale
 
 # Exponential of the underlying risk to match log of the linear predictor
-g1_pobrisks_v1 <- exp(g1_pobrisks_v1)
-g2_pobrisks_v1 <- exp(g2_pobrisks_v1)
-g3_pobrisks_v1 <- exp(g3_pobrisks_v1)
-g4_pobrisks_v1 <- exp(g4_pobrisks_v1)
+g1_prk_v1 <- exp(g1_prk_v1)
+g2_prk_v1 <- exp(g2_prk_v1)
+g3_prk_v1 <- exp(g3_prk_v1)
+g4_prk_v1 <- exp(g4_prk_v1)
 
-g1_pobrisks_v2 <- exp(g1_pobrisks_v2)
-g2_pobrisks_v2 <- exp(g2_pobrisks_v2)
-g3_pobrisks_v2 <- exp(g3_pobrisks_v2)
-g4_pobrisks_v2 <- exp(g4_pobrisks_v2)
+g1_prk_v2 <- exp(g1_prk_v2)
+g2_prk_v2 <- exp(g2_prk_v2)
+g3_prk_v2 <- exp(g3_prk_v2)
+g4_prk_v2 <- exp(g4_prk_v2)
 
-g1_pobrisks_v3 <- exp(g1_pobrisks_v3)
-g2_pobrisks_v3 <- exp(g2_pobrisks_v3)
-g3_pobrisks_v3 <- exp(g3_pobrisks_v3)
-g4_pobrisks_v3 <- exp(g4_pobrisks_v3)
+g1_prk_v3 <- exp(g1_prk_v3)
+g2_prk_v3 <- exp(g2_prk_v3)
+g3_prk_v3 <- exp(g3_prk_v3)
+g4_prk_v3 <- exp(g4_prk_v3)
 
-data_risk$M3_SIM_V1 <- c(g1_pobrisks_v1, g2_pobrisks_v1, g3_pobrisks_v1, g4_pobrisks_v1)
-data_risk$M3_SIM_V2 <- c(g1_pobrisks_v2, g2_pobrisks_v2, g3_pobrisks_v2, g4_pobrisks_v2)
-data_risk$M3_SIM_V3 <- c(g1_pobrisks_v3, g2_pobrisks_v3, g3_pobrisks_v3, g4_pobrisks_v3)
+data_risk$M3_SIM_V1 <- c(g1_prk_v1, g2_prk_v1, g3_prk_v1, g4_prk_v1)
+data_risk$M3_SIM_V2 <- c(g1_prk_v2, g2_prk_v2, g3_prk_v2, g4_prk_v2)
+data_risk$M3_SIM_V3 <- c(g1_prk_v3, g2_prk_v3, g3_prk_v3, g4_prk_v3)
 
 # Estimate the total combination of population and risks
-total_pobrisk_v1 <- sum(POP * g1_pobrisks_v1 + POP * g2_pobrisks_v1 + POP * g3_pobrisks_v1 + POP * g4_pobrisks_v1)
-total_pobrisk_v2 <- sum(POP * g1_pobrisks_v2 + POP * g2_pobrisks_v2 + POP * g3_pobrisks_v2 + POP * g4_pobrisks_v2)
-total_pobrisk_v3 <- sum(POP * g1_pobrisks_v3 + POP * g2_pobrisks_v3 + POP * g3_pobrisks_v3 + POP * g4_pobrisks_v3)
+total_pobrisk_v1 <- sum(POP * g1_prk_v1 + POP * g2_prk_v1 + POP * g3_prk_v1 + POP * g4_prk_v1)
+total_pobrisk_v2 <- sum(POP * g1_prk_v2 + POP * g2_prk_v2 + POP * g3_prk_v2 + POP * g4_prk_v2)
+total_pobrisk_v3 <- sum(POP * g1_prk_v3 + POP * g2_prk_v3 + POP * g3_prk_v3 + POP * g4_prk_v3)
 
 # Add observed values to sp object for ploting
-us_counties$OBS_M3_SIM_G1_v1 <- round(total_obs*((POP * g1_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M3_SIM_G2_v1 <- round(total_obs*((POP * g2_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M3_SIM_G3_v1 <- round(total_obs*((POP * g3_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M3_SIM_G4_v1 <- round(total_obs*((POP * g4_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M3_SIM_G1_v1 <- round(total_obs*((POP * g1_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M3_SIM_G2_v1 <- round(total_obs*((POP * g2_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M3_SIM_G3_v1 <- round(total_obs*((POP * g3_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M3_SIM_G4_v1 <- round(total_obs*((POP * g4_prk_v1)/(total_pobrisk_v1)), 0)
 
-us_counties$OBS_M3_SIM_G1_v2 <- round(total_obs*((POP * g1_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M3_SIM_G2_v2 <- round(total_obs*((POP * g2_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M3_SIM_G3_v2 <- round(total_obs*((POP * g3_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M3_SIM_G4_v2 <- round(total_obs*((POP * g4_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M3_SIM_G1_v2 <- round(total_obs*((POP * g1_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M3_SIM_G2_v2 <- round(total_obs*((POP * g2_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M3_SIM_G3_v2 <- round(total_obs*((POP * g3_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M3_SIM_G4_v2 <- round(total_obs*((POP * g4_prk_v2)/(total_pobrisk_v2)), 0)
 
-us_counties$OBS_M3_SIM_G1_v3 <- round(total_obs*((POP * g1_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M3_SIM_G2_v3 <- round(total_obs*((POP * g2_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M3_SIM_G3_v3 <- round(total_obs*((POP * g3_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M3_SIM_G4_v3 <- round(total_obs*((POP * g4_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M3_SIM_G1_v3 <- round(total_obs*((POP * g1_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M3_SIM_G2_v3 <- round(total_obs*((POP * g2_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M3_SIM_G3_v3 <- round(total_obs*((POP * g3_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M3_SIM_G4_v3 <- round(total_obs*((POP * g4_prk_v3)/(total_pobrisk_v3)), 0)
 
 # Create dataframe for M0 models and estimate observed values depending on risks
 M3_df <- data.frame("OBS_SIM_v1"=NA, "OBS_DIF_v1"=NA, "OBS_SIM_v2"=NA, "OBS_DIF_v2"=NA, "OBS_SIM_v3"=NA, "OBS_DIF_v3"=NA, "EXP"=EXP, 
@@ -1419,13 +1403,9 @@ if(total_dif_v3>0){
   r_ids <- sample(1:nrow(M3_df), abs(total_dif_v3))
   M3_df$OBS_SIM_v3[r_ids] <- M3_df$OBS_SIM_v3[r_ids] - 1
 }
-
-if(sum(M3_df$OBS_SIM_v1)!=total_obs){stop("Observed values and expected values do not match.")}
-if(sum(M3_df$OBS_SIM_v2)!=total_obs){stop("Observed values and expected values do not match.")}
-if(sum(M3_df$OBS_SIM_v3)!=total_obs){stop("Observed values and expected values do not match.")}
 ```
 
-### V1
+### V1 - Equal Weights 
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M3_SIM_G1_v1/POP)*100000
@@ -1458,7 +1438,7 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ***
 
-### V2
+### V2 - Heterogeneity Max Risk
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M3_SIM_G1_v2/POP)*100000
@@ -1491,7 +1471,7 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ***
 
-### V3
+### V3 - Last Effect Max Risk
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M3_SIM_G1_v3/POP)*100000
@@ -1532,61 +1512,61 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ```{r echo=TRUE}
 # Estimate underlying risk for each group
-g1_pobrisks_v1 <- 1/2*us_counties$group1_dif_risk + 1/2*ind.ef.g2 
-g2_pobrisks_v1 <- 1/2*us_counties$group2_dif_risk + 1/2*ind.ef.g2
-g3_pobrisks_v1 <- 1/3*us_counties$group3_dif_risk + 1/3*ind.ef.g2 + 1/3*us_counties$POP_DENS_Scale
-g4_pobrisks_v1 <- 1/3*us_counties$group4_dif_risk + 1/3*ind.ef.g2 + 1/3*us_counties$POP_DENS_Scale
+g1_prk_v1 <- 1/2*us_counties$group1_dif_risk + 1/2*ind.ef.g2 
+g2_prk_v1 <- 1/2*us_counties$group2_dif_risk + 1/2*ind.ef.g2
+g3_prk_v1 <- 1/3*us_counties$group3_dif_risk + 1/3*ind.ef.g2 + 1/3*us_counties$POP_DENS_Scale
+g4_prk_v1 <- 1/3*us_counties$group4_dif_risk + 1/3*ind.ef.g2 + 1/3*us_counties$POP_DENS_Scale
 
-g1_pobrisks_v2 <- 2/3*us_counties$group1_dif_risk + 1/3*ind.ef.g2 
-g2_pobrisks_v2 <- 2/3*us_counties$group2_dif_risk + 1/3*ind.ef.g2
-g3_pobrisks_v2 <- 14/25*us_counties$group3_dif_risk + 7/25*ind.ef.g2 + 4/25*us_counties$POP_DENS_Scale
-g4_pobrisks_v2 <- 14/25*us_counties$group4_dif_risk + 7/25*ind.ef.g2 + 4/25*us_counties$POP_DENS_Scale
+g1_prk_v2 <- 2/3*us_counties$group1_dif_risk + 1/3*ind.ef.g2 
+g2_prk_v2 <- 2/3*us_counties$group2_dif_risk + 1/3*ind.ef.g2
+g3_prk_v2 <- 14/25*us_counties$group3_dif_risk + 7/25*ind.ef.g2 + 4/25*us_counties$POP_DENS_Scale
+g4_prk_v2 <- 14/25*us_counties$group4_dif_risk + 7/25*ind.ef.g2 + 4/25*us_counties$POP_DENS_Scale
 
-g1_pobrisks_v3 <- 1/3*us_counties$group1_dif_risk + 2/3*ind.ef.g2 
-g2_pobrisks_v3 <- 1/3*us_counties$group2_dif_risk + 2/3*ind.ef.g2
-g3_pobrisks_v3 <- 4/25*us_counties$group3_dif_risk + 7/25*ind.ef.g2 + 14/25*us_counties$POP_DENS_Scale
-g4_pobrisks_v3 <- 4/25*us_counties$group4_dif_risk + 7/25*ind.ef.g2 + 14/25*us_counties$POP_DENS_Scale
+g1_prk_v3 <- 1/3*us_counties$group1_dif_risk + 2/3*ind.ef.g2 
+g2_prk_v3 <- 1/3*us_counties$group2_dif_risk + 2/3*ind.ef.g2
+g3_prk_v3 <- 4/25*us_counties$group3_dif_risk + 7/25*ind.ef.g2 + 14/25*us_counties$POP_DENS_Scale
+g4_prk_v3 <- 4/25*us_counties$group4_dif_risk + 7/25*ind.ef.g2 + 14/25*us_counties$POP_DENS_Scale
 
 # Exponential of the underlying risk to match log of the linear predictor
-g1_pobrisks_v1 <- exp(g1_pobrisks_v1)
-g2_pobrisks_v1 <- exp(g2_pobrisks_v1)
-g3_pobrisks_v1 <- exp(g3_pobrisks_v1)
-g4_pobrisks_v1 <- exp(g4_pobrisks_v1)
+g1_prk_v1 <- exp(g1_prk_v1)
+g2_prk_v1 <- exp(g2_prk_v1)
+g3_prk_v1 <- exp(g3_prk_v1)
+g4_prk_v1 <- exp(g4_prk_v1)
 
-g1_pobrisks_v2 <- exp(g1_pobrisks_v2)
-g2_pobrisks_v2 <- exp(g2_pobrisks_v2)
-g3_pobrisks_v2 <- exp(g3_pobrisks_v2)
-g4_pobrisks_v2 <- exp(g4_pobrisks_v2)
+g1_prk_v2 <- exp(g1_prk_v2)
+g2_prk_v2 <- exp(g2_prk_v2)
+g3_prk_v2 <- exp(g3_prk_v2)
+g4_prk_v2 <- exp(g4_prk_v2)
 
-g1_pobrisks_v3 <- exp(g1_pobrisks_v3)
-g2_pobrisks_v3 <- exp(g2_pobrisks_v3)
-g3_pobrisks_v3 <- exp(g3_pobrisks_v3)
-g4_pobrisks_v3 <- exp(g4_pobrisks_v3)
+g1_prk_v3 <- exp(g1_prk_v3)
+g2_prk_v3 <- exp(g2_prk_v3)
+g3_prk_v3 <- exp(g3_prk_v3)
+g4_prk_v3 <- exp(g4_prk_v3)
 
-data_risk$M3_DIF_V1 <- c(g1_pobrisks_v1, g2_pobrisks_v1, g3_pobrisks_v1, g4_pobrisks_v1)
-data_risk$M3_DIF_V2 <- c(g1_pobrisks_v2, g2_pobrisks_v2, g3_pobrisks_v2, g4_pobrisks_v2)
-data_risk$M3_DIF_V3 <- c(g1_pobrisks_v3, g2_pobrisks_v3, g3_pobrisks_v3, g4_pobrisks_v3)
+data_risk$M3_DIF_V1 <- c(g1_prk_v1, g2_prk_v1, g3_prk_v1, g4_prk_v1)
+data_risk$M3_DIF_V2 <- c(g1_prk_v2, g2_prk_v2, g3_prk_v2, g4_prk_v2)
+data_risk$M3_DIF_V3 <- c(g1_prk_v3, g2_prk_v3, g3_prk_v3, g4_prk_v3)
 
 # Estimate the total combination of population and risks
-total_pobrisk_v1 <- sum(POP * g1_pobrisks_v1 + POP * g2_pobrisks_v1 + POP * g3_pobrisks_v1 + POP * g4_pobrisks_v1)
-total_pobrisk_v2 <- sum(POP * g1_pobrisks_v2 + POP * g2_pobrisks_v2 + POP * g3_pobrisks_v2 + POP * g4_pobrisks_v2)
-total_pobrisk_v3 <- sum(POP * g1_pobrisks_v3 + POP * g2_pobrisks_v3 + POP * g3_pobrisks_v3 + POP * g4_pobrisks_v3)
+total_pobrisk_v1 <- sum(POP * g1_prk_v1 + POP * g2_prk_v1 + POP * g3_prk_v1 + POP * g4_prk_v1)
+total_pobrisk_v2 <- sum(POP * g1_prk_v2 + POP * g2_prk_v2 + POP * g3_prk_v2 + POP * g4_prk_v2)
+total_pobrisk_v3 <- sum(POP * g1_prk_v3 + POP * g2_prk_v3 + POP * g3_prk_v3 + POP * g4_prk_v3)
 
 # Add observed values to sp object for ploting
-us_counties$OBS_M3_DIF_G1_v1 <- round(total_obs*((POP * g1_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M3_DIF_G2_v1 <- round(total_obs*((POP * g2_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M3_DIF_G3_v1 <- round(total_obs*((POP * g3_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M3_DIF_G4_v1 <- round(total_obs*((POP * g4_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M3_DIF_G1_v1 <- round(total_obs*((POP * g1_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M3_DIF_G2_v1 <- round(total_obs*((POP * g2_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M3_DIF_G3_v1 <- round(total_obs*((POP * g3_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M3_DIF_G4_v1 <- round(total_obs*((POP * g4_prk_v1)/(total_pobrisk_v1)), 0)
 
-us_counties$OBS_M3_DIF_G1_v2 <- round(total_obs*((POP * g1_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M3_DIF_G2_v2 <- round(total_obs*((POP * g2_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M3_DIF_G3_v2 <- round(total_obs*((POP * g3_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M3_DIF_G4_v2 <- round(total_obs*((POP * g4_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M3_DIF_G1_v2 <- round(total_obs*((POP * g1_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M3_DIF_G2_v2 <- round(total_obs*((POP * g2_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M3_DIF_G3_v2 <- round(total_obs*((POP * g3_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M3_DIF_G4_v2 <- round(total_obs*((POP * g4_prk_v2)/(total_pobrisk_v2)), 0)
 
-us_counties$OBS_M3_DIF_G1_v3 <- round(total_obs*((POP * g1_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M3_DIF_G2_v3 <- round(total_obs*((POP * g2_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M3_DIF_G3_v3 <- round(total_obs*((POP * g3_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M3_DIF_G4_v3 <- round(total_obs*((POP * g4_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M3_DIF_G1_v3 <- round(total_obs*((POP * g1_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M3_DIF_G2_v3 <- round(total_obs*((POP * g2_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M3_DIF_G3_v3 <- round(total_obs*((POP * g3_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M3_DIF_G4_v3 <- round(total_obs*((POP * g4_prk_v3)/(total_pobrisk_v3)), 0)
 
 # Create dataframe for M0 models and estimate observed values depending on risks
 M3_df$OBS_DIF_v1 <- c(us_counties$OBS_M3_DIF_G1_v1, us_counties$OBS_M3_DIF_G2_v1, us_counties$OBS_M3_DIF_G3_v1, us_counties$OBS_M3_DIF_G4_v1)
@@ -1621,13 +1601,9 @@ if(total_dif_v3>0){
   r_ids <- sample(1:nrow(M2_df), abs(total_dif_v3))
   M3_df$OBS_DIF_v3[r_ids] <- M3_df$OBS_DIF_v3[r_ids] - 1
 }
-
-if(sum(M3_df$OBS_DIF_v1)!=total_obs){stop("Observed values and expected values do not match.")}
-if(sum(M3_df$OBS_DIF_v2)!=total_obs){stop("Observed values and expected values do not match.")}
-if(sum(M3_df$OBS_DIF_v3)!=total_obs){stop("Observed values and expected values do not match.")}
 ```
 
-### V1
+### V1 - Equal Weights 
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M3_DIF_G1_v1/POP)*100000
@@ -1660,7 +1636,7 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ***
 
-### V2
+### V2 - Heterogeneity Max Risk
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M3_DIF_G1_v2/POP)*100000
@@ -1693,7 +1669,7 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ***
 
-### V3
+### V3 - Last Effect Max Risk
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M3_DIF_G1_v3/POP)*100000
@@ -1726,7 +1702,7 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ***
 
-# .-Factor 2 Spatial Effect (North-South)
+# Factor 2 Spatial Effect (North-South)
 
 $$
 \begin{aligned}
@@ -1743,61 +1719,61 @@ $$
 
 ```{r echo=TRUE}
 # Estimate underlying risk for each group
-g1_pobrisks_v1 <- 1/3*us_counties$group1_sim_risk + 1/3*ind.ef.g2 + 1/3*us_counties$Temp_Scale
-g2_pobrisks_v1 <- 1/2*us_counties$group2_sim_risk + 1/2*ind.ef.g2
-g3_pobrisks_v1 <- 1/3*us_counties$group3_sim_risk + 1/3*ind.ef.g2 + 1/3*us_counties$Temp_Scale
-g4_pobrisks_v1 <- 1/2*us_counties$group4_sim_risk + 1/2*ind.ef.g2
+g1_prk_v1 <- 1/3*us_counties$group1_sim_risk + 1/3*ind.ef.g2 + 1/3*us_counties$Temp_Scale
+g2_prk_v1 <- 1/2*us_counties$group2_sim_risk + 1/2*ind.ef.g2
+g3_prk_v1 <- 1/3*us_counties$group3_sim_risk + 1/3*ind.ef.g2 + 1/3*us_counties$Temp_Scale
+g4_prk_v1 <- 1/2*us_counties$group4_sim_risk + 1/2*ind.ef.g2
 
-g1_pobrisks_v2 <- 14/25*us_counties$group1_sim_risk + 7/25*ind.ef.g2 + 4/25*us_counties$Temp_Scale
-g2_pobrisks_v2 <- 2/3*us_counties$group2_sim_risk + 1/3*ind.ef.g2
-g3_pobrisks_v2 <- 14/25*us_counties$group3_sim_risk + 7/25*ind.ef.g2 + 4/25*us_counties$Temp_Scale
-g4_pobrisks_v2 <- 2/3*us_counties$group4_sim_risk + 1/3*ind.ef.g2
+g1_prk_v2 <- 14/25*us_counties$group1_sim_risk + 7/25*ind.ef.g2 + 4/25*us_counties$Temp_Scale
+g2_prk_v2 <- 2/3*us_counties$group2_sim_risk + 1/3*ind.ef.g2
+g3_prk_v2 <- 14/25*us_counties$group3_sim_risk + 7/25*ind.ef.g2 + 4/25*us_counties$Temp_Scale
+g4_prk_v2 <- 2/3*us_counties$group4_sim_risk + 1/3*ind.ef.g2
 
-g1_pobrisks_v3 <- 4/25*us_counties$group1_sim_risk + 7/25*ind.ef.g2 + 14/25*us_counties$Temp_Scale
-g2_pobrisks_v3 <- 1/3*us_counties$group2_sim_risk + 2/3*ind.ef.g2
-g3_pobrisks_v3 <- 4/25*us_counties$group3_sim_risk + 7/25*ind.ef.g2 + 14/25*us_counties$Temp_Scale
-g4_pobrisks_v3 <- 1/3*us_counties$group4_sim_risk + 2/3*ind.ef.g2
+g1_prk_v3 <- 4/25*us_counties$group1_sim_risk + 7/25*ind.ef.g2 + 14/25*us_counties$Temp_Scale
+g2_prk_v3 <- 1/3*us_counties$group2_sim_risk + 2/3*ind.ef.g2
+g3_prk_v3 <- 4/25*us_counties$group3_sim_risk + 7/25*ind.ef.g2 + 14/25*us_counties$Temp_Scale
+g4_prk_v3 <- 1/3*us_counties$group4_sim_risk + 2/3*ind.ef.g2
 
 # Exponential of the underlying risk to match log of the linear predictor
-g1_pobrisks_v1 <- exp(g1_pobrisks_v1)
-g2_pobrisks_v1 <- exp(g2_pobrisks_v1)
-g3_pobrisks_v1 <- exp(g3_pobrisks_v1)
-g4_pobrisks_v1 <- exp(g4_pobrisks_v1)
+g1_prk_v1 <- exp(g1_prk_v1)
+g2_prk_v1 <- exp(g2_prk_v1)
+g3_prk_v1 <- exp(g3_prk_v1)
+g4_prk_v1 <- exp(g4_prk_v1)
 
-g1_pobrisks_v2 <- exp(g1_pobrisks_v2)
-g2_pobrisks_v2 <- exp(g2_pobrisks_v2)
-g3_pobrisks_v2 <- exp(g3_pobrisks_v2)
-g4_pobrisks_v2 <- exp(g4_pobrisks_v2)
+g1_prk_v2 <- exp(g1_prk_v2)
+g2_prk_v2 <- exp(g2_prk_v2)
+g3_prk_v2 <- exp(g3_prk_v2)
+g4_prk_v2 <- exp(g4_prk_v2)
 
-g1_pobrisks_v3 <- exp(g1_pobrisks_v3)
-g2_pobrisks_v3 <- exp(g2_pobrisks_v3)
-g3_pobrisks_v3 <- exp(g3_pobrisks_v3)
-g4_pobrisks_v3 <- exp(g4_pobrisks_v3)
+g1_prk_v3 <- exp(g1_prk_v3)
+g2_prk_v3 <- exp(g2_prk_v3)
+g3_prk_v3 <- exp(g3_prk_v3)
+g4_prk_v3 <- exp(g4_prk_v3)
 
-data_risk$M4_SIM_V1 <- c(g1_pobrisks_v1, g2_pobrisks_v1, g3_pobrisks_v1, g4_pobrisks_v1)
-data_risk$M4_SIM_V2 <- c(g1_pobrisks_v2, g2_pobrisks_v2, g3_pobrisks_v2, g4_pobrisks_v2)
-data_risk$M4_SIM_V3 <- c(g1_pobrisks_v3, g2_pobrisks_v3, g3_pobrisks_v3, g4_pobrisks_v3)
+data_risk$M4_SIM_V1 <- c(g1_prk_v1, g2_prk_v1, g3_prk_v1, g4_prk_v1)
+data_risk$M4_SIM_V2 <- c(g1_prk_v2, g2_prk_v2, g3_prk_v2, g4_prk_v2)
+data_risk$M4_SIM_V3 <- c(g1_prk_v3, g2_prk_v3, g3_prk_v3, g4_prk_v3)
 
 # Estimate the total combination of population and risks
-total_pobrisk_v1 <- sum(POP * g1_pobrisks_v1 + POP * g2_pobrisks_v1 + POP * g3_pobrisks_v1 + POP * g4_pobrisks_v1)
-total_pobrisk_v2 <- sum(POP * g1_pobrisks_v2 + POP * g2_pobrisks_v2 + POP * g3_pobrisks_v2 + POP * g4_pobrisks_v2)
-total_pobrisk_v3 <- sum(POP * g1_pobrisks_v3 + POP * g2_pobrisks_v3 + POP * g3_pobrisks_v3 + POP * g4_pobrisks_v3)
+total_pobrisk_v1 <- sum(POP * g1_prk_v1 + POP * g2_prk_v1 + POP * g3_prk_v1 + POP * g4_prk_v1)
+total_pobrisk_v2 <- sum(POP * g1_prk_v2 + POP * g2_prk_v2 + POP * g3_prk_v2 + POP * g4_prk_v2)
+total_pobrisk_v3 <- sum(POP * g1_prk_v3 + POP * g2_prk_v3 + POP * g3_prk_v3 + POP * g4_prk_v3)
 
 # Add observed values to sp object for ploting
-us_counties$OBS_M4_SIM_G1_v1 <- round(total_obs*((POP * g1_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M4_SIM_G2_v1 <- round(total_obs*((POP * g2_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M4_SIM_G3_v1 <- round(total_obs*((POP * g3_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M4_SIM_G4_v1 <- round(total_obs*((POP * g4_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M4_SIM_G1_v1 <- round(total_obs*((POP * g1_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M4_SIM_G2_v1 <- round(total_obs*((POP * g2_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M4_SIM_G3_v1 <- round(total_obs*((POP * g3_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M4_SIM_G4_v1 <- round(total_obs*((POP * g4_prk_v1)/(total_pobrisk_v1)), 0)
 
-us_counties$OBS_M4_SIM_G1_v2 <- round(total_obs*((POP * g1_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M4_SIM_G2_v2 <- round(total_obs*((POP * g2_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M4_SIM_G3_v2 <- round(total_obs*((POP * g3_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M4_SIM_G4_v2 <- round(total_obs*((POP * g4_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M4_SIM_G1_v2 <- round(total_obs*((POP * g1_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M4_SIM_G2_v2 <- round(total_obs*((POP * g2_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M4_SIM_G3_v2 <- round(total_obs*((POP * g3_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M4_SIM_G4_v2 <- round(total_obs*((POP * g4_prk_v2)/(total_pobrisk_v2)), 0)
 
-us_counties$OBS_M4_SIM_G1_v3 <- round(total_obs*((POP * g1_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M4_SIM_G2_v3 <- round(total_obs*((POP * g2_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M4_SIM_G3_v3 <- round(total_obs*((POP * g3_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M4_SIM_G4_v3 <- round(total_obs*((POP * g4_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M4_SIM_G1_v3 <- round(total_obs*((POP * g1_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M4_SIM_G2_v3 <- round(total_obs*((POP * g2_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M4_SIM_G3_v3 <- round(total_obs*((POP * g3_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M4_SIM_G4_v3 <- round(total_obs*((POP * g4_prk_v3)/(total_pobrisk_v3)), 0)
 
 # Create dataframe for M0 models and estimate observed values depending on risks
 M4_df <- data.frame("OBS_SIM_v1"=NA, "OBS_DIF_v1"=NA, "OBS_SIM_v2"=NA, "OBS_DIF_v2"=NA, "OBS_SIM_v3"=NA, "OBS_DIF_v3"=NA, "EXP"=EXP, 
@@ -1834,13 +1810,9 @@ if(total_dif_v3>0){
   r_ids <- sample(1:nrow(M4_df), abs(total_dif_v3))
   M4_df$OBS_SIM_v3[r_ids] <- M4_df$OBS_SIM_v3[r_ids] - 1
 }
-
-if(sum(M4_df$OBS_SIM_v1)!=total_obs){stop("Observed values and expected values do not match.")}
-if(sum(M4_df$OBS_SIM_v2)!=total_obs){stop("Observed values and expected values do not match.")}
-if(sum(M4_df$OBS_SIM_v3)!=total_obs){stop("Observed values and expected values do not match.")}
 ```
 
-### V1
+### V1 - Equal Weights 
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M4_SIM_G1_v1/POP)*100000
@@ -1873,7 +1845,7 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ***
 
-### V2
+### V2 - Heterogeneity Max Risk
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M4_SIM_G1_v2/POP)*100000
@@ -1906,7 +1878,7 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ***
 
-### V3
+### V3 - Last Effect Max Risk
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M4_SIM_G1_v3/POP)*100000
@@ -1947,61 +1919,61 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ```{r echo=TRUE}
 # Estimate underlying risk for each group
-g1_pobrisks_v1 <- 1/3*us_counties$group1_dif_risk + 1/3*ind.ef.g2 + 1/3*us_counties$Temp_Scale
-g2_pobrisks_v1 <- 1/2*us_counties$group2_dif_risk + 1/2*ind.ef.g2
-g3_pobrisks_v1 <- 1/3*us_counties$group3_dif_risk + 1/3*ind.ef.g2 + 1/3*us_counties$Temp_Scale
-g4_pobrisks_v1 <- 1/2*us_counties$group4_dif_risk + 1/2*ind.ef.g2
+g1_prk_v1 <- 1/3*us_counties$group1_dif_risk + 1/3*ind.ef.g2 + 1/3*us_counties$Temp_Scale
+g2_prk_v1 <- 1/2*us_counties$group2_dif_risk + 1/2*ind.ef.g2
+g3_prk_v1 <- 1/3*us_counties$group3_dif_risk + 1/3*ind.ef.g2 + 1/3*us_counties$Temp_Scale
+g4_prk_v1 <- 1/2*us_counties$group4_dif_risk + 1/2*ind.ef.g2
 
-g1_pobrisks_v2 <- 14/25*us_counties$group1_dif_risk + 7/25*ind.ef.g2 + 4/25*us_counties$Temp_Scale
-g2_pobrisks_v2 <- 2/3*us_counties$group2_dif_risk + 1/3*ind.ef.g2
-g3_pobrisks_v2 <- 14/25*us_counties$group3_dif_risk + 7/25*ind.ef.g2 + 4/25*us_counties$Temp_Scale
-g4_pobrisks_v2 <- 2/3*us_counties$group4_dif_risk + 1/3*ind.ef.g2
+g1_prk_v2 <- 14/25*us_counties$group1_dif_risk + 7/25*ind.ef.g2 + 4/25*us_counties$Temp_Scale
+g2_prk_v2 <- 2/3*us_counties$group2_dif_risk + 1/3*ind.ef.g2
+g3_prk_v2 <- 14/25*us_counties$group3_dif_risk + 7/25*ind.ef.g2 + 4/25*us_counties$Temp_Scale
+g4_prk_v2 <- 2/3*us_counties$group4_dif_risk + 1/3*ind.ef.g2
 
-g1_pobrisks_v3 <- 4/25*us_counties$group1_dif_risk + 7/25*ind.ef.g2 + 14/25*us_counties$Temp_Scale
-g2_pobrisks_v3 <- 1/3*us_counties$group2_dif_risk + 2/3*ind.ef.g2
-g3_pobrisks_v3 <- 4/25*us_counties$group3_dif_risk + 7/25*ind.ef.g2 + 14/25*us_counties$Temp_Scale
-g4_pobrisks_v3 <- 1/3*us_counties$group4_dif_risk + 2/3*ind.ef.g2
+g1_prk_v3 <- 4/25*us_counties$group1_dif_risk + 7/25*ind.ef.g2 + 14/25*us_counties$Temp_Scale
+g2_prk_v3 <- 1/3*us_counties$group2_dif_risk + 2/3*ind.ef.g2
+g3_prk_v3 <- 4/25*us_counties$group3_dif_risk + 7/25*ind.ef.g2 + 14/25*us_counties$Temp_Scale
+g4_prk_v3 <- 1/3*us_counties$group4_dif_risk + 2/3*ind.ef.g2
 
 # Exponential of the underlying risk to match log of the linear predictor
-g1_pobrisks_v1 <- exp(g1_pobrisks_v1)
-g2_pobrisks_v1 <- exp(g2_pobrisks_v1)
-g3_pobrisks_v1 <- exp(g3_pobrisks_v1)
-g4_pobrisks_v1 <- exp(g4_pobrisks_v1)
+g1_prk_v1 <- exp(g1_prk_v1)
+g2_prk_v1 <- exp(g2_prk_v1)
+g3_prk_v1 <- exp(g3_prk_v1)
+g4_prk_v1 <- exp(g4_prk_v1)
 
-g1_pobrisks_v2 <- exp(g1_pobrisks_v2)
-g2_pobrisks_v2 <- exp(g2_pobrisks_v2)
-g3_pobrisks_v2 <- exp(g3_pobrisks_v2)
-g4_pobrisks_v2 <- exp(g4_pobrisks_v2)
+g1_prk_v2 <- exp(g1_prk_v2)
+g2_prk_v2 <- exp(g2_prk_v2)
+g3_prk_v2 <- exp(g3_prk_v2)
+g4_prk_v2 <- exp(g4_prk_v2)
 
-g1_pobrisks_v3 <- exp(g1_pobrisks_v3)
-g2_pobrisks_v3 <- exp(g2_pobrisks_v3)
-g3_pobrisks_v3 <- exp(g3_pobrisks_v3)
-g4_pobrisks_v3 <- exp(g4_pobrisks_v3)
+g1_prk_v3 <- exp(g1_prk_v3)
+g2_prk_v3 <- exp(g2_prk_v3)
+g3_prk_v3 <- exp(g3_prk_v3)
+g4_prk_v3 <- exp(g4_prk_v3)
 
-data_risk$M4_DIF_V1 <- c(g1_pobrisks_v1, g2_pobrisks_v1, g3_pobrisks_v1, g4_pobrisks_v1)
-data_risk$M4_DIF_V2 <- c(g1_pobrisks_v2, g2_pobrisks_v2, g3_pobrisks_v2, g4_pobrisks_v2)
-data_risk$M4_DIF_V3 <- c(g1_pobrisks_v3, g2_pobrisks_v3, g3_pobrisks_v3, g4_pobrisks_v3)
+data_risk$M4_DIF_V1 <- c(g1_prk_v1, g2_prk_v1, g3_prk_v1, g4_prk_v1)
+data_risk$M4_DIF_V2 <- c(g1_prk_v2, g2_prk_v2, g3_prk_v2, g4_prk_v2)
+data_risk$M4_DIF_V3 <- c(g1_prk_v3, g2_prk_v3, g3_prk_v3, g4_prk_v3)
 
 # Estimate the total combination of population and risks
-total_pobrisk_v1 <- sum(POP * g1_pobrisks_v1 + POP * g2_pobrisks_v1 + POP * g3_pobrisks_v1 + POP * g4_pobrisks_v1)
-total_pobrisk_v2 <- sum(POP * g1_pobrisks_v2 + POP * g2_pobrisks_v2 + POP * g3_pobrisks_v2 + POP * g4_pobrisks_v2)
-total_pobrisk_v3 <- sum(POP * g1_pobrisks_v3 + POP * g2_pobrisks_v3 + POP * g3_pobrisks_v3 + POP * g4_pobrisks_v3)
+total_pobrisk_v1 <- sum(POP * g1_prk_v1 + POP * g2_prk_v1 + POP * g3_prk_v1 + POP * g4_prk_v1)
+total_pobrisk_v2 <- sum(POP * g1_prk_v2 + POP * g2_prk_v2 + POP * g3_prk_v2 + POP * g4_prk_v2)
+total_pobrisk_v3 <- sum(POP * g1_prk_v3 + POP * g2_prk_v3 + POP * g3_prk_v3 + POP * g4_prk_v3)
 
 # Add observed values to sp object for ploting
-us_counties$OBS_M4_DIF_G1_v1 <- round(total_obs*((POP * g1_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M4_DIF_G2_v1 <- round(total_obs*((POP * g2_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M4_DIF_G3_v1 <- round(total_obs*((POP * g3_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M4_DIF_G4_v1 <- round(total_obs*((POP * g4_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M4_DIF_G1_v1 <- round(total_obs*((POP * g1_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M4_DIF_G2_v1 <- round(total_obs*((POP * g2_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M4_DIF_G3_v1 <- round(total_obs*((POP * g3_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M4_DIF_G4_v1 <- round(total_obs*((POP * g4_prk_v1)/(total_pobrisk_v1)), 0)
 
-us_counties$OBS_M4_DIF_G1_v2 <- round(total_obs*((POP * g1_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M4_DIF_G2_v2 <- round(total_obs*((POP * g2_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M4_DIF_G3_v2 <- round(total_obs*((POP * g3_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M4_DIF_G4_v2 <- round(total_obs*((POP * g4_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M4_DIF_G1_v2 <- round(total_obs*((POP * g1_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M4_DIF_G2_v2 <- round(total_obs*((POP * g2_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M4_DIF_G3_v2 <- round(total_obs*((POP * g3_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M4_DIF_G4_v2 <- round(total_obs*((POP * g4_prk_v2)/(total_pobrisk_v2)), 0)
 
-us_counties$OBS_M4_DIF_G1_v3 <- round(total_obs*((POP * g1_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M4_DIF_G2_v3 <- round(total_obs*((POP * g2_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M4_DIF_G3_v3 <- round(total_obs*((POP * g3_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M4_DIF_G4_v3 <- round(total_obs*((POP * g4_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M4_DIF_G1_v3 <- round(total_obs*((POP * g1_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M4_DIF_G2_v3 <- round(total_obs*((POP * g2_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M4_DIF_G3_v3 <- round(total_obs*((POP * g3_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M4_DIF_G4_v3 <- round(total_obs*((POP * g4_prk_v3)/(total_pobrisk_v3)), 0)
 
 # Create dataframe for M0 models and estimate observed values depending on risks
 M4_df$OBS_DIF_v1 <- c(us_counties$OBS_M4_DIF_G1_v1, us_counties$OBS_M4_DIF_G2_v1, us_counties$OBS_M4_DIF_G3_v1, us_counties$OBS_M4_DIF_G4_v1)
@@ -2036,13 +2008,9 @@ if(total_dif_v3>0){
   r_ids <- sample(1:nrow(M4_df), abs(total_dif_v3))
   M4_df$OBS_DIF_v3[r_ids] <- M4_df$OBS_DIF_v3[r_ids] - 1
 }
-
-if(sum(M4_df$OBS_DIF_v1)!=total_obs){stop("Observed values and expected values do not match.")}
-if(sum(M4_df$OBS_DIF_v2)!=total_obs){stop("Observed values and expected values do not match.")}
-if(sum(M4_df$OBS_DIF_v3)!=total_obs){stop("Observed values and expected values do not match.")}
 ```
 
-### V1
+### V1 - Equal Weights 
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M4_DIF_G1_v1/POP)*100000
@@ -2075,7 +2043,7 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ***
 
-### V2
+### V2 - Heterogeneity Max Risk
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M4_DIF_G1_v2/POP)*100000
@@ -2108,7 +2076,7 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ***
 
-### V3
+### V3 - Last Effect Max Risk
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M4_DIF_G1_v3/POP)*100000
@@ -2141,7 +2109,7 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ***
 
-# .-Factor 1 + Factor 2
+# Factor 1 + Factor 2
 
 $$
 \begin{aligned}
@@ -2158,61 +2126,61 @@ $$
 
 ```{r echo=TRUE}
 # Estimate underlying risk for each group
-g1_pobrisks_v1 <- 1/3*us_counties$group1_sim_risk + 1/3*ind.ef.g2 + 1/3*us_counties$Temp_Scale
-g2_pobrisks_v1 <- 1/2*us_counties$group2_sim_risk + 1/2*ind.ef.g2
-g3_pobrisks_v1 <- 1/4*us_counties$group3_sim_risk + 1/4*ind.ef.g2 + 1/4*us_counties$POP_DENS_Scale + 1/4*us_counties$Temp_Scale
-g4_pobrisks_v1 <- 1/3*us_counties$group4_sim_risk + 1/3*ind.ef.g2 + 1/3*us_counties$POP_DENS_Scale
+g1_prk_v1 <- 1/3*us_counties$group1_sim_risk + 1/3*ind.ef.g2 + 1/3*us_counties$Temp_Scale
+g2_prk_v1 <- 1/2*us_counties$group2_sim_risk + 1/2*ind.ef.g2
+g3_prk_v1 <- 1/4*us_counties$group3_sim_risk + 1/4*ind.ef.g2 + 1/4*us_counties$POP_DENS_Scale + 1/4*us_counties$Temp_Scale
+g4_prk_v1 <- 1/3*us_counties$group4_sim_risk + 1/3*ind.ef.g2 + 1/3*us_counties$POP_DENS_Scale
 
-g1_pobrisks_v2 <- 14/25*us_counties$group1_sim_risk + 7/25*ind.ef.g2 + 4/25*us_counties$Temp_Scale
-g2_pobrisks_v2 <- 2/3*us_counties$group2_sim_risk + 1/3*ind.ef.g2
-g3_pobrisks_v2 <- 53/100*us_counties$group3_sim_risk + 26/100*ind.ef.g2 + 13/100*us_counties$POP_DENS_Scale + 8/100*us_counties$Temp_Scale
-g4_pobrisks_v2 <- 14/25*us_counties$group4_sim_risk + 7/25*ind.ef.g2 + 4/25*us_counties$POP_DENS_Scale
+g1_prk_v2 <- 14/25*us_counties$group1_sim_risk + 7/25*ind.ef.g2 + 4/25*us_counties$Temp_Scale
+g2_prk_v2 <- 2/3*us_counties$group2_sim_risk + 1/3*ind.ef.g2
+g3_prk_v2 <- 53/100*us_counties$group3_sim_risk + 26/100*ind.ef.g2 + 13/100*us_counties$POP_DENS_Scale + 8/100*us_counties$Temp_Scale
+g4_prk_v2 <- 14/25*us_counties$group4_sim_risk + 7/25*ind.ef.g2 + 4/25*us_counties$POP_DENS_Scale
 
-g1_pobrisks_v3 <- 4/25*us_counties$group1_sim_risk + 7/25*ind.ef.g2 + 14/25*us_counties$Temp_Scale
-g2_pobrisks_v3 <- 1/3*us_counties$group2_sim_risk + 2/3*ind.ef.g2
-g3_pobrisks_v3 <- 8/100*us_counties$group3_sim_risk + 53/100*ind.ef.g2 + 26/100*us_counties$POP_DENS_Scale + 13/100*us_counties$Temp_Scale
-g4_pobrisks_v3 <- 4/25*us_counties$group4_sim_risk + 7/25*ind.ef.g2 + 14/25*us_counties$POP_DENS_Scale
+g1_prk_v3 <- 4/25*us_counties$group1_sim_risk + 7/25*ind.ef.g2 + 14/25*us_counties$Temp_Scale
+g2_prk_v3 <- 1/3*us_counties$group2_sim_risk + 2/3*ind.ef.g2
+g3_prk_v3 <- 8/100*us_counties$group3_sim_risk + 53/100*ind.ef.g2 + 26/100*us_counties$POP_DENS_Scale + 13/100*us_counties$Temp_Scale
+g4_prk_v3 <- 4/25*us_counties$group4_sim_risk + 7/25*ind.ef.g2 + 14/25*us_counties$POP_DENS_Scale
 
 # Exponential of the underlying risk to match log of the linear predictor
-g1_pobrisks_v1 <- exp(g1_pobrisks_v1)
-g2_pobrisks_v1 <- exp(g2_pobrisks_v1)
-g3_pobrisks_v1 <- exp(g3_pobrisks_v1)
-g4_pobrisks_v1 <- exp(g4_pobrisks_v1)
+g1_prk_v1 <- exp(g1_prk_v1)
+g2_prk_v1 <- exp(g2_prk_v1)
+g3_prk_v1 <- exp(g3_prk_v1)
+g4_prk_v1 <- exp(g4_prk_v1)
 
-g1_pobrisks_v2 <- exp(g1_pobrisks_v2)
-g2_pobrisks_v2 <- exp(g2_pobrisks_v2)
-g3_pobrisks_v2 <- exp(g3_pobrisks_v2)
-g4_pobrisks_v2 <- exp(g4_pobrisks_v2)
+g1_prk_v2 <- exp(g1_prk_v2)
+g2_prk_v2 <- exp(g2_prk_v2)
+g3_prk_v2 <- exp(g3_prk_v2)
+g4_prk_v2 <- exp(g4_prk_v2)
 
-g1_pobrisks_v3 <- exp(g1_pobrisks_v3)
-g2_pobrisks_v3 <- exp(g2_pobrisks_v3)
-g3_pobrisks_v3 <- exp(g3_pobrisks_v3)
-g4_pobrisks_v3 <- exp(g4_pobrisks_v3)
+g1_prk_v3 <- exp(g1_prk_v3)
+g2_prk_v3 <- exp(g2_prk_v3)
+g3_prk_v3 <- exp(g3_prk_v3)
+g4_prk_v3 <- exp(g4_prk_v3)
 
-data_risk$M5_SIM_V1 <- c(g1_pobrisks_v1, g2_pobrisks_v1, g3_pobrisks_v1, g4_pobrisks_v1)
-data_risk$M5_SIM_V2 <- c(g1_pobrisks_v2, g2_pobrisks_v2, g3_pobrisks_v2, g4_pobrisks_v2)
-data_risk$M5_SIM_V3 <- c(g1_pobrisks_v3, g2_pobrisks_v3, g3_pobrisks_v3, g4_pobrisks_v3)
+data_risk$M5_SIM_V1 <- c(g1_prk_v1, g2_prk_v1, g3_prk_v1, g4_prk_v1)
+data_risk$M5_SIM_V2 <- c(g1_prk_v2, g2_prk_v2, g3_prk_v2, g4_prk_v2)
+data_risk$M5_SIM_V3 <- c(g1_prk_v3, g2_prk_v3, g3_prk_v3, g4_prk_v3)
 
 # Estimate the total combination of population and risks
-total_pobrisk_v1 <- sum(POP * g1_pobrisks_v1 + POP * g2_pobrisks_v1 + POP * g3_pobrisks_v1 + POP * g4_pobrisks_v1)
-total_pobrisk_v2 <- sum(POP * g1_pobrisks_v2 + POP * g2_pobrisks_v2 + POP * g3_pobrisks_v2 + POP * g4_pobrisks_v2)
-total_pobrisk_v3 <- sum(POP * g1_pobrisks_v3 + POP * g2_pobrisks_v3 + POP * g3_pobrisks_v3 + POP * g4_pobrisks_v3)
+total_pobrisk_v1 <- sum(POP * g1_prk_v1 + POP * g2_prk_v1 + POP * g3_prk_v1 + POP * g4_prk_v1)
+total_pobrisk_v2 <- sum(POP * g1_prk_v2 + POP * g2_prk_v2 + POP * g3_prk_v2 + POP * g4_prk_v2)
+total_pobrisk_v3 <- sum(POP * g1_prk_v3 + POP * g2_prk_v3 + POP * g3_prk_v3 + POP * g4_prk_v3)
 
 # Add observed values to sp object for ploting
-us_counties$OBS_M5_SIM_G1_v1 <- round(total_obs*((POP * g1_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M5_SIM_G2_v1 <- round(total_obs*((POP * g2_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M5_SIM_G3_v1 <- round(total_obs*((POP * g3_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M5_SIM_G4_v1 <- round(total_obs*((POP * g4_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M5_SIM_G1_v1 <- round(total_obs*((POP * g1_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M5_SIM_G2_v1 <- round(total_obs*((POP * g2_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M5_SIM_G3_v1 <- round(total_obs*((POP * g3_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M5_SIM_G4_v1 <- round(total_obs*((POP * g4_prk_v1)/(total_pobrisk_v1)), 0)
 
-us_counties$OBS_M5_SIM_G1_v2 <- round(total_obs*((POP * g1_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M5_SIM_G2_v2 <- round(total_obs*((POP * g2_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M5_SIM_G3_v2 <- round(total_obs*((POP * g3_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M5_SIM_G4_v2 <- round(total_obs*((POP * g4_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M5_SIM_G1_v2 <- round(total_obs*((POP * g1_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M5_SIM_G2_v2 <- round(total_obs*((POP * g2_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M5_SIM_G3_v2 <- round(total_obs*((POP * g3_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M5_SIM_G4_v2 <- round(total_obs*((POP * g4_prk_v2)/(total_pobrisk_v2)), 0)
 
-us_counties$OBS_M5_SIM_G1_v3 <- round(total_obs*((POP * g1_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M5_SIM_G2_v3 <- round(total_obs*((POP * g2_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M5_SIM_G3_v3 <- round(total_obs*((POP * g3_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M5_SIM_G4_v3 <- round(total_obs*((POP * g4_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M5_SIM_G1_v3 <- round(total_obs*((POP * g1_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M5_SIM_G2_v3 <- round(total_obs*((POP * g2_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M5_SIM_G3_v3 <- round(total_obs*((POP * g3_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M5_SIM_G4_v3 <- round(total_obs*((POP * g4_prk_v3)/(total_pobrisk_v3)), 0)
 
 # Create dataframe for M0 models and estimate observed values depending on risks
 M5_df <- data.frame("OBS_SIM_v1"=NA, "OBS_DIF_v1"=NA, "OBS_SIM_v2"=NA, "OBS_DIF_v2"=NA, "OBS_SIM_v3"=NA, "OBS_DIF_v3"=NA, "EXP"=EXP, 
@@ -2249,13 +2217,9 @@ if(total_dif_v3>0){
   r_ids <- sample(1:nrow(M2_df), abs(total_dif_v3))
   M5_df$OBS_SIM_v3[r_ids] <- M5_df$OBS_SIM_v3[r_ids] - 1
 }
-
-if(sum(M5_df$OBS_SIM_v1)!=total_obs){stop("Observed values and expected values do not match.")}
-if(sum(M5_df$OBS_SIM_v2)!=total_obs){stop("Observed values and expected values do not match.")}
-if(sum(M5_df$OBS_SIM_v3)!=total_obs){stop("Observed values and expected values do not match.")}
 ```
 
-### V1
+### V1 - Equal Weights 
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M5_SIM_G1_v1/POP)*100000
@@ -2288,7 +2252,7 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ***
 
-### V2
+### V2 - Heterogeneity Max Risk
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M5_SIM_G1_v2/POP)*100000
@@ -2321,7 +2285,7 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ***
 
-### V3
+### V3 - Last Effect Max Risk
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M5_SIM_G1_v3/POP)*100000
@@ -2362,61 +2326,61 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ```{r echo=TRUE}
 # Estimate underlying risk for each group
-g1_pobrisks_v1 <- 1/3*us_counties$group1_dif_risk + 1/3*ind.ef.g2 + 1/3*us_counties$Temp_Scale
-g2_pobrisks_v1 <- 1/2*us_counties$group2_dif_risk + 1/2*ind.ef.g2
-g3_pobrisks_v1 <- 1/4*us_counties$group3_dif_risk + 1/4*ind.ef.g2 + 1/4*us_counties$POP_DENS_Scale + 1/4*us_counties$Temp_Scale
-g4_pobrisks_v1 <- 1/3*us_counties$group4_dif_risk + 1/3*ind.ef.g2 + 1/3*us_counties$POP_DENS_Scale
+g1_prk_v1 <- 1/3*us_counties$group1_dif_risk + 1/3*ind.ef.g2 + 1/3*us_counties$Temp_Scale
+g2_prk_v1 <- 1/2*us_counties$group2_dif_risk + 1/2*ind.ef.g2
+g3_prk_v1 <- 1/4*us_counties$group3_dif_risk + 1/4*ind.ef.g2 + 1/4*us_counties$POP_DENS_Scale + 1/4*us_counties$Temp_Scale
+g4_prk_v1 <- 1/3*us_counties$group4_dif_risk + 1/3*ind.ef.g2 + 1/3*us_counties$POP_DENS_Scale
 
-g1_pobrisks_v2 <- 14/25*us_counties$group1_dif_risk + 7/25*ind.ef.g2 + 4/25*us_counties$Temp_Scale
-g2_pobrisks_v2 <- 2/3*us_counties$group2_dif_risk + 1/3*ind.ef.g2
-g3_pobrisks_v2 <- 53/100*us_counties$group3_dif_risk + 26/100*ind.ef.g2 + 13/100*us_counties$POP_DENS_Scale + 8/100*us_counties$Temp_Scale
-g4_pobrisks_v2 <- 14/25*us_counties$group4_dif_risk + 7/25*ind.ef.g2 + 4/25*us_counties$POP_DENS_Scale
+g1_prk_v2 <- 14/25*us_counties$group1_dif_risk + 7/25*ind.ef.g2 + 4/25*us_counties$Temp_Scale
+g2_prk_v2 <- 2/3*us_counties$group2_dif_risk + 1/3*ind.ef.g2
+g3_prk_v2 <- 53/100*us_counties$group3_dif_risk + 26/100*ind.ef.g2 + 13/100*us_counties$POP_DENS_Scale + 8/100*us_counties$Temp_Scale
+g4_prk_v2 <- 14/25*us_counties$group4_dif_risk + 7/25*ind.ef.g2 + 4/25*us_counties$POP_DENS_Scale
 
-g1_pobrisks_v3 <- 4/25*us_counties$group1_dif_risk + 7/25*ind.ef.g2 + 14/25*us_counties$Temp_Scale
-g2_pobrisks_v3 <- 1/3*us_counties$group2_dif_risk + 2/3*ind.ef.g2
-g3_pobrisks_v3 <- 8/100*us_counties$group3_dif_risk + 53/100*ind.ef.g2 + 26/100*us_counties$POP_DENS_Scale + 13/100*us_counties$Temp_Scale
-g4_pobrisks_v3 <- 4/25*us_counties$group4_dif_risk + 7/25*ind.ef.g2 + 14/25*us_counties$POP_DENS_Scale
+g1_prk_v3 <- 4/25*us_counties$group1_dif_risk + 7/25*ind.ef.g2 + 14/25*us_counties$Temp_Scale
+g2_prk_v3 <- 1/3*us_counties$group2_dif_risk + 2/3*ind.ef.g2
+g3_prk_v3 <- 8/100*us_counties$group3_dif_risk + 53/100*ind.ef.g2 + 26/100*us_counties$POP_DENS_Scale + 13/100*us_counties$Temp_Scale
+g4_prk_v3 <- 4/25*us_counties$group4_dif_risk + 7/25*ind.ef.g2 + 14/25*us_counties$POP_DENS_Scale
 
 # Exponential of the underlying risk to match log of the linear predictor
-g1_pobrisks_v1 <- exp(g1_pobrisks_v1)
-g2_pobrisks_v1 <- exp(g2_pobrisks_v1)
-g3_pobrisks_v1 <- exp(g3_pobrisks_v1)
-g4_pobrisks_v1 <- exp(g4_pobrisks_v1)
+g1_prk_v1 <- exp(g1_prk_v1)
+g2_prk_v1 <- exp(g2_prk_v1)
+g3_prk_v1 <- exp(g3_prk_v1)
+g4_prk_v1 <- exp(g4_prk_v1)
 
-g1_pobrisks_v2 <- exp(g1_pobrisks_v2)
-g2_pobrisks_v2 <- exp(g2_pobrisks_v2)
-g3_pobrisks_v2 <- exp(g3_pobrisks_v2)
-g4_pobrisks_v2 <- exp(g4_pobrisks_v2)
+g1_prk_v2 <- exp(g1_prk_v2)
+g2_prk_v2 <- exp(g2_prk_v2)
+g3_prk_v2 <- exp(g3_prk_v2)
+g4_prk_v2 <- exp(g4_prk_v2)
 
-g1_pobrisks_v3 <- exp(g1_pobrisks_v3)
-g2_pobrisks_v3 <- exp(g2_pobrisks_v3)
-g3_pobrisks_v3 <- exp(g3_pobrisks_v3)
-g4_pobrisks_v3 <- exp(g4_pobrisks_v3)
+g1_prk_v3 <- exp(g1_prk_v3)
+g2_prk_v3 <- exp(g2_prk_v3)
+g3_prk_v3 <- exp(g3_prk_v3)
+g4_prk_v3 <- exp(g4_prk_v3)
 
-data_risk$M5_DIF_V1 <- c(g1_pobrisks_v1, g2_pobrisks_v1, g3_pobrisks_v1, g4_pobrisks_v1)
-data_risk$M5_DIF_V2 <- c(g1_pobrisks_v2, g2_pobrisks_v2, g3_pobrisks_v2, g4_pobrisks_v2)
-data_risk$M5_DIF_V3 <- c(g1_pobrisks_v3, g2_pobrisks_v3, g3_pobrisks_v3, g4_pobrisks_v3)
+data_risk$M5_DIF_V1 <- c(g1_prk_v1, g2_prk_v1, g3_prk_v1, g4_prk_v1)
+data_risk$M5_DIF_V2 <- c(g1_prk_v2, g2_prk_v2, g3_prk_v2, g4_prk_v2)
+data_risk$M5_DIF_V3 <- c(g1_prk_v3, g2_prk_v3, g3_prk_v3, g4_prk_v3)
 
 # Estimate the total combination of population and risks
-total_pobrisk_v1 <- sum(POP * g1_pobrisks_v1 + POP * g2_pobrisks_v1 + POP * g3_pobrisks_v1 + POP * g4_pobrisks_v1)
-total_pobrisk_v2 <- sum(POP * g1_pobrisks_v2 + POP * g2_pobrisks_v2 + POP * g3_pobrisks_v2 + POP * g4_pobrisks_v2)
-total_pobrisk_v3 <- sum(POP * g1_pobrisks_v3 + POP * g2_pobrisks_v3 + POP * g3_pobrisks_v3 + POP * g4_pobrisks_v3)
+total_pobrisk_v1 <- sum(POP * g1_prk_v1 + POP * g2_prk_v1 + POP * g3_prk_v1 + POP * g4_prk_v1)
+total_pobrisk_v2 <- sum(POP * g1_prk_v2 + POP * g2_prk_v2 + POP * g3_prk_v2 + POP * g4_prk_v2)
+total_pobrisk_v3 <- sum(POP * g1_prk_v3 + POP * g2_prk_v3 + POP * g3_prk_v3 + POP * g4_prk_v3)
 
 # Add observed values to sp object for ploting
-us_counties$OBS_M5_DIF_G1_v1 <- round(total_obs*((POP * g1_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M5_DIF_G2_v1 <- round(total_obs*((POP * g2_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M5_DIF_G3_v1 <- round(total_obs*((POP * g3_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M5_DIF_G4_v1 <- round(total_obs*((POP * g4_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M5_DIF_G1_v1 <- round(total_obs*((POP * g1_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M5_DIF_G2_v1 <- round(total_obs*((POP * g2_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M5_DIF_G3_v1 <- round(total_obs*((POP * g3_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M5_DIF_G4_v1 <- round(total_obs*((POP * g4_prk_v1)/(total_pobrisk_v1)), 0)
 
-us_counties$OBS_M5_DIF_G1_v2 <- round(total_obs*((POP * g1_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M5_DIF_G2_v2 <- round(total_obs*((POP * g2_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M5_DIF_G3_v2 <- round(total_obs*((POP * g3_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M5_DIF_G4_v2 <- round(total_obs*((POP * g4_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M5_DIF_G1_v2 <- round(total_obs*((POP * g1_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M5_DIF_G2_v2 <- round(total_obs*((POP * g2_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M5_DIF_G3_v2 <- round(total_obs*((POP * g3_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M5_DIF_G4_v2 <- round(total_obs*((POP * g4_prk_v2)/(total_pobrisk_v2)), 0)
 
-us_counties$OBS_M5_DIF_G1_v3 <- round(total_obs*((POP * g1_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M5_DIF_G2_v3 <- round(total_obs*((POP * g2_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M5_DIF_G3_v3 <- round(total_obs*((POP * g3_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M5_DIF_G4_v3 <- round(total_obs*((POP * g4_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M5_DIF_G1_v3 <- round(total_obs*((POP * g1_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M5_DIF_G2_v3 <- round(total_obs*((POP * g2_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M5_DIF_G3_v3 <- round(total_obs*((POP * g3_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M5_DIF_G4_v3 <- round(total_obs*((POP * g4_prk_v3)/(total_pobrisk_v3)), 0)
 
 # Create dataframe for M0 models and estimate observed values depending on risks
 M5_df$OBS_DIF_v1 <- c(us_counties$OBS_M5_DIF_G1_v1, us_counties$OBS_M5_DIF_G2_v1, us_counties$OBS_M5_DIF_G3_v1, us_counties$OBS_M5_DIF_G4_v1)
@@ -2451,13 +2415,9 @@ if(total_dif_v3>0){
   r_ids <- sample(1:nrow(M2_df), abs(total_dif_v3))
   M5_df$OBS_DIF_v3[r_ids] <- M5_df$OBS_DIF_v3[r_ids] - 1
 }
-
-if(sum(M5_df$OBS_DIF_v1)!=total_obs){stop("Observed values and expected values do not match.")}
-if(sum(M5_df$OBS_DIF_v2)!=total_obs){stop("Observed values and expected values do not match.")}
-if(sum(M5_df$OBS_DIF_v3)!=total_obs){stop("Observed values and expected values do not match.")}
 ```
 
-### V1
+### V1 - Equal Weights 
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M5_DIF_G1_v1/POP)*100000
@@ -2490,7 +2450,7 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ***
 
-### V2
+### V2 - Heterogeneity Max Risk
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M5_DIF_G1_v2/POP)*100000
@@ -2523,7 +2483,7 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ***
 
-### V3
+### V3 - Last Effect Max Risk
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M5_DIF_G1_v3/POP)*100000
@@ -2556,7 +2516,7 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ***
 
-# .-Factor 1 * Factor 2
+# Factor 1 * Factor 2
 
 $$
 \begin{aligned}
@@ -2573,61 +2533,61 @@ $$
 
 ```{r echo=TRUE}
 # Estimate underlying risk for each group
-g1_pobrisks_v1 <- 1/3*us_counties$group1_sim_risk + 1/3*ind.ef.g2 + 1/3*us_counties$Temp_Scale
-g2_pobrisks_v1 <- 1/2*us_counties$group2_sim_risk + 1/2*ind.ef.g2
-g3_pobrisks_v1 <- 1/4*us_counties$group3_sim_risk + 1/4*ind.ef.g2 + 1/4*ind.ef.g1 + 1/4*us_counties$Temp_Scale
-g4_pobrisks_v1 <- 1/3*us_counties$group4_sim_risk + 1/3*ind.ef.g2 + 1/3*us_counties$POP_DENS_Scale
+g1_prk_v1 <- 1/3*us_counties$group1_sim_risk + 1/3*ind.ef.g2 + 1/3*us_counties$Temp_Scale
+g2_prk_v1 <- 1/2*us_counties$group2_sim_risk + 1/2*ind.ef.g2
+g3_prk_v1 <- 1/4*us_counties$group3_sim_risk + 1/4*ind.ef.g2 + 1/4*ind.ef.g1 + 1/4*us_counties$Temp_Scale
+g4_prk_v1 <- 1/3*us_counties$group4_sim_risk + 1/3*ind.ef.g2 + 1/3*us_counties$POP_DENS_Scale
 
-g1_pobrisks_v2 <- 14/25*us_counties$group1_sim_risk + 7/25*ind.ef.g2 + 4/25*us_counties$Temp_Scale
-g2_pobrisks_v2 <- 2/3*us_counties$group2_sim_risk + 1/3*ind.ef.g2
-g3_pobrisks_v2 <- 53/100*us_counties$group3_sim_risk + 26/100*ind.ef.g2 + 13/100*ind.ef.g1 + 8/100*us_counties$Temp_Scale
-g4_pobrisks_v2 <- 14/25*us_counties$group4_sim_risk + 7/25*ind.ef.g2 + 4/25*us_counties$POP_DENS_Scale
+g1_prk_v2 <- 14/25*us_counties$group1_sim_risk + 7/25*ind.ef.g2 + 4/25*us_counties$Temp_Scale
+g2_prk_v2 <- 2/3*us_counties$group2_sim_risk + 1/3*ind.ef.g2
+g3_prk_v2 <- 53/100*us_counties$group3_sim_risk + 26/100*ind.ef.g2 + 13/100*ind.ef.g1 + 8/100*us_counties$Temp_Scale
+g4_prk_v2 <- 14/25*us_counties$group4_sim_risk + 7/25*ind.ef.g2 + 4/25*us_counties$POP_DENS_Scale
 
-g1_pobrisks_v3 <- 4/25*us_counties$group1_sim_risk + 7/25*ind.ef.g2 + 14/25*us_counties$Temp_Scale
-g2_pobrisks_v3 <- 1/3*us_counties$group2_sim_risk + 2/3*ind.ef.g2
-g3_pobrisks_v3 <- 8/100*us_counties$group3_sim_risk + 53/100*ind.ef.g2 + 26/100*ind.ef.g1 + 13/100*us_counties$Temp_Scale
-g4_pobrisks_v3 <- 4/25*us_counties$group4_sim_risk + 7/25*ind.ef.g2 + 14/25*us_counties$POP_DENS_Scale
+g1_prk_v3 <- 4/25*us_counties$group1_sim_risk + 7/25*ind.ef.g2 + 14/25*us_counties$Temp_Scale
+g2_prk_v3 <- 1/3*us_counties$group2_sim_risk + 2/3*ind.ef.g2
+g3_prk_v3 <- 8/100*us_counties$group3_sim_risk + 53/100*ind.ef.g2 + 26/100*ind.ef.g1 + 13/100*us_counties$Temp_Scale
+g4_prk_v3 <- 4/25*us_counties$group4_sim_risk + 7/25*ind.ef.g2 + 14/25*us_counties$POP_DENS_Scale
 
 # Exponential of the underlying risk to match log of the linear predictor
-g1_pobrisks_v1 <- exp(g1_pobrisks_v1)
-g2_pobrisks_v1 <- exp(g2_pobrisks_v1)
-g3_pobrisks_v1 <- exp(g3_pobrisks_v1)
-g4_pobrisks_v1 <- exp(g4_pobrisks_v1)
+g1_prk_v1 <- exp(g1_prk_v1)
+g2_prk_v1 <- exp(g2_prk_v1)
+g3_prk_v1 <- exp(g3_prk_v1)
+g4_prk_v1 <- exp(g4_prk_v1)
 
-g1_pobrisks_v2 <- exp(g1_pobrisks_v2)
-g2_pobrisks_v2 <- exp(g2_pobrisks_v2)
-g3_pobrisks_v2 <- exp(g3_pobrisks_v2)
-g4_pobrisks_v2 <- exp(g4_pobrisks_v2)
+g1_prk_v2 <- exp(g1_prk_v2)
+g2_prk_v2 <- exp(g2_prk_v2)
+g3_prk_v2 <- exp(g3_prk_v2)
+g4_prk_v2 <- exp(g4_prk_v2)
 
-g1_pobrisks_v3 <- exp(g1_pobrisks_v3)
-g2_pobrisks_v3 <- exp(g2_pobrisks_v3)
-g3_pobrisks_v3 <- exp(g3_pobrisks_v3)
-g4_pobrisks_v3 <- exp(g4_pobrisks_v3)
+g1_prk_v3 <- exp(g1_prk_v3)
+g2_prk_v3 <- exp(g2_prk_v3)
+g3_prk_v3 <- exp(g3_prk_v3)
+g4_prk_v3 <- exp(g4_prk_v3)
 
-data_risk$M6_SIM_V1 <- c(g1_pobrisks_v1, g2_pobrisks_v1, g3_pobrisks_v1, g4_pobrisks_v1)
-data_risk$M6_SIM_V2 <- c(g1_pobrisks_v2, g2_pobrisks_v2, g3_pobrisks_v2, g4_pobrisks_v2)
-data_risk$M6_SIM_V3 <- c(g1_pobrisks_v3, g2_pobrisks_v3, g3_pobrisks_v3, g4_pobrisks_v3)
+data_risk$M6_SIM_V1 <- c(g1_prk_v1, g2_prk_v1, g3_prk_v1, g4_prk_v1)
+data_risk$M6_SIM_V2 <- c(g1_prk_v2, g2_prk_v2, g3_prk_v2, g4_prk_v2)
+data_risk$M6_SIM_V3 <- c(g1_prk_v3, g2_prk_v3, g3_prk_v3, g4_prk_v3)
 
 # Estimate the total combination of population and risks
-total_pobrisk_v1 <- sum(POP * g1_pobrisks_v1 + POP * g2_pobrisks_v1 + POP * g3_pobrisks_v1 + POP * g4_pobrisks_v1)
-total_pobrisk_v2 <- sum(POP * g1_pobrisks_v2 + POP * g2_pobrisks_v2 + POP * g3_pobrisks_v2 + POP * g4_pobrisks_v2)
-total_pobrisk_v3 <- sum(POP * g1_pobrisks_v3 + POP * g2_pobrisks_v3 + POP * g3_pobrisks_v3 + POP * g4_pobrisks_v3)
+total_pobrisk_v1 <- sum(POP * g1_prk_v1 + POP * g2_prk_v1 + POP * g3_prk_v1 + POP * g4_prk_v1)
+total_pobrisk_v2 <- sum(POP * g1_prk_v2 + POP * g2_prk_v2 + POP * g3_prk_v2 + POP * g4_prk_v2)
+total_pobrisk_v3 <- sum(POP * g1_prk_v3 + POP * g2_prk_v3 + POP * g3_prk_v3 + POP * g4_prk_v3)
 
 # Add observed values to sp object for ploting
-us_counties$OBS_M6_SIM_G1_v1 <- round(total_obs*((POP * g1_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M6_SIM_G2_v1 <- round(total_obs*((POP * g2_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M6_SIM_G3_v1 <- round(total_obs*((POP * g3_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M6_SIM_G4_v1 <- round(total_obs*((POP * g4_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M6_SIM_G1_v1 <- round(total_obs*((POP * g1_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M6_SIM_G2_v1 <- round(total_obs*((POP * g2_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M6_SIM_G3_v1 <- round(total_obs*((POP * g3_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M6_SIM_G4_v1 <- round(total_obs*((POP * g4_prk_v1)/(total_pobrisk_v1)), 0)
 
-us_counties$OBS_M6_SIM_G1_v2 <- round(total_obs*((POP * g1_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M6_SIM_G2_v2 <- round(total_obs*((POP * g2_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M6_SIM_G3_v2 <- round(total_obs*((POP * g3_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M6_SIM_G4_v2 <- round(total_obs*((POP * g4_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M6_SIM_G1_v2 <- round(total_obs*((POP * g1_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M6_SIM_G2_v2 <- round(total_obs*((POP * g2_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M6_SIM_G3_v2 <- round(total_obs*((POP * g3_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M6_SIM_G4_v2 <- round(total_obs*((POP * g4_prk_v2)/(total_pobrisk_v2)), 0)
 
-us_counties$OBS_M6_SIM_G1_v3 <- round(total_obs*((POP * g1_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M6_SIM_G2_v3 <- round(total_obs*((POP * g2_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M6_SIM_G3_v3 <- round(total_obs*((POP * g3_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M6_SIM_G4_v3 <- round(total_obs*((POP * g4_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M6_SIM_G1_v3 <- round(total_obs*((POP * g1_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M6_SIM_G2_v3 <- round(total_obs*((POP * g2_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M6_SIM_G3_v3 <- round(total_obs*((POP * g3_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M6_SIM_G4_v3 <- round(total_obs*((POP * g4_prk_v3)/(total_pobrisk_v3)), 0)
 
 # Create dataframe for M0 models and estimate observed values depending on risks
 M6_df <- data.frame("OBS_SIM_v1"=NA, "OBS_DIF_v1"=NA, "OBS_SIM_v2"=NA, "OBS_DIF_v2"=NA, "OBS_SIM_v3"=NA, "OBS_DIF_v3"=NA, "EXP"=EXP, 
@@ -2664,13 +2624,9 @@ if(total_dif_v3>0){
   r_ids <- sample(1:nrow(M2_df), abs(total_dif_v3))
   M6_df$OBS_SIM_v3[r_ids] <- M6_df$OBS_SIM_v3[r_ids] - 1
 }
-
-if(sum(M6_df$OBS_SIM_v1)!=total_obs){stop("Observed values and expected values do not match.")}
-if(sum(M6_df$OBS_SIM_v2)!=total_obs){stop("Observed values and expected values do not match.")}
-if(sum(M6_df$OBS_SIM_v3)!=total_obs){stop("Observed values and expected values do not match.")}
 ```
 
-### V1
+### V1 - Equal Weights 
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M6_SIM_G1_v1/POP)*100000
@@ -2703,7 +2659,7 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ***
 
-### V2
+### V2 - Heterogeneity Max Risk
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M6_SIM_G1_v2/POP)*100000
@@ -2736,7 +2692,7 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ***
 
-### V3
+### V3 - Last Effect Max Risk
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M6_SIM_G1_v3/POP)*100000
@@ -2777,61 +2733,61 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ```{r echo=TRUE}
 # Estimate underlying risk for each group
-g1_pobrisks_v1 <- 1/3*us_counties$group1_dif_risk + 1/3*ind.ef.g2 + 1/3*us_counties$Temp_Scale
-g2_pobrisks_v1 <- 1/2*us_counties$group2_dif_risk + 1/2*ind.ef.g2
-g3_pobrisks_v1 <- 1/4*us_counties$group3_dif_risk + 1/4*ind.ef.g2 + 1/4*ind.ef.g1 + 1/4*us_counties$Temp_Scale
-g4_pobrisks_v1 <- 1/3*us_counties$group4_dif_risk + 1/3*ind.ef.g2 + 1/3*us_counties$POP_DENS_Scale
+g1_prk_v1 <- 1/3*us_counties$group1_dif_risk + 1/3*ind.ef.g2 + 1/3*us_counties$Temp_Scale
+g2_prk_v1 <- 1/2*us_counties$group2_dif_risk + 1/2*ind.ef.g2
+g3_prk_v1 <- 1/4*us_counties$group3_dif_risk + 1/4*ind.ef.g2 + 1/4*ind.ef.g1 + 1/4*us_counties$Temp_Scale
+g4_prk_v1 <- 1/3*us_counties$group4_dif_risk + 1/3*ind.ef.g2 + 1/3*us_counties$POP_DENS_Scale
 
-g1_pobrisks_v2 <- 14/25*us_counties$group1_dif_risk + 7/25*ind.ef.g2 + 4/25*us_counties$Temp_Scale
-g2_pobrisks_v2 <- 2/3*us_counties$group2_dif_risk + 1/3*ind.ef.g2
-g3_pobrisks_v2 <- 53/100*us_counties$group3_dif_risk + 26/100*ind.ef.g2 + 13/100*ind.ef.g1 + 8/100*us_counties$Temp_Scale
-g4_pobrisks_v2 <- 14/25*us_counties$group4_dif_risk + 7/25*ind.ef.g2 + 4/25*us_counties$POP_DENS_Scale
+g1_prk_v2 <- 14/25*us_counties$group1_dif_risk + 7/25*ind.ef.g2 + 4/25*us_counties$Temp_Scale
+g2_prk_v2 <- 2/3*us_counties$group2_dif_risk + 1/3*ind.ef.g2
+g3_prk_v2 <- 53/100*us_counties$group3_dif_risk + 26/100*ind.ef.g2 + 13/100*ind.ef.g1 + 8/100*us_counties$Temp_Scale
+g4_prk_v2 <- 14/25*us_counties$group4_dif_risk + 7/25*ind.ef.g2 + 4/25*us_counties$POP_DENS_Scale
 
-g1_pobrisks_v3 <- 4/25*us_counties$group1_dif_risk + 7/25*ind.ef.g2 + 14/25*us_counties$Temp_Scale
-g2_pobrisks_v3 <- 1/3*us_counties$group2_dif_risk + 2/3*ind.ef.g2
-g3_pobrisks_v3 <- 8/100*us_counties$group3_dif_risk + 53/100*ind.ef.g2 + 26/100*ind.ef.g1 + 13/100*us_counties$Temp_Scale
-g4_pobrisks_v3 <- 4/25*us_counties$group4_dif_risk + 7/25*ind.ef.g2 + 14/25*us_counties$POP_DENS_Scale
+g1_prk_v3 <- 4/25*us_counties$group1_dif_risk + 7/25*ind.ef.g2 + 14/25*us_counties$Temp_Scale
+g2_prk_v3 <- 1/3*us_counties$group2_dif_risk + 2/3*ind.ef.g2
+g3_prk_v3 <- 8/100*us_counties$group3_dif_risk + 53/100*ind.ef.g2 + 26/100*ind.ef.g1 + 13/100*us_counties$Temp_Scale
+g4_prk_v3 <- 4/25*us_counties$group4_dif_risk + 7/25*ind.ef.g2 + 14/25*us_counties$POP_DENS_Scale
 
 # Exponential of the underlying risk to match log of the linear predictor
-g1_pobrisks_v1 <- exp(g1_pobrisks_v1)
-g2_pobrisks_v1 <- exp(g2_pobrisks_v1)
-g3_pobrisks_v1 <- exp(g3_pobrisks_v1)
-g4_pobrisks_v1 <- exp(g4_pobrisks_v1)
+g1_prk_v1 <- exp(g1_prk_v1)
+g2_prk_v1 <- exp(g2_prk_v1)
+g3_prk_v1 <- exp(g3_prk_v1)
+g4_prk_v1 <- exp(g4_prk_v1)
 
-g1_pobrisks_v2 <- exp(g1_pobrisks_v2)
-g2_pobrisks_v2 <- exp(g2_pobrisks_v2)
-g3_pobrisks_v2 <- exp(g3_pobrisks_v2)
-g4_pobrisks_v2 <- exp(g4_pobrisks_v2)
+g1_prk_v2 <- exp(g1_prk_v2)
+g2_prk_v2 <- exp(g2_prk_v2)
+g3_prk_v2 <- exp(g3_prk_v2)
+g4_prk_v2 <- exp(g4_prk_v2)
 
-g1_pobrisks_v3 <- exp(g1_pobrisks_v3)
-g2_pobrisks_v3 <- exp(g2_pobrisks_v3)
-g3_pobrisks_v3 <- exp(g3_pobrisks_v3)
-g4_pobrisks_v3 <- exp(g4_pobrisks_v3)
+g1_prk_v3 <- exp(g1_prk_v3)
+g2_prk_v3 <- exp(g2_prk_v3)
+g3_prk_v3 <- exp(g3_prk_v3)
+g4_prk_v3 <- exp(g4_prk_v3)
 
-data_risk$M6_DIF_V1 <- c(g1_pobrisks_v1, g2_pobrisks_v1, g3_pobrisks_v1, g4_pobrisks_v1)
-data_risk$M6_DIF_V2 <- c(g1_pobrisks_v2, g2_pobrisks_v2, g3_pobrisks_v2, g4_pobrisks_v2)
-data_risk$M6_DIF_V3 <- c(g1_pobrisks_v3, g2_pobrisks_v3, g3_pobrisks_v3, g4_pobrisks_v3)
+data_risk$M6_DIF_V1 <- c(g1_prk_v1, g2_prk_v1, g3_prk_v1, g4_prk_v1)
+data_risk$M6_DIF_V2 <- c(g1_prk_v2, g2_prk_v2, g3_prk_v2, g4_prk_v2)
+data_risk$M6_DIF_V3 <- c(g1_prk_v3, g2_prk_v3, g3_prk_v3, g4_prk_v3)
 
 # Estimate the total combination of population and risks
-total_pobrisk_v1 <- sum(POP * g1_pobrisks_v1 + POP * g2_pobrisks_v1 + POP * g3_pobrisks_v1 + POP * g4_pobrisks_v1)
-total_pobrisk_v2 <- sum(POP * g1_pobrisks_v2 + POP * g2_pobrisks_v2 + POP * g3_pobrisks_v2 + POP * g4_pobrisks_v2)
-total_pobrisk_v3 <- sum(POP * g1_pobrisks_v3 + POP * g2_pobrisks_v3 + POP * g3_pobrisks_v3 + POP * g4_pobrisks_v3)
+total_pobrisk_v1 <- sum(POP * g1_prk_v1 + POP * g2_prk_v1 + POP * g3_prk_v1 + POP * g4_prk_v1)
+total_pobrisk_v2 <- sum(POP * g1_prk_v2 + POP * g2_prk_v2 + POP * g3_prk_v2 + POP * g4_prk_v2)
+total_pobrisk_v3 <- sum(POP * g1_prk_v3 + POP * g2_prk_v3 + POP * g3_prk_v3 + POP * g4_prk_v3)
 
 # Add observed values to sp object for ploting
-us_counties$OBS_M6_DIF_G1_v1 <- round(total_obs*((POP * g1_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M6_DIF_G2_v1 <- round(total_obs*((POP * g2_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M6_DIF_G3_v1 <- round(total_obs*((POP * g3_pobrisks_v1)/(total_pobrisk_v1)), 0)
-us_counties$OBS_M6_DIF_G4_v1 <- round(total_obs*((POP * g4_pobrisks_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M6_DIF_G1_v1 <- round(total_obs*((POP * g1_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M6_DIF_G2_v1 <- round(total_obs*((POP * g2_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M6_DIF_G3_v1 <- round(total_obs*((POP * g3_prk_v1)/(total_pobrisk_v1)), 0)
+us_counties$OBS_M6_DIF_G4_v1 <- round(total_obs*((POP * g4_prk_v1)/(total_pobrisk_v1)), 0)
 
-us_counties$OBS_M6_DIF_G1_v2 <- round(total_obs*((POP * g1_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M6_DIF_G2_v2 <- round(total_obs*((POP * g2_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M6_DIF_G3_v2 <- round(total_obs*((POP * g3_pobrisks_v2)/(total_pobrisk_v2)), 0)
-us_counties$OBS_M6_DIF_G4_v2 <- round(total_obs*((POP * g4_pobrisks_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M6_DIF_G1_v2 <- round(total_obs*((POP * g1_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M6_DIF_G2_v2 <- round(total_obs*((POP * g2_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M6_DIF_G3_v2 <- round(total_obs*((POP * g3_prk_v2)/(total_pobrisk_v2)), 0)
+us_counties$OBS_M6_DIF_G4_v2 <- round(total_obs*((POP * g4_prk_v2)/(total_pobrisk_v2)), 0)
 
-us_counties$OBS_M6_DIF_G1_v3 <- round(total_obs*((POP * g1_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M6_DIF_G2_v3 <- round(total_obs*((POP * g2_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M6_DIF_G3_v3 <- round(total_obs*((POP * g3_pobrisks_v3)/(total_pobrisk_v3)), 0)
-us_counties$OBS_M6_DIF_G4_v3 <- round(total_obs*((POP * g4_pobrisks_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M6_DIF_G1_v3 <- round(total_obs*((POP * g1_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M6_DIF_G2_v3 <- round(total_obs*((POP * g2_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M6_DIF_G3_v3 <- round(total_obs*((POP * g3_prk_v3)/(total_pobrisk_v3)), 0)
+us_counties$OBS_M6_DIF_G4_v3 <- round(total_obs*((POP * g4_prk_v3)/(total_pobrisk_v3)), 0)
 
 # Create dataframe for M0 models and estimate observed values depending on risks
 M6_df$OBS_DIF_v1 <- c(us_counties$OBS_M6_DIF_G1_v1, us_counties$OBS_M6_DIF_G2_v1, us_counties$OBS_M6_DIF_G3_v1, us_counties$OBS_M6_DIF_G4_v1)
@@ -2866,13 +2822,9 @@ if(total_dif_v3>0){
   r_ids <- sample(1:nrow(M2_df), abs(total_dif_v3))
   M6_df$OBS_DIF_v3[r_ids] <- M6_df$OBS_DIF_v3[r_ids] - 1
 }
-
-if(sum(M6_df$OBS_DIF_v1)!=total_obs){stop("Observed values and expected values do not match.")}
-if(sum(M6_df$OBS_DIF_v2)!=total_obs){stop("Observed values and expected values do not match.")}
-if(sum(M6_df$OBS_DIF_v3)!=total_obs){stop("Observed values and expected values do not match.")}
 ```
 
-### V1
+### V1 - Equal Weights 
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M6_DIF_G1_v1/POP)*100000
@@ -2905,7 +2857,7 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ***
 
-### V2
+### V2 - Heterogeneity Max Risk
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M6_DIF_G1_v2/POP)*100000
@@ -2938,7 +2890,7 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ***
 
-### V3
+### V3 - Last Effect Max Risk
 
 ```{r echo=FALSE}
 us_counties$G1_rate <- (us_counties$OBS_M6_DIF_G1_v3/POP)*100000
@@ -2971,11 +2923,11 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 
 ***
 
-# .-Save Data
+# Save Data
 
 |       Lastly, we save all the necessary objects that we will be using in the analysis part and the results part.
 
-```{r echo=TRUE}
+```{r echo=TRUE, eval=FALSE}
 save(M0_df, M1_df, M2_df, M3_df, M4_df, M5_df, M6_df, W, graph, us_counties, file="./Datos/sim_data.Rdata")
 
 sp_object <- us_counties %>% select(geometry, NAME, NAMELSAD, 

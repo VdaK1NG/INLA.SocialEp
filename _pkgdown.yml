@@ -6,7 +6,7 @@ articles:
   navbar: Vignettes
   contents:
   - simulation
-  - introduction
+  - example
 authors:
   Pablo Escobar-Hernández:
     href: https://github.com/VdaK1NG
