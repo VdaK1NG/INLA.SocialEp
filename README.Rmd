@@ -14,7 +14,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-# mikropml <a href='https://github.com/VdaK1NG/INLA.SocialEp'><img src='man/figures/logo.png' align="right" height="120" /></a>
+# INLA.SocialEp <a href='https://github.com/VdaK1NG/INLA.SocialEp'><img src='man/figures/logo.png' align="right" height="120" /></a>
 
 Package that includes a series of functions acting as a wrapper for several disease mapping methods applied to social epidemiology on INLA.
 
