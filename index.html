@@ -6,6 +6,11 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Implementation of Advanced Social Disease Mapping Techniques in INLA • INLA.SocialEp</title>
+<!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="favicon-96x96.png">
+<link rel="icon" type="”image/svg+xml”" href="favicon.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="icon" sizes="any" href="favicon.ico">
+<link rel="manifest" href="site.webmanifest">
 <script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
@@ -57,8 +62,8 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="section level1">
 <div class="page-header">
-<img src="logo.png" class="logo" alt=""><h1 id="mikropml-">mikropml 
-<a class="anchor" aria-label="anchor" href="#mikropml-"></a>
+<img src="logo.png" class="logo" alt=""><h1 id="inlasocialep-">INLA.SocialEp 
+<a class="anchor" aria-label="anchor" href="#inlasocialep-"></a>
 </h1>
 </div>
 <p>Package that includes a series of functions acting as a wrapper for several disease mapping methods applied to social epidemiology on INLA.</p>
@@ -75,6 +80,10 @@
 <div class="section level3">
 <h3 id="dependencies">Dependencies<a class="anchor" aria-label="anchor" href="#dependencies"></a>
 </h3>
+<p><strong>-Imports</strong>: dplyr,ggraph, spdep, ggplot2, gridExtra, broom, sf, tidyr, scales, SUMMER</p>
+<hr>
+<p><strong>-Suggests</strong>: assertthat, doFuture, forcats</p>
+<hr>
 </div>
 </div>
 <div class="section level2">
@@ -97,6 +106,14 @@
 </h2>
 <p>To cite <code>INLA.SocialEp</code> in publications, use:</p>
 <p>A BibTeX entry for LaTeX users is:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a> <span class="sc">@</span>Manual{,</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>  title <span class="ot">=</span> {INLA.SocialEp<span class="sc">:</span> Implementation of Advanced Social Disease Mapping Techniques <span class="cf">in</span></span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>INLA},</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>  author <span class="ot">=</span> {Pablo Escobar<span class="sc">-</span>Hernández and Francisco Palmí<span class="sc">-</span>Perales and Antonio López<span class="sc">-</span>Quílez},</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>  year <span class="ot">=</span> {<span class="dv">2025</span>},</span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>  note <span class="ot">=</span> {R package version <span class="fl">1.1</span>, commit <span class="dv">0</span>edbfae61f99d7d65045fd9be9dccfd2327445bc},</span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>  url <span class="ot">=</span> {https<span class="sc">:</span><span class="er">//</span>github.com<span class="sc">/</span>VdaK1NG<span class="sc">/</span>INLA.SocialEp},</span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>} </span></code></pre></div>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">

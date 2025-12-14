@@ -1,4 +1,4 @@
-# mikropml
+# INLA.SocialEp
 
 Package that includes a series of functions acting as a wrapper for
 several disease mapping methods applied to social epidemiology on INLA.
@@ -23,6 +23,15 @@ remotes::install_github("VdaK1NG/INLA.SocialEp")
 ```
 
 ### Dependencies
+
+**-Imports**: dplyr,ggraph, spdep, ggplot2, gridExtra, broom, sf, tidyr,
+scales, SUMMER
+
+------------------------------------------------------------------------
+
+**-Suggests**: assertthat, doFuture, forcats
+
+------------------------------------------------------------------------
 
 ## Usage
 
@@ -52,3 +61,14 @@ license](https://creativecommons.org/licenses/by/4.0/).
 To cite `INLA.SocialEp` in publications, use:
 
 A BibTeX entry for LaTeX users is:
+
+``` R
+ @Manual{,
+  title = {INLA.SocialEp: Implementation of Advanced Social Disease Mapping Techniques in
+INLA},
+  author = {Pablo Escobar-Hernández and Francisco Palmí-Perales and Antonio López-Quílez},
+  year = {2025},
+  note = {R package version 1.1, commit 0edbfae61f99d7d65045fd9be9dccfd2327445bc},
+  url = {https://github.com/VdaK1NG/INLA.SocialEp},
+} 
+```
