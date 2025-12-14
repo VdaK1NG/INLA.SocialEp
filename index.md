@@ -1,4 +1,4 @@
-# mikropml [![](reference/figures/logo.png)](https://github.com/VdaK1NG/INLA.SocialEp)
+# mikropml
 
 Package that includes a series of functions acting as a wrapper for
 several disease mapping methods applied to social epidemiology on INLA.
