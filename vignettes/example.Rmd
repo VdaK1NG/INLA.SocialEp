@@ -1,6 +1,6 @@
 ---
 title: "example"
-output: rmarkdown::html_vignette
+output: rmarkdown::html_document
 vignette: >
   %\VignetteIndexEntry{example}
   %\VignetteEngine{knitr::rmarkdown}

@@ -1,7 +1,7 @@
 ---
 title: "Simulation Study - Data Creation"
 author: "P. Escobar-Hernandez, A. López-Quílez, F. Palmí-Perales"
-output: rmarkdown::html_vignette
+output: rmarkdown::html_document
 vignette: >
   %\VignetteIndexEntry{Introduction to mikropml}
   %\VignetteEngine{knitr::rmarkdown}
