@@ -1,6 +1,6 @@
-# Mini OTU abundance dataset - preprocessed
+# TMean Temperature 2023
 
-This is the result of running `preprocess_data("otu_mini_bin")`
+Mean Temperature per US County - Year 2023
 
 ## Usage
 
@@ -10,4 +10,5 @@ temp_data_us_23
 
 ## Format
 
-An object of class `data.frame` with 3107 rows and 7 columns.
+Dataframe Dataframe containing the mean temperature per US county on
+2023

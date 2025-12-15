@@ -112,13 +112,13 @@ Prepare datasets for analysis.
 Several datasets for simulating data.
 
 - [`pop_data_us_23`](https://vdak1ng.github.io/INLA.SocialEp/reference/pop_data_us_23.md)
-  : Small OTU abundance dataset
+  : Population per US County - Year 2023
 - [`temp_data_us_23`](https://vdak1ng.github.io/INLA.SocialEp/reference/temp_data_us_23.md)
-  : Mini OTU abundance dataset - preprocessed
+  : TMean Temperature 2023
 - [`us_county_23`](https://vdak1ng.github.io/INLA.SocialEp/reference/us_county_23.md)
-  : Mini OTU abundance dataset with 3 categorical variables
+  : US County 2023
 - [`sim_sp_ef`](https://vdak1ng.github.io/INLA.SocialEp/reference/sim_sp_ef.md)
-  : Mini OTU abundance dataset
+  : Simulated spatial effects
 
 # Articles
 

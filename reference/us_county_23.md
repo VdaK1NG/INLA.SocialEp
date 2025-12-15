@@ -1,7 +1,6 @@
-# Mini OTU abundance dataset with 3 categorical variables
+# US County 2023
 
-A dataset containing relatives abundances of OTUs for human stool
-samples
+Spatial object coming from a shp file with the US counties
 
 ## Usage
 
@@ -11,6 +10,4 @@ us_county_23
 
 ## Format
 
-A data frame The `dx` column is the colorectal cancer diagnosis:
-adenoma, carcinoma, normal. All other columns are OTU relative
-abundances.
+Spatial Object Spatial object with the US Counties, year 2023
