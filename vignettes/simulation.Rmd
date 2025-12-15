@@ -3,7 +3,7 @@ title: "Simulation Study - Data Creation"
 author: "P. Escobar-Hernandez, A. López-Quílez, F. Palmí-Perales"
 output: rmarkdown::html_document
 vignette: >
-  %\VignetteIndexEntry{Introduction to mikropml}
+  %\VignetteIndexEntry{Simulation Study - Data Creation}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

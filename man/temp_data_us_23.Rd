@@ -3,14 +3,15 @@
 \docType{data}
 \name{temp_data_us_23}
 \alias{temp_data_us_23}
-\title{Mini OTU abundance dataset - preprocessed}
+\title{TMean Temperature 2023}
 \format{
-An object of class \code{data.frame} with 3107 rows and 7 columns.
+Dataframe
+Dataframe containing the mean temperature per US county on 2023
 }
 \usage{
 temp_data_us_23
 }
 \description{
-This is the result of running \code{preprocess_data("otu_mini_bin")}
+Mean Temperature per US County - Year 2023
 }
 \keyword{datasets}

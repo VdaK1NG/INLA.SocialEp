@@ -3,16 +3,15 @@
 \docType{data}
 \name{us_county_23}
 \alias{us_county_23}
-\title{Mini OTU abundance dataset with 3 categorical variables}
+\title{US County 2023}
 \format{
-A data frame
-The \code{dx} column is the colorectal cancer diagnosis: adenoma, carcinoma, normal.
-All other columns are OTU relative abundances.
+Spatial Object
+Spatial object with the US Counties, year 2023
 }
 \usage{
 us_county_23
 }
 \description{
-A dataset containing relatives abundances of OTUs for human stool samples
+Spatial object coming from a shp file with the US counties
 }
 \keyword{datasets}

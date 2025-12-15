@@ -3,18 +3,15 @@
 \docType{data}
 \name{pop_data_us_23}
 \alias{pop_data_us_23}
-\title{Small OTU abundance dataset}
+\title{Population per US County - Year 2023}
 \format{
-A data frame with 60 rows and 61 variables.
-The \code{dx} column is the diagnosis: healthy or cancerous (colorectal).
-All other columns are OTU relative abundances.
+Dataframe
+Dataframe containing the population per US county on 2023
 }
 \usage{
 pop_data_us_23
 }
 \description{
-A dataset containing relatives abundances of 60 OTUs for 60 human stool samples.
-This is a subset of the data provided in \code{extdata/otu_large.csv}, which was
-used in \href{https://journals.asm.org/doi/10.1128/mbio.00434-20}{Topçuoğlu \emph{et al.} 2020}.
+Population per US County - Year 2023
 }
 \keyword{datasets}

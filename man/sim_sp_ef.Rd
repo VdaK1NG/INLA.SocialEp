@@ -3,18 +3,15 @@
 \docType{data}
 \name{sim_sp_ef}
 \alias{sim_sp_ef}
-\title{Mini OTU abundance dataset}
+\title{Simulated spatial effects}
 \format{
-A data frame
-The \code{dx} column is the diagnosis: healthy or cancerous (colorectal).
-All other columns are OTU relative abundances.
+Matrix
+Each column contains one of the simulated spatial effect
 }
 \usage{
 sim_sp_ef
 }
 \description{
-A dataset containing relatives abundances of OTUs for human stool samples
-with a binary outcome, \code{dx}.
-This is a subset of \code{otu_small}.
+A dataset containing simulated spatial effects.
 }
 \keyword{datasets}
