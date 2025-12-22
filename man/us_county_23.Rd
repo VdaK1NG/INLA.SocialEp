@@ -5,7 +5,6 @@
 \alias{us_county_23}
 \title{US County 2023}
 \format{
-Spatial Object
 Spatial object with the US Counties, year 2023
 }
 \usage{

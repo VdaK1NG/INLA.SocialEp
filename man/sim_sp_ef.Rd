@@ -5,7 +5,6 @@
 \alias{sim_sp_ef}
 \title{Simulated spatial effects}
 \format{
-Matrix
 Each column contains one of the simulated spatial effect
 }
 \usage{

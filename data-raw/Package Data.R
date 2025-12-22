@@ -6,6 +6,8 @@ pop_data_us_23 <- read.csv("./data-raw/co-est2023-alldata.csv")
 load("./data-raw/ind_ef.Rdata")
 sim_sp_ef <- ind.ef
 
+load("./data-raw/sp_object_sim.Rdata")
+
 save(us_county_23, file="us_county_23.rda")
 save(temp_data_us_23, file="temp_data_us_23.rda")
 save(pop_data_us_23, file="pop_data_us_23.rda")
@@ -15,3 +17,4 @@ usethis::use_data_raw("us_county_23")
 usethis::use_data_raw("temp_data_us_23")
 usethis::use_data_raw("pop_data_us_23")
 usethis::use_data_raw("sim_sp_ef")
+usethis::use_data_raw("sp_object_sim")

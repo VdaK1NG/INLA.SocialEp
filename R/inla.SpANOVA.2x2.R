@@ -47,11 +47,12 @@
 #' @param save.res Save fitted values or not from the different models, default is TRUE
 #' @param save.random Save values adjusted from the random spatial effects or not from the different models, default is TRUE
 #' @param save.hyper Save hyperparameter values from each individual model, default is TRUE
+#' @param save.mod.data Save modelling data to run the model afterwards
 #' @return List with all the models analyzed and a summary table with the most common performance metrics.
 #' @export
 
 inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, lev.fac2 = NULL, scale.mod=TRUE, sp.prior="sdunif", pc.prec.val = c(1, 0.01),
-                             sp.copy.fixed=TRUE, save.res=TRUE, save.random=TRUE, save.hyper=TRUE) {
+                             sp.copy.fixed=TRUE, save.res=TRUE, save.random=TRUE, save.hyper=TRUE, save.mod.data=TRUE) {
 
   ## Print warnings (warnings are printed as they occur)
   options(warn=1)
@@ -69,7 +70,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   n.areas <- gr$n
 
   ## Get maximum number of groups/diseases
-  n.groups <- prod(n.levels)
+  n.groups <- base::prod(n.levels)
 
   ## Check if obs and exp are the same
   #if (sum(obs) != as.integer(sum(exp))){
@@ -278,13 +279,19 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     f(omega_j, model = "iid")
 
   # Run model in INLA
-  try(ResMod <- inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l1,
+  try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
                      control.inla = list(tolerance.step = 1e-8)))
 
   # Save Data of the Model into list of models
   list_temp <- list()
-  list_temp$Formula <- formula
+
+  if(save.mod.data==TRUE){
+    list_temp$formula <- formula
+    list_temp$alpha <- alpha_f1l1_f2l1
+    list_temp$obs <- OBS_f1l1_f2l1
+    list_temp$exp <- EXP_f1l1_f2l1
+  }
 
   if(exists("ResMod")){
     list_temp$DIC <- ResMod$dic
@@ -382,13 +389,19 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     f(omega_j, model = "iid")
 
   # Run Model
-  try(ResMod <- inla(formula = formula,data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l1,
+  try(ResMod <- INLA::inla(formula = formula,data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
                      control.inla = list(tolerance.step = 1e-8)))
 
   # Save Data of the Model into list of models
   list_temp <- list()
-  list_temp$Formula <- formula
+
+  if(save.mod.data==TRUE){
+    list_temp$formula <- formula
+    list_temp$alpha <- alpha_f1l1_f2l1
+    list_temp$obs <- OBS_f1l1_f2l1
+    list_temp$exp <- EXP_f1l1_f2l1
+  }
 
   if(exists("ResMod")){
     list_temp$DIC <- ResMod$dic
@@ -480,13 +493,19 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     f(omega_j, model = "iid")
 
   ## Run model in INLA
-  try(ResMod <- inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l1,
+  try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
                      control.inla = list(tolerance.step = 1e-5)))
 
   # Save Data of the Model into list of models
   list_temp <- list()
-  list_temp$Formula <- formula
+
+  if(save.mod.data==TRUE){
+    list_temp$formula <- formula
+    list_temp$alpha <- alpha_f1l1_f2l1
+    list_temp$obs <- OBS_f1l1_f2l1
+    list_temp$exp <- EXP_f1l1_f2l1
+  }
 
   if(exists("ResMod")){
     list_temp$DIC <- ResMod$dic
@@ -561,13 +580,19 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     f(omega_j, model = "iid")
 
   ## Run model in INLA
-  try(ResMod <- inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l2_f2l1,
+  try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l2_f2l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
                      control.inla = list(tolerance.step = 1e-5)))
 
   # Save Data of the Model into list of models
   list_temp <- list()
-  list_temp$Formula <- formula
+
+  if(save.mod.data==TRUE){
+    list_temp$formula <- formula
+    list_temp$alpha <- alpha_f1l2_f2l1
+    list_temp$obs <- OBS_f1l2_f2l1
+    list_temp$exp <- EXP_f1l2_f2l1
+  }
 
   if(exists("ResMod")){
     list_temp$DIC <- ResMod$dic
@@ -642,13 +667,19 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     f(omega_j, model = "iid")
 
   ## Run model in INLA
-  try(ResMod <- inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l2,
+  try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l2,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
                      control.inla = list(tolerance.step = 1e-5)))
 
   # Save Data of the Model into list of models
   list_temp <- list()
-  list_temp$Formula <- formula
+
+  if(save.mod.data==TRUE){
+    list_temp$formula <- formula
+    list_temp$alpha <- alpha_f1l1_f2l2
+    list_temp$obs <- OBS_f1l1_f2l2
+    list_temp$exp <- EXP_f1l1_f2l2
+  }
 
   if(exists("ResMod")){
     list_temp$DIC <- ResMod$dic
@@ -723,13 +754,19 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     f(omega_j, model = "iid")
 
   ## Run model in INLA
-  try(ResMod <- inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l2_f2l2,
+  try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l2_f2l2,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
                      control.inla = list(tolerance.step = 1e-5)))
 
   # Save Data of the Model into list of models
   list_temp <- list()
-  list_temp$Formula <- formula
+
+  if(save.mod.data==TRUE){
+    list_temp$formula <- formula
+    list_temp$alpha <- alpha_f1l2_f2l2
+    list_temp$obs <- OBS_f1l2_f2l2
+    list_temp$exp <- EXP_f1l2_f2l2
+  }
 
   if(exists("ResMod")){
     list_temp$DIC <- ResMod$dic
@@ -831,13 +868,19 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     f(omega_j, model = "iid")
 
   ## Run model in INLA
-  try(ResMod <- inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l1,
+  try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
                      control.inla = list(tolerance.step = 1e-5)))
 
   # Save Data of the Model into list of models
   list_temp <- list()
-  list_temp$Formula <- formula
+
+  if(save.mod.data==TRUE){
+    list_temp$formula <- formula
+    list_temp$alpha <- alpha_f1l1_f2l1
+    list_temp$obs <- OBS_f1l1_f2l1
+    list_temp$exp <- EXP_f1l1_f2l1
+  }
 
   if(exists("ResMod")){
     list_temp$DIC <- ResMod$dic
@@ -920,13 +963,19 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     f(omega_j, model = "iid")
 
   ## Run model in INLA
-  try(ResMod <- inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l2_f2l1,
+  try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l2_f2l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
                      control.inla = list(tolerance.step = 1e-5)))
 
   # Save Data of the Model into list of models
   list_temp <- list()
-  list_temp$Formula <- formula
+
+  if(save.mod.data==TRUE){
+    list_temp$formula <- formula
+    list_temp$alpha <- alpha_f1l2_f2l1
+    list_temp$obs <- OBS_f1l2_f2l1
+    list_temp$exp <- EXP_f1l2_f2l1
+  }
 
   if(exists("ResMod")){
     list_temp$DIC <- ResMod$dic
@@ -1022,13 +1071,19 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     f(omega_j, model = "iid")
 
   ## Run model in INLA
-  try(ResMod <- inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l1,
+  try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
                      control.inla = list(tolerance.step = 1e-5)))
 
   # Save Data of the Model into list of models
   list_temp <- list()
-  list_temp$Formula <- formula
+
+  if(save.mod.data==TRUE){
+    list_temp$formula <- formula
+    list_temp$alpha <- alpha_f1l1_f2l1
+    list_temp$obs <- OBS_f1l1_f2l1
+    list_temp$exp <- EXP_f1l1_f2l1
+  }
 
   if(exists("ResMod")){
     list_temp$DIC <- ResMod$dic
@@ -1111,13 +1166,19 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     f(omega_j, model = "iid")
 
   ## Run model in INLA
-  try(ResMod <- inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l2,
+  try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l2,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
                      control.inla = list(tolerance.step = 1e-5)))
 
   # Save Data of the Model into list of models
   list_temp <- list()
-  list_temp$Formula <- formula
+
+  if(save.mod.data==TRUE){
+    list_temp$formula <- formula
+    list_temp$alpha <- alpha_f1l1_f2l2
+    list_temp$obs <- OBS_f1l1_f2l2
+    list_temp$exp <- EXP_f1l1_f2l2
+  }
 
   if(exists("ResMod")){
     list_temp$DIC <- ResMod$dic
@@ -1232,13 +1293,19 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     f(omega_j, model = "iid")
 
   ## Run model in INLA
-  try(ResMod <- inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l1,
+  try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
                      control.inla = list(tolerance.step = 1e-5)))
 
   # Save Data of the Model into list of models
   list_temp <- list()
-  list_temp$Formula <- formula
+
+  if(save.mod.data==TRUE){
+    list_temp$formula <- formula
+    list_temp$alpha <- alpha_f1l1_f2l1
+    list_temp$obs <- OBS_f1l1_f2l1
+    list_temp$exp <- EXP_f1l1_f2l1
+  }
 
   if(exists("ResMod")){
     list_temp$DIC <- ResMod$dic
@@ -1291,7 +1358,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   names(data.models)[length(data.models)] <- "M5"
   rm(list_temp)
 
-  setTxtProgressBar(pb, 1)
+  utils::setTxtProgressBar(pb, 1)
 
   ### F1L2-F2L1 ---------------------------------------------------------------------------------------------------------------------
 
@@ -1330,13 +1397,19 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     f(omega_j, model = "iid")
 
   ## Run model in INLA
-  try(ResMod <- inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l2_f2l1,
+  try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l2_f2l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
                      control.inla = list(tolerance.step = 1e-5)))
 
   # Save Data of the Model into list of models
   list_temp <- list()
-  list_temp$Formula <- formula
+
+  if(save.mod.data==TRUE){
+    list_temp$formula <- formula
+    list_temp$alpha <- alpha_f1l2_f2l1
+    list_temp$obs <- OBS_f1l2_f2l1
+    list_temp$exp <- EXP_f1l2_f2l1
+  }
 
   if(exists("ResMod")){
     list_temp$DIC <- ResMod$dic
@@ -1389,7 +1462,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   names(data.models)[length(data.models)] <- "M5"
   rm(list_temp)
 
-  setTxtProgressBar(pb, 2)
+  utils::setTxtProgressBar(pb, 2)
 
   ### F1L1-F2L2 ---------------------------------------------------------------------------------------------------------------------
 
@@ -1428,13 +1501,19 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     f(omega_j, model = "iid")
 
   ## Run model in INLA
-  try(ResMod <- inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l2,
+  try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l2,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
                      control.inla = list(tolerance.step = 1e-5)))
 
   # Save Data of the Model into list of models
   list_temp <- list()
-  list_temp$Formula <- formula
+
+  if(save.mod.data==TRUE){
+    list_temp$formula <- formula
+    list_temp$alpha <- alpha_f1l1_f2l2
+    list_temp$obs <- OBS_f1l1_f2l2
+    list_temp$exp <- EXP_f1l1_f2l2
+  }
 
   if(exists("ResMod")){
     list_temp$DIC <- ResMod$dic
@@ -1488,7 +1567,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   names(data.models)[length(data.models)] <- "M5"
   rm(list_temp)
 
-  setTxtProgressBar(pb, 3)
+  utils::setTxtProgressBar(pb, 3)
 
   ### F1L2-F2L2 ---------------------------------------------------------------------------------------------------------------------
 
@@ -1527,13 +1606,19 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     f(omega_j, model = "iid")
 
   ## Run model in INLA
-  try(ResMod <- inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l2_f2l2,
+  try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l2_f2l2,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
                      control.inla = list(tolerance.step = 1e-5)))
 
   # Save Data of the Model into list of models
   list_temp <- list()
-  list_temp$Formula <- formula
+
+  if(save.mod.data==TRUE){
+    list_temp$formula <- formula
+    list_temp$alpha <- alpha_f1l2_f2l2
+    list_temp$obs <- OBS_f1l2_f2l2
+    list_temp$exp <- EXP_f1l2_f2l2
+  }
 
   if(exists("ResMod")){
     list_temp$DIC <- ResMod$dic
@@ -1586,7 +1671,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   names(data.models)[length(data.models)] <- "M5"
   rm(list_temp)
 
-  setTxtProgressBar(pb, 4)
+  utils::setTxtProgressBar(pb, 4)
 
   cat("\n-/-/-/-/-/-/-/-/-/- M5 finished -/-/-/-/-/-/-/-/-/-\n")
 
@@ -1660,13 +1745,19 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     f(omega_j, model = "iid")
 
   ## Run model in INLA
-  try(ResMod <- inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l1,
+  try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
                      control.inla = list(tolerance.step = 1e-5)))
 
   # Save Data of the Model into list of models
   list_temp <- list()
-  list_temp$Formula <- formula
+
+  if(save.mod.data==TRUE){
+    list_temp$formula <- formula
+    list_temp$alpha <- alpha_f1l1_f2l1
+    list_temp$obs <- OBS_f1l1_f2l1
+    list_temp$exp <- EXP_f1l1_f2l1
+  }
 
   if(exists("ResMod")){
     list_temp$DIC <- ResMod$dic
@@ -1719,7 +1810,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   names(data.models)[length(data.models)] <- "M6"
   rm(list_temp)
 
-  setTxtProgressBar(pb, 1)
+  utils::setTxtProgressBar(pb, 1)
 
   ### F1L2-F2L1 ---------------------------------------------------------------------------------------------------------------------
 
@@ -1764,13 +1855,19 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     f(omega_j, model = "iid")
 
   ## Run model in INLA
-  try(ResMod <- inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l2_f2l1,
+  try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l2_f2l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
                      control.inla = list(tolerance.step = 1e-5)))
 
   # Save Data of the Model into list of models
   list_temp <- list()
-  list_temp$Formula <- formula
+
+  if(save.mod.data==TRUE){
+    list_temp$formula <- formula
+    list_temp$alpha <- alpha_f1l2_f2l1
+    list_temp$obs <- OBS_f1l2_f2l1
+    list_temp$exp <- EXP_f1l2_f2l1
+  }
 
   if(exists("ResMod")){
     list_temp$DIC <- ResMod$dic
@@ -1823,7 +1920,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   names(data.models)[length(data.models)] <- "M6"
   rm(list_temp)
 
-  setTxtProgressBar(pb, 2)
+  utils::setTxtProgressBar(pb, 2)
 
   ### F1L1-F2L2 ---------------------------------------------------------------------------------------------------------------------
 
@@ -1868,13 +1965,19 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     f(omega_j, model = "iid")
 
   ## Run model in INLA
-  try(ResMod <- inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l2,
+  try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l2,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
                      control.inla = list(tolerance.step = 1e-5)))
 
   # Save Data of the Model into list of models
   list_temp <- list()
-  list_temp$Formula <- formula
+
+  if(save.mod.data==TRUE){
+    list_temp$formula <- formula
+    list_temp$alpha <- alpha_f1l1_f2l2
+    list_temp$obs <- OBS_f1l1_f2l2
+    list_temp$exp <- EXP_f1l1_f2l2
+  }
 
   if(exists("ResMod")){
     list_temp$DIC <- ResMod$dic
@@ -1927,7 +2030,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   names(data.models)[length(data.models)] <- "M6"
   rm(list_temp)
 
-  setTxtProgressBar(pb, 3)
+  utils::setTxtProgressBar(pb, 3)
 
   ### F1L2-F2L2 ---------------------------------------------------------------------------------------------------------------------
 
@@ -1972,13 +2075,19 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     f(omega_j, model = "iid")
 
   ## Run model in INLA
-  try(ResMod <- inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l2_f2l2,
+  try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l2_f2l2,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
                      control.inla = list(tolerance.step = 1e-5)))
 
   # Save Data of the Model into list of models
   list_temp <- list()
-  list_temp$Formula <- formula
+
+  if(save.mod.data==TRUE){
+    list_temp$formula <- formula
+    list_temp$alpha <- alpha_f1l2_f2l2
+    list_temp$obs <- OBS_f1l2_f2l2
+    list_temp$exp <- EXP_f1l2_f2l2
+  }
 
   if(exists("ResMod")){
     list_temp$DIC <- ResMod$dic
@@ -2031,7 +2140,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   names(data.models)[length(data.models)] <- "M6"
   rm(list_temp)
 
-  setTxtProgressBar(pb, 4)
+  utils::setTxtProgressBar(pb, 4)
 
   ### F2L1-F1L1 ---------------------------------------------------------------------------------------------------------------------
 
@@ -2076,13 +2185,19 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     f(omega_j, model = "iid")
 
   ## Run model in INLA
-  try(ResMod <- inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f2l1_f1l1,
+  try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f2l1_f1l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
                      control.inla = list(tolerance.step = 1e-5)))
 
   # Save Data of the Model into list of models
   list_temp <- list()
-  list_temp$Formula <- formula
+
+  if(save.mod.data==TRUE){
+      list_temp$formula <- formula
+      list_temp$alpha <- alpha_f2l1_f1l1
+      list_temp$obs <- OBS_f2l1_f1l1
+      list_temp$exp <- EXP_f2l1_f1l1
+    }
 
   if(exists("ResMod")){
     list_temp$DIC <- ResMod$dic
@@ -2135,7 +2250,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   names(data.models)[length(data.models)] <- "M6"
   rm(list_temp)
 
-  setTxtProgressBar(pb, 5)
+  utils::setTxtProgressBar(pb, 5)
 
   ### F2L2-F1L1 ---------------------------------------------------------------------------------------------------------------------
 
@@ -2180,13 +2295,19 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     f(omega_j, model = "iid")
 
   ## Run model in INLA
-  try(ResMod <- inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f2l2_f1l1,
+  try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f2l2_f1l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
                      control.inla = list(tolerance.step = 1e-5)))
 
   # Save Data of the Model into list of models
   list_temp <- list()
-  list_temp$Formula <- formula
+
+  if(save.mod.data==TRUE){
+    list_temp$formula <- formula
+    list_temp$alpha <- alpha_f2l2_f1l1
+    list_temp$obs <- OBS_f2l2_f1l1
+    list_temp$exp <- EXP_f2l2_f1l1
+  }
 
   if(exists("ResMod")){
     list_temp$DIC <- ResMod$dic
@@ -2239,7 +2360,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   names(data.models)[length(data.models)] <- "M6"
   rm(list_temp)
 
-  setTxtProgressBar(pb, 6)
+  utils::setTxtProgressBar(pb, 6)
 
   ### F2L1-F1L2 ---------------------------------------------------------------------------------------------------------------------
 
@@ -2284,13 +2405,19 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     f(omega_j, model = "iid")
 
   ## Run model in INLA
-  try(ResMod <- inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f2l1_f1l2,
+  try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f2l1_f1l2,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
                      control.inla = list(tolerance.step = 1e-5)))
 
   # Save Data of the Model into list of models
   list_temp <- list()
-  list_temp$Formula <- formula
+
+  if(save.mod.data==TRUE){
+    list_temp$formula <- formula
+    list_temp$alpha <- alpha_f2l1_f1l2
+    list_temp$obs <- OBS_f2l1_f1l2
+    list_temp$exp <- EXP_f2l1_f1l2
+  }
 
   if(exists("ResMod")){
     list_temp$DIC <- ResMod$dic
@@ -2343,7 +2470,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   names(data.models)[length(data.models)] <- "M6"
   rm(list_temp)
 
-  setTxtProgressBar(pb, 7)
+  utils::setTxtProgressBar(pb, 7)
 
   ### F2L2-F2L2 ---------------------------------------------------------------------------------------------------------------------
 
@@ -2388,13 +2515,19 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     f(omega_j, model = "iid")
 
   ## Run model in INLA
-  try(ResMod <- inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f2l2_f1l2,
+  try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f2l2_f1l2,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
                      control.inla = list(tolerance.step = 1e-5)))
 
   # Save Data of the Model into list of models
   list_temp <- list()
-  list_temp$Formula <- formula
+
+  if(save.mod.data==TRUE){
+    list_temp$formula <- formula
+    list_temp$alpha <- alpha_f2l2_f1l2
+    list_temp$obs <- OBS_f2l2_f1l2
+    list_temp$exp <- EXP_f2l2_f1l2
+  }
 
   if(exists("ResMod")){
     list_temp$DIC <- ResMod$dic
@@ -2447,7 +2580,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   names(data.models)[length(data.models)] <- "M6"
   rm(list_temp)
 
-  setTxtProgressBar(pb, 8)
+  utils::setTxtProgressBar(pb, 8)
 
   cat("\n-/-/-/-/-/-/-/-/-/- M6 finished -/-/-/-/-/-/-/-/-/-\n")
 
@@ -2613,6 +2746,8 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   names(data.models)[22] <- paste0("M6.", fac.names[2], "(", lev.fac2[2],")", "*", fac.names[1], "(", lev.fac1[2],")")
 
   data_summary <- data.frame(
+    "NUMBER"=1:22,
+
     "MODEL"=c("M0", "M1",
               paste0("M2-ind(", lev.fac1[1], "-", lev.fac2[1], ")"), paste0("M2-ind(", lev.fac1[2], "-", lev.fac2[1], ")"),
               paste0("M2-ind(", lev.fac2[1], "-", lev.fac1[2], ")"), paste0("M2-ind(", lev.fac2[2], "-", lev.fac1[2], ")"),
@@ -2710,6 +2845,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
 
   data.models[[23]] <- data_summary
   names(data.models)[23] <- "Summary"
+  data.models <- INLA.SocialEp::inla.null.sp(data.models)
   print(data_summary)
 
   # Devolvemos lista con todos los modelos

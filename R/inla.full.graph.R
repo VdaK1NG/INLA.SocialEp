@@ -7,7 +7,7 @@
 #'
 #' @param sp_obj Spatial object in sp form
 #' @param graph Graph object from nb2INLA function
-#' @param snap snap argument for the function poly2nb
+#' @param snap Snap argument for the function poly2nb
 #' @param distance_by Choices are perimeter and centroid
 #' @return List including three different objects: the adjacency object, the edited graph and a dataframe with the changes applied
 #' @export

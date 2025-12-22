@@ -32,7 +32,9 @@ reference:
 - title: INLA Model Wrappers
   desc: |
     Wrapper functions for several advanced disease mapping models in INLA.
-  contents: inla.SpANOVA.2x2
+  contents:
+  - inla.SpANOVA.2x2
+  - inla.rerun.SpANOVA
 - title: Model evaluation
   desc: |
     Evaluate and interpret models.
@@ -45,7 +47,10 @@ reference:
 - title: Accessory Functions
   desc: |
     Prepare datasets for analysis.
-  contents: inla.full.graph
+  contents:
+  - inla.full.graph
+  - convert_col
+  - plot.SpANOVA
 - title: Package Data
 - subtitle: Datasets
   desc: |
@@ -55,4 +60,5 @@ reference:
   - temp_data_us_23
   - us_county_23
   - sim_sp_ef
+  - sp_object_sim
 

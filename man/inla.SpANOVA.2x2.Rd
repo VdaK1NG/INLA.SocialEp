@@ -17,7 +17,8 @@ inla.SpANOVA.2x2(
   sp.copy.fixed = TRUE,
   save.res = TRUE,
   save.random = TRUE,
-  save.hyper = TRUE
+  save.hyper = TRUE,
+  save.mod.data = TRUE
 )
 }
 \arguments{
@@ -46,6 +47,8 @@ inla.SpANOVA.2x2(
 \item{save.random}{Save values adjusted from the random spatial effects or not from the different models, default is TRUE}
 
 \item{save.hyper}{Save hyperparameter values from each individual model, default is TRUE}
+
+\item{save.mod.data}{Save modelling data to run the model afterwards}
 }
 \value{
 List with all the models analyzed and a summary table with the most common performance metrics.

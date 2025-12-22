@@ -17,7 +17,7 @@ inla.full.graph(
 
 \item{graph}{Graph object from nb2INLA function}
 
-\item{snap}{snap argument for the function poly2nb}
+\item{snap}{Snap argument for the function poly2nb}
 
 \item{distance_by}{Choices are perimeter and centroid}
 }

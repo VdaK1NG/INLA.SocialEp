@@ -11,7 +11,7 @@ vignette: >
 <div style="text-align: justify">
 
 ```{r echo=FALSE}
-knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, fig.align = "center", fig.width = 12)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, fig.align = "center")
 options(knitr.kable.NA = '---') # Celdas vacías en la tabla se rellenan con ---
 ```
 
@@ -2911,17 +2911,14 @@ grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
 |       Lastly, we save all the necessary objects that we will be using in the analysis part and the results part.
 
 ```{r echo=TRUE, eval=FALSE}
-save(M0_df, M1_df, M2_df, M3_df, M4_df, M5_df, M6_df, W, graph, us_counties, file="./Datos/sim_data.Rdata")
+sp_object_sim <- us_counties 
+sp_object_sim$ind.ef.g1 <- ind.ef.g1
+sp_object_sim$ind.ef.g2 <- ind.ef.g2
+sp_object_sim$ind.ef.g3 <- ind.ef.g3
+sp_object_sim$ind.ef.g4 <- ind.ef.g4
+sp_object_sim$EXP <- EXP[1:3107]
 
-sp_object <- us_counties %>% select(geometry, NAME, NAMELSAD, 
-                                    group1_dif_risk, group2_dif_risk, group3_dif_risk, group4_dif_risk, group1_sim_risk, group2_sim_risk, group3_sim_risk, group4_sim_risk, 
-                                    Temp_Scale, POP_DENS_Scale)
-sp_object$ind.ef.g2 <- ind.ef.g2
-sp_object$ind.ef.g1 <- ind.ef.g1
-sp_object$ind.ef.g3 <- ind.ef.g3
-sp_object$ind.ef.g4 <- ind.ef.g4
-save(sp_object, file="./Datos/sp_object.Rdata")
-save(data_risk, file="./Datos/risk_sim.Rdata")
+save(sp_object_sim, file="./Datos/sp_object_sim.Rdata")
 ```
 
 ***

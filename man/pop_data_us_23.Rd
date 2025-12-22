@@ -5,7 +5,6 @@
 \alias{pop_data_us_23}
 \title{Population per US County - Year 2023}
 \format{
-Dataframe
 Dataframe containing the population per US county on 2023
 }
 \usage{

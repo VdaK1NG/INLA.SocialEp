@@ -3,9 +3,8 @@
 \docType{data}
 \name{temp_data_us_23}
 \alias{temp_data_us_23}
-\title{TMean Temperature 2023}
+\title{Mean Temperature 2023}
 \format{
-Dataframe
 Dataframe containing the mean temperature per US county on 2023
 }
 \usage{
