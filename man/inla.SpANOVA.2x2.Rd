@@ -15,10 +15,12 @@ inla.SpANOVA.2x2(
   sp.prior = "sdunif",
   pc.prec.val = c(1, 0.01),
   sp.copy.fixed = TRUE,
-  save.res = TRUE,
+  save.res = FALSE,
   save.random = TRUE,
   save.hyper = TRUE,
-  save.mod.data = TRUE
+  save.fixed = TRUE,
+  save.mod.data = FALSE,
+  verbose.INLA = FALSE
 )
 }
 \arguments{
@@ -48,7 +50,11 @@ inla.SpANOVA.2x2(
 
 \item{save.hyper}{Save hyperparameter values from each individual model, default is TRUE}
 
+\item{save.fixed}{Save values adjusted from the fixed effects or not from the different models, default is TRUE}
+
 \item{save.mod.data}{Save modelling data to run the model afterwards}
+
+\item{verbose.INLA}{Verbose option for INLA, default is FALSE}
 }
 \value{
 List with all the models analyzed and a summary table with the most common performance metrics.

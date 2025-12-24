@@ -46,13 +46,15 @@
 #' @param sp.copy.fixed Fix copied values for the random spatial effects, default is TRUE
 #' @param save.res Save fitted values or not from the different models, default is TRUE
 #' @param save.random Save values adjusted from the random spatial effects or not from the different models, default is TRUE
+#' @param save.fixed Save values adjusted from the fixed effects or not from the different models, default is TRUE
 #' @param save.hyper Save hyperparameter values from each individual model, default is TRUE
+#' @param verbose.INLA Verbose option for INLA, default is FALSE
 #' @param save.mod.data Save modelling data to run the model afterwards
 #' @return List with all the models analyzed and a summary table with the most common performance metrics.
 #' @export
 
 inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, lev.fac2 = NULL, scale.mod=TRUE, sp.prior="sdunif", pc.prec.val = c(1, 0.01),
-                             sp.copy.fixed=TRUE, save.res=TRUE, save.random=TRUE, save.hyper=TRUE, save.mod.data=TRUE) {
+                             sp.copy.fixed=TRUE, save.res=FALSE, save.random=TRUE, save.hyper=TRUE, save.fixed=TRUE, save.mod.data=FALSE, verbose.INLA=FALSE) {
 
   ## Print warnings (warnings are printed as they occur)
   options(warn=1)
@@ -281,16 +283,16 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   # Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-8)))
+                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
 
   if(save.mod.data==TRUE){
     list_temp$formula <- formula
-    list_temp$alpha <- alpha_f1l1_f2l1
-    list_temp$obs <- OBS_f1l1_f2l1
-    list_temp$exp <- EXP_f1l1_f2l1
+    list_temp$alpha <- data.INLA$alpha_f1l1_f2l1
+    list_temp$obs <- data.INLA$OBS_f1l1_f2l1
+    list_temp$exp <- data.INLA$EXP_f1l1_f2l1
   }
 
   if(exists("ResMod")){
@@ -315,6 +317,9 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     # Extract Residuals
     if(save.res==TRUE){list_temp$residuals <- ResMod$residuals$deviance.residuals}
 
+    # Extract Random Fixed
+    if(save.fixed==TRUE){list_temp$summary.fixed <- ResMod$summary.fixed}
+
     # Extract Random Effects
     if(save.random==TRUE){list_temp$summary.random <- ResMod$summary.random}
 
@@ -323,6 +328,8 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
 
     # Extract RME for each group
     list_temp$RME <- ResMod$summary.fitted.values$mean
+
+    # Clean Environment
     rm(ResMod)
 
   } else {
@@ -336,6 +343,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$residuals <- NA
     list_temp$RME <- NA
     list_temp$summary.random <- NA
+    list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
   }
@@ -391,16 +399,16 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   # Run Model
   try(ResMod <- INLA::inla(formula = formula,data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-8)))
+                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
 
   if(save.mod.data==TRUE){
     list_temp$formula <- formula
-    list_temp$alpha <- alpha_f1l1_f2l1
-    list_temp$obs <- OBS_f1l1_f2l1
-    list_temp$exp <- EXP_f1l1_f2l1
+    list_temp$alpha <- data.INLA$alpha_f1l1_f2l1
+    list_temp$obs <- data.INLA$OBS_f1l1_f2l1
+    list_temp$exp <- data.INLA$EXP_f1l1_f2l1
   }
 
   if(exists("ResMod")){
@@ -428,11 +436,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     # Extract Random Effects
     if(save.random==TRUE){list_temp$summary.random <- ResMod$summary.random}
 
+    # Extract Random Fixed
+    if(save.fixed==TRUE){list_temp$summary.fixed <- ResMod$summary.fixed}
+
     # Extract Hyperparameters
     if(save.hyper==TRUE){list_temp$summary.hyperpar <- ResMod$summary.hyperpar}
 
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
+
+    # Clean Environment
+    rm(ResMod)
 
   } else {
     list_temp$DIC$dic <- NA
@@ -445,6 +459,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$residuals <- NA
     list_temp$RME <- NA
     list_temp$summary.random <- NA
+    list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
   }
@@ -495,16 +510,16 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-5)))
+                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
 
   if(save.mod.data==TRUE){
     list_temp$formula <- formula
-    list_temp$alpha <- alpha_f1l1_f2l1
-    list_temp$obs <- OBS_f1l1_f2l1
-    list_temp$exp <- EXP_f1l1_f2l1
+    list_temp$alpha <- data.INLA$alpha_f1l1_f2l1
+    list_temp$obs <- data.INLA$OBS_f1l1_f2l1
+    list_temp$exp <- data.INLA$EXP_f1l1_f2l1
   }
 
   if(exists("ResMod")){
@@ -532,11 +547,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     # Extract Random Effects
     if(save.random==TRUE){list_temp$summary.random <- ResMod$summary.random}
 
+    # Extract Random Fixed
+    if(save.fixed==TRUE){list_temp$summary.fixed <- ResMod$summary.fixed}
+
     # Extract Hyperparameters
     if(save.hyper==TRUE){list_temp$summary.hyperpar <- ResMod$summary.hyperpar}
 
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
+
+    # Clean Environment
+    rm(ResMod)
 
   } else {
     list_temp$DIC$dic <- NA
@@ -549,6 +570,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$residuals <- NA
     list_temp$RME <- NA
     list_temp$summary.random <- NA
+    list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
   }
@@ -582,16 +604,16 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l2_f2l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-5)))
+                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
 
   if(save.mod.data==TRUE){
     list_temp$formula <- formula
-    list_temp$alpha <- alpha_f1l2_f2l1
-    list_temp$obs <- OBS_f1l2_f2l1
-    list_temp$exp <- EXP_f1l2_f2l1
+    list_temp$alpha <- data.INLA$alpha_f1l2_f2l1
+    list_temp$obs <- data.INLA$OBS_f1l2_f2l1
+    list_temp$exp <- data.INLA$EXP_f1l2_f2l1
   }
 
   if(exists("ResMod")){
@@ -619,11 +641,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     # Extract Random Effects
     if(save.random==TRUE){list_temp$summary.random <- ResMod$summary.random}
 
+    # Extract Random Fixed
+    if(save.fixed==TRUE){list_temp$summary.fixed <- ResMod$summary.fixed}
+
     # Extract Hyperparameters
     if(save.hyper==TRUE){list_temp$summary.hyperpar <- ResMod$summary.hyperpar}
 
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
+
+    # Clean Environment
+    rm(ResMod)
 
   } else {
     list_temp$DIC$dic <- NA
@@ -636,6 +664,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$residuals <- NA
     list_temp$RME <- NA
     list_temp$summary.random <- NA
+    list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
   }
@@ -669,16 +698,16 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l2,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-5)))
+                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
 
   if(save.mod.data==TRUE){
     list_temp$formula <- formula
-    list_temp$alpha <- alpha_f1l1_f2l2
-    list_temp$obs <- OBS_f1l1_f2l2
-    list_temp$exp <- EXP_f1l1_f2l2
+    list_temp$alpha <- data.INLA$alpha_f1l1_f2l2
+    list_temp$obs <- data.INLA$OBS_f1l1_f2l2
+    list_temp$exp <- data.INLA$EXP_f1l1_f2l2
   }
 
   if(exists("ResMod")){
@@ -706,11 +735,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     # Extract Random Effects
     if(save.random==TRUE){list_temp$summary.random <- ResMod$summary.random}
 
+    # Extract Random Fixed
+    if(save.fixed==TRUE){list_temp$summary.fixed <- ResMod$summary.fixed}
+
     # Extract Hyperparameters
     if(save.hyper==TRUE){list_temp$summary.hyperpar <- ResMod$summary.hyperpar}
 
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
+
+    # Clean Environment
+    rm(ResMod)
 
   } else {
     list_temp$DIC$dic <- NA
@@ -723,6 +758,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$residuals <- NA
     list_temp$RME <- NA
     list_temp$summary.random <- NA
+    list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
   }
@@ -756,16 +792,16 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l2_f2l2,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-5)))
+                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
 
   if(save.mod.data==TRUE){
     list_temp$formula <- formula
-    list_temp$alpha <- alpha_f1l2_f2l2
-    list_temp$obs <- OBS_f1l2_f2l2
-    list_temp$exp <- EXP_f1l2_f2l2
+    list_temp$alpha <- data.INLA$alpha_f1l2_f2l2
+    list_temp$obs <- data.INLA$OBS_f1l2_f2l2
+    list_temp$exp <- data.INLA$EXP_f1l2_f2l2
   }
 
   if(exists("ResMod")){
@@ -793,11 +829,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     # Extract Random Effects
     if(save.random==TRUE){list_temp$summary.random <- ResMod$summary.random}
 
+    # Extract Random Fixed
+    if(save.fixed==TRUE){list_temp$summary.fixed <- ResMod$summary.fixed}
+
     # Extract Hyperparameters
     if(save.hyper==TRUE){list_temp$summary.hyperpar <- ResMod$summary.hyperpar}
 
     ## Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
+
+    # Clean Environment
+    rm(ResMod)
 
   } else {
     list_temp$DIC$dic <- NA
@@ -810,6 +852,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$residuals <- NA
     list_temp$RME <- NA
     list_temp$summary.random <- NA
+    list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
   }
@@ -870,16 +913,16 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-5)))
+                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
 
   if(save.mod.data==TRUE){
     list_temp$formula <- formula
-    list_temp$alpha <- alpha_f1l1_f2l1
-    list_temp$obs <- OBS_f1l1_f2l1
-    list_temp$exp <- EXP_f1l1_f2l1
+    list_temp$alpha <- data.INLA$alpha_f1l1_f2l1
+    list_temp$obs <- data.INLA$OBS_f1l1_f2l1
+    list_temp$exp <- data.INLA$EXP_f1l1_f2l1
   }
 
   if(exists("ResMod")){
@@ -907,11 +950,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     # Extract Random Effects
     if(save.random==TRUE){list_temp$summary.random <- ResMod$summary.random}
 
+    # Extract Random Fixed
+    if(save.fixed==TRUE){list_temp$summary.fixed <- ResMod$summary.fixed}
+
     # Extract Hyperparameters
     if(save.hyper==TRUE){list_temp$summary.hyperpar <- ResMod$summary.hyperpar}
 
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
+
+    # Clean Environment
+    rm(ResMod)
 
   } else {
     list_temp$DIC$dic <- NA
@@ -924,6 +973,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$residuals <- NA
     list_temp$RME <- NA
     list_temp$summary.random <- NA
+    list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
   }
@@ -965,16 +1015,16 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l2_f2l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-5)))
+                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
-  list_temp <- list()
+  list_temp <- list() = verbose.INLA
 
   if(save.mod.data==TRUE){
     list_temp$formula <- formula
-    list_temp$alpha <- alpha_f1l2_f2l1
-    list_temp$obs <- OBS_f1l2_f2l1
-    list_temp$exp <- EXP_f1l2_f2l1
+    list_temp$alpha <- data.INLA$alpha_f1l2_f2l1
+    list_temp$obs <- data.INLA$OBS_f1l2_f2l1
+    list_temp$exp <- data.INLA$EXP_f1l2_f2l1
   }
 
   if(exists("ResMod")){
@@ -1002,11 +1052,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     # Extract Random Effects
     if(save.random==TRUE){list_temp$summary.random <- ResMod$summary.random}
 
+    # Extract Random Fixed
+    if(save.fixed==TRUE){list_temp$summary.fixed <- ResMod$summary.fixed}
+
     # Extract Hyperparameters
     if(save.hyper==TRUE){list_temp$summary.hyperpar <- ResMod$summary.hyperpar}
 
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
+
+    # Clean Environment
+    rm(ResMod)
 
   } else {
     list_temp$DIC$dic <- NA
@@ -1019,6 +1075,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$residuals <- NA
     list_temp$RME <- NA
     list_temp$summary.random <- NA
+    list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
   }
@@ -1073,16 +1130,16 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-5)))
+                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
 
   if(save.mod.data==TRUE){
     list_temp$formula <- formula
-    list_temp$alpha <- alpha_f1l1_f2l1
-    list_temp$obs <- OBS_f1l1_f2l1
-    list_temp$exp <- EXP_f1l1_f2l1
+    list_temp$alpha <- data.INLA$alpha_f1l1_f2l1
+    list_temp$obs <- data.INLA$OBS_f1l1_f2l1
+    list_temp$exp <- data.INLA$EXP_f1l1_f2l1
   }
 
   if(exists("ResMod")){
@@ -1110,11 +1167,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     # Extract Random Effects
     if(save.random==TRUE){list_temp$summary.random <- ResMod$summary.random}
 
+    # Extract Random Fixed
+    if(save.fixed==TRUE){list_temp$summary.fixed <- ResMod$summary.fixed}
+
     # Extract Hyperparameters
     if(save.hyper==TRUE){list_temp$summary.hyperpar <- ResMod$summary.hyperpar}
 
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
+
+    # Clean Environment
+    rm(ResMod)
 
   } else {
     list_temp$DIC$dic <- NA
@@ -1127,6 +1190,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$residuals <- NA
     list_temp$RME <- NA
     list_temp$summary.random <- NA
+    list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
   }
@@ -1168,16 +1232,16 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l2,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-5)))
+                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
 
   if(save.mod.data==TRUE){
     list_temp$formula <- formula
-    list_temp$alpha <- alpha_f1l1_f2l2
-    list_temp$obs <- OBS_f1l1_f2l2
-    list_temp$exp <- EXP_f1l1_f2l2
+    list_temp$alpha <- data.INLA$alpha_f1l1_f2l2
+    list_temp$obs <- data.INLA$OBS_f1l1_f2l2
+    list_temp$exp <- data.INLA$EXP_f1l1_f2l2
   }
 
   if(exists("ResMod")){
@@ -1205,11 +1269,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     # Extract Random Effects
     if(save.random==TRUE){list_temp$summary.random <- ResMod$summary.random}
 
+    # Extract Random Fixed
+    if(save.fixed==TRUE){list_temp$summary.fixed <- ResMod$summary.fixed}
+
     # Extract Hyperparameters
     if(save.hyper==TRUE){list_temp$summary.hyperpar <- ResMod$summary.hyperpar}
 
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
+
+    # Clean Environment
+    rm(ResMod)
 
   } else {
     list_temp$DIC$dic <- NA
@@ -1222,6 +1292,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$residuals <- NA
     list_temp$RME <- NA
     list_temp$summary.random <- NA
+    list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
   }
@@ -1295,16 +1366,16 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-5)))
+                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
 
   if(save.mod.data==TRUE){
     list_temp$formula <- formula
-    list_temp$alpha <- alpha_f1l1_f2l1
-    list_temp$obs <- OBS_f1l1_f2l1
-    list_temp$exp <- EXP_f1l1_f2l1
+    list_temp$alpha <- data.INLA$alpha_f1l1_f2l1
+    list_temp$obs <- data.INLA$OBS_f1l1_f2l1
+    list_temp$exp <- data.INLA$EXP_f1l1_f2l1
   }
 
   if(exists("ResMod")){
@@ -1332,11 +1403,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     # Extract Random Effects
     if(save.random==TRUE){list_temp$summary.random <- ResMod$summary.random}
 
+    # Extract Random Fixed
+    if(save.fixed==TRUE){list_temp$summary.fixed <- ResMod$summary.fixed}
+
     # Extract Hyperparameters
     if(save.hyper==TRUE){list_temp$summary.hyperpar <- ResMod$summary.hyperpar}
 
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
+
+    # Clean Environment
+    rm(ResMod)
 
   } else {
     list_temp$DIC$dic <- NA
@@ -1349,6 +1426,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$residuals <- NA
     list_temp$RME <- NA
     list_temp$summary.random <- NA
+    list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
   }
@@ -1399,16 +1477,16 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l2_f2l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-5)))
+                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
 
   if(save.mod.data==TRUE){
     list_temp$formula <- formula
-    list_temp$alpha <- alpha_f1l2_f2l1
-    list_temp$obs <- OBS_f1l2_f2l1
-    list_temp$exp <- EXP_f1l2_f2l1
+    list_temp$alpha <- data.INLA$alpha_f1l2_f2l1
+    list_temp$obs <- data.INLA$OBS_f1l2_f2l1
+    list_temp$exp <- data.INLA$EXP_f1l2_f2l1
   }
 
   if(exists("ResMod")){
@@ -1436,11 +1514,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     # Extract Random Effects
     if(save.random==TRUE){list_temp$summary.random <- ResMod$summary.random}
 
+    # Extract Random Fixed
+    if(save.fixed==TRUE){list_temp$summary.fixed <- ResMod$summary.fixed}
+
     # Extract Hyperparameters
     if(save.hyper==TRUE){list_temp$summary.hyperpar <- ResMod$summary.hyperpar}
 
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
+
+    # Clean Environment
+    rm(ResMod)
 
   } else {
     list_temp$DIC$dic <- NA
@@ -1453,6 +1537,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$residuals <- NA
     list_temp$RME <- NA
     list_temp$summary.random <- NA
+    list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
   }
@@ -1503,16 +1588,16 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l2,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-5)))
+                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
 
   if(save.mod.data==TRUE){
     list_temp$formula <- formula
-    list_temp$alpha <- alpha_f1l1_f2l2
-    list_temp$obs <- OBS_f1l1_f2l2
-    list_temp$exp <- EXP_f1l1_f2l2
+    list_temp$alpha <- data.INLA$alpha_f1l1_f2l2
+    list_temp$obs <- data.INLA$OBS_f1l1_f2l2
+    list_temp$exp <- data.INLA$EXP_f1l1_f2l2
   }
 
   if(exists("ResMod")){
@@ -1540,11 +1625,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     # Extract Random Effects
     if(save.random==TRUE){list_temp$summary.random <- ResMod$summary.random}
 
+    # Extract Random Fixed
+    if(save.fixed==TRUE){list_temp$summary.fixed <- ResMod$summary.fixed}
+
     # Extract Hyperparameters
     if(save.hyper==TRUE){list_temp$summary.hyperpar <- ResMod$summary.hyperpar}
 
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
+
+    # Clean Environment
+    rm(ResMod)
 
   } else {
     list_temp$DIC$dic <- NA
@@ -1557,6 +1648,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$residuals <- NA
     list_temp$RME <- NA
     list_temp$summary.random <- NA
+    list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
   }
@@ -1608,16 +1700,16 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l2_f2l2,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-5)))
+                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
 
   if(save.mod.data==TRUE){
     list_temp$formula <- formula
-    list_temp$alpha <- alpha_f1l2_f2l2
-    list_temp$obs <- OBS_f1l2_f2l2
-    list_temp$exp <- EXP_f1l2_f2l2
+    list_temp$alpha <- data.INLA$alpha_f1l2_f2l2
+    list_temp$obs <- data.INLA$OBS_f1l2_f2l2
+    list_temp$exp <- data.INLA$EXP_f1l2_f2l2
   }
 
   if(exists("ResMod")){
@@ -1645,11 +1737,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     # Extract Random Effects
     if(save.random==TRUE){list_temp$summary.random <- ResMod$summary.random}
 
+    # Extract Random Fixed
+    if(save.fixed==TRUE){list_temp$summary.fixed <- ResMod$summary.fixed}
+
     # Extract Hyperparameters
     if(save.hyper==TRUE){list_temp$summary.hyperpar <- ResMod$summary.hyperpar}
 
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
+
+    # Clean Environment
+    rm(ResMod)
 
   } else {
     list_temp$DIC$dic <- NA
@@ -1662,6 +1760,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$residuals <- NA
     list_temp$RME <- NA
     list_temp$summary.random <- NA
+    list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
   }
@@ -1747,16 +1846,16 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-5)))
+                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
 
   if(save.mod.data==TRUE){
     list_temp$formula <- formula
-    list_temp$alpha <- alpha_f1l1_f2l1
-    list_temp$obs <- OBS_f1l1_f2l1
-    list_temp$exp <- EXP_f1l1_f2l1
+    list_temp$alpha <- data.INLA$alpha_f1l1_f2l1
+    list_temp$obs <- data.INLA$OBS_f1l1_f2l1
+    list_temp$exp <- data.INLA$EXP_f1l1_f2l1
   }
 
   if(exists("ResMod")){
@@ -1784,11 +1883,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     # Extract Random Effects
     if(save.random==TRUE){list_temp$summary.random <- ResMod$summary.random}
 
+    # Extract Random Fixed
+    if(save.fixed==TRUE){list_temp$summary.fixed <- ResMod$summary.fixed}
+
     # Extract Hyperparameters
     if(save.hyper==TRUE){list_temp$summary.hyperpar <- ResMod$summary.hyperpar}
 
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
+
+    # Clean Environment
+    rm(ResMod)
 
   } else {
     list_temp$DIC$dic <- NA
@@ -1801,6 +1906,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$residuals <- NA
     list_temp$RME <- NA
     list_temp$summary.random <- NA
+    list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
   }
@@ -1857,16 +1963,16 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l2_f2l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-5)))
+                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
 
   if(save.mod.data==TRUE){
     list_temp$formula <- formula
-    list_temp$alpha <- alpha_f1l2_f2l1
-    list_temp$obs <- OBS_f1l2_f2l1
-    list_temp$exp <- EXP_f1l2_f2l1
+    list_temp$alpha <- data.INLA$alpha_f1l2_f2l1
+    list_temp$obs <- data.INLA$OBS_f1l2_f2l1
+    list_temp$exp <- data.INLA$EXP_f1l2_f2l1
   }
 
   if(exists("ResMod")){
@@ -1894,11 +2000,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     # Extract Random Effects
     if(save.random==TRUE){list_temp$summary.random <- ResMod$summary.random}
 
+    # Extract Random Fixed
+    if(save.fixed==TRUE){list_temp$summary.fixed <- ResMod$summary.fixed}
+
     # Extract Hyperparameters
     if(save.hyper==TRUE){list_temp$summary.hyperpar <- ResMod$summary.hyperpar}
 
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
+
+    # Clean Environment
+    rm(ResMod)
 
   } else {
     list_temp$DIC$dic <- NA
@@ -1911,6 +2023,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$residuals <- NA
     list_temp$RME <- NA
     list_temp$summary.random <- NA
+    list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
   }
@@ -1967,16 +2080,16 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l2,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-5)))
+                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
 
   if(save.mod.data==TRUE){
     list_temp$formula <- formula
-    list_temp$alpha <- alpha_f1l1_f2l2
-    list_temp$obs <- OBS_f1l1_f2l2
-    list_temp$exp <- EXP_f1l1_f2l2
+    list_temp$alpha <- data.INLA$alpha_f1l1_f2l2
+    list_temp$obs <- data.INLA$OBS_f1l1_f2l2
+    list_temp$exp <- data.INLA$EXP_f1l1_f2l2
   }
 
   if(exists("ResMod")){
@@ -2004,11 +2117,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     # Extract Random Effects
     if(save.random==TRUE){list_temp$summary.random <- ResMod$summary.random}
 
+    # Extract Random Fixed
+    if(save.fixed==TRUE){list_temp$summary.fixed <- ResMod$summary.fixed}
+
     # Extract Hyperparameters
     if(save.hyper==TRUE){list_temp$summary.hyperpar <- ResMod$summary.hyperpar}
 
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
+
+    # Clean Environment
+    rm(ResMod)
 
   } else {
     list_temp$DIC$dic <- NA
@@ -2021,6 +2140,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$residuals <- NA
     list_temp$RME <- NA
     list_temp$summary.random <- NA
+    list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
   }
@@ -2077,16 +2197,16 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l2_f2l2,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-5)))
+                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
 
   if(save.mod.data==TRUE){
     list_temp$formula <- formula
-    list_temp$alpha <- alpha_f1l2_f2l2
-    list_temp$obs <- OBS_f1l2_f2l2
-    list_temp$exp <- EXP_f1l2_f2l2
+    list_temp$alpha <- data.INLA$alpha_f1l2_f2l2
+    list_temp$obs <- data.INLA$OBS_f1l2_f2l2
+    list_temp$exp <- data.INLA$EXP_f1l2_f2l2
   }
 
   if(exists("ResMod")){
@@ -2114,11 +2234,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     # Extract Random Effects
     if(save.random==TRUE){list_temp$summary.random <- ResMod$summary.random}
 
+    # Extract Random Fixed
+    if(save.fixed==TRUE){list_temp$summary.fixed <- ResMod$summary.fixed}
+
     # Extract Hyperparameters
     if(save.hyper==TRUE){list_temp$summary.hyperpar <- ResMod$summary.hyperpar}
 
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
+
+    # Clean Environment
+    rm(ResMod)
 
   } else {
     list_temp$DIC$dic <- NA
@@ -2131,6 +2257,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$residuals <- NA
     list_temp$RME <- NA
     list_temp$summary.random <- NA
+    list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
   }
@@ -2187,16 +2314,16 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f2l1_f1l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-5)))
+                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
 
   if(save.mod.data==TRUE){
       list_temp$formula <- formula
-      list_temp$alpha <- alpha_f2l1_f1l1
-      list_temp$obs <- OBS_f2l1_f1l1
-      list_temp$exp <- EXP_f2l1_f1l1
+      list_temp$alpha <- data.INLA$alpha_f2l1_f1l1
+      list_temp$obs <- data.INLA$OBS_f2l1_f1l1
+      list_temp$exp <- data.INLA$EXP_f2l1_f1l1
     }
 
   if(exists("ResMod")){
@@ -2224,11 +2351,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     # Extract Random Effects
     if(save.random==TRUE){list_temp$summary.random <- ResMod$summary.random}
 
+    # Extract Random Fixed
+    if(save.fixed==TRUE){list_temp$summary.fixed <- ResMod$summary.fixed}
+
     # Extract Hyperparameters
     if(save.hyper==TRUE){list_temp$summary.hyperpar <- ResMod$summary.hyperpar}
 
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
+
+    # Clean Environment
+    rm(ResMod)
 
   } else {
     list_temp$DIC$dic <- NA
@@ -2241,6 +2374,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$residuals <- NA
     list_temp$RME <- NA
     list_temp$summary.random <- NA
+    list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
   }
@@ -2297,16 +2431,16 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f2l2_f1l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-5)))
+                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
 
   if(save.mod.data==TRUE){
     list_temp$formula <- formula
-    list_temp$alpha <- alpha_f2l2_f1l1
-    list_temp$obs <- OBS_f2l2_f1l1
-    list_temp$exp <- EXP_f2l2_f1l1
+    list_temp$alpha <- data.INLA$alpha_f2l2_f1l1
+    list_temp$obs <- data.INLA$OBS_f2l2_f1l1
+    list_temp$exp <- data.INLA$EXP_f2l2_f1l1
   }
 
   if(exists("ResMod")){
@@ -2334,11 +2468,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     # Extract Random Effects
     if(save.random==TRUE){list_temp$summary.random <- ResMod$summary.random}
 
+    # Extract Random Fixed
+    if(save.fixed==TRUE){list_temp$summary.fixed <- ResMod$summary.fixed}
+
     # Extract Hyperparameters
     if(save.hyper==TRUE){list_temp$summary.hyperpar <- ResMod$summary.hyperpar}
 
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
+
+    # Clean Environment
+    rm(ResMod)
 
   } else {
     list_temp$DIC$dic <- NA
@@ -2351,6 +2491,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$residuals <- NA
     list_temp$RME <- NA
     list_temp$summary.random <- NA
+    list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
   }
@@ -2407,16 +2548,16 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f2l1_f1l2,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-5)))
+                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
 
   if(save.mod.data==TRUE){
     list_temp$formula <- formula
-    list_temp$alpha <- alpha_f2l1_f1l2
-    list_temp$obs <- OBS_f2l1_f1l2
-    list_temp$exp <- EXP_f2l1_f1l2
+    list_temp$alpha <- data.INLA$alpha_f2l1_f1l2
+    list_temp$obs <- data.INLA$OBS_f2l1_f1l2
+    list_temp$exp <- data.INLA$EXP_f2l1_f1l2
   }
 
   if(exists("ResMod")){
@@ -2444,11 +2585,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     # Extract Random Effects
     if(save.random==TRUE){list_temp$summary.random <- ResMod$summary.random}
 
+    # Extract Random Fixed
+    if(save.fixed==TRUE){list_temp$summary.fixed <- ResMod$summary.fixed}
+
     # Extract Hyperparameters
     if(save.hyper==TRUE){list_temp$summary.hyperpar <- ResMod$summary.hyperpar}
 
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
+
+    # Clean Environment
+    rm(ResMod)
 
   } else {
     list_temp$DIC$dic <- NA
@@ -2461,6 +2608,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$residuals <- NA
     list_temp$RME <- NA
     list_temp$summary.random <- NA
+    list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
   }
@@ -2517,16 +2665,16 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f2l2_f1l2,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-5)))
+                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
 
   if(save.mod.data==TRUE){
     list_temp$formula <- formula
-    list_temp$alpha <- alpha_f2l2_f1l2
-    list_temp$obs <- OBS_f2l2_f1l2
-    list_temp$exp <- EXP_f2l2_f1l2
+    list_temp$alpha <- data.INLA$alpha_f2l2_f1l2
+    list_temp$obs <- data.INLA$OBS_f2l2_f1l2
+    list_temp$exp <- data.INLA$EXP_f2l2_f1l2
   }
 
   if(exists("ResMod")){
@@ -2554,11 +2702,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     # Extract Random Effects
     if(save.random==TRUE){list_temp$summary.random <- ResMod$summary.random}
 
+    # Extract Random Fixed
+    if(save.fixed==TRUE){list_temp$summary.fixed <- ResMod$summary.fixed}
+
     # Extract Hyperparameters
     if(save.hyper==TRUE){list_temp$summary.hyperpar <- ResMod$summary.hyperpar}
 
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
+
+    # Clean Environment
+    rm(ResMod)
 
   } else {
     list_temp$DIC$dic <- NA
@@ -2571,6 +2725,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$residuals <- NA
     list_temp$RME <- NA
     list_temp$summary.random <- NA
+    list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
   }
