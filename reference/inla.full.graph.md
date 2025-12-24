@@ -29,7 +29,7 @@ inla.full.graph(
 
 - snap:
 
-  snap argument for the function poly2nb
+  Snap argument for the function poly2nb
 
 - distance_by:
 

@@ -49,9 +49,12 @@ inla.SpANOVA.2x2(
   sp.prior = "sdunif",
   pc.prec.val = c(1, 0.01),
   sp.copy.fixed = TRUE,
-  save.res = TRUE,
+  save.res = FALSE,
   save.random = TRUE,
-  save.hyper = TRUE
+  save.hyper = TRUE,
+  save.fixed = TRUE,
+  save.mod.data = FALSE,
+  verbose.INLA = FALSE
 )
 ```
 
@@ -111,6 +114,19 @@ inla.SpANOVA.2x2(
 - save.hyper:
 
   Save hyperparameter values from each individual model, default is TRUE
+
+- save.fixed:
+
+  Save values adjusted from the fixed effects or not from the different
+  models, default is TRUE
+
+- save.mod.data:
+
+  Save modelling data to run the model afterwards
+
+- verbose.INLA:
+
+  Verbose option for INLA, default is FALSE
 
 ## Value
 

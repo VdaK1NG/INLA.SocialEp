@@ -10,4 +10,4 @@ pop_data_us_23
 
 ## Format
 
-Dataframe Dataframe containing the population per US county on 2023
+Dataframe containing the population per US county on 2023

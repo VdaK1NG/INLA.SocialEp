@@ -41,7 +41,6 @@
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Vignettes</h6></li>
     <li><a class="dropdown-item" href="../articles/simulation.html">Simulation Study - Data Creation</a></li>
-    <li><a class="dropdown-item" href="../articles/example.html">Usage Example</a></li>
   </ul>
 </li>
       </ul>
@@ -92,7 +91,7 @@ connected graph underlying in the spatial effects. This means removing
 Alaska and non-continental states, as well as two island counties (San
 Juan and Nantucket), and leaving the final number of counties at
 3104.</div>
-<p><img src="simulation_files/figure-html/unnamed-chunk-4-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-4-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 <p>We are going to fix the seed for the random numbers using the number
 of our <a href="https://arxiv.org/abs/2410.21227" class="external-link">ARXIV page</a> and use
@@ -133,7 +132,7 @@ dataset that presents pronounced differences between the groups.</li>
 <span><span class="va">us_counties</span><span class="op">$</span><span class="va">group2_dif_risk</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_county</span>, <span class="fl">0.05</span>, <span class="fl">0.5</span><span class="op">)</span></span>
 <span><span class="va">us_counties</span><span class="op">$</span><span class="va">group3_dif_risk</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_county</span>, <span class="op">-</span><span class="fl">0.3</span>, <span class="fl">0.5</span><span class="op">)</span></span>
 <span><span class="va">us_counties</span><span class="op">$</span><span class="va">group4_dif_risk</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_county</span>, <span class="op">-</span><span class="fl">0.05</span>, <span class="fl">0.5</span><span class="op">)</span></span></code></pre></div>
-<p><img src="simulation_files/figure-html/unnamed-chunk-7-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-7-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 <ul>
 <li>
@@ -147,7 +146,7 @@ will simulate two groups with a fairly similar relative risk.</li>
 <span><span class="va">us_counties</span><span class="op">$</span><span class="va">group2_sim_risk</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_county</span>, <span class="fl">0</span>, <span class="fl">0.5</span><span class="op">)</span></span>
 <span><span class="va">us_counties</span><span class="op">$</span><span class="va">group3_sim_risk</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_county</span>, <span class="fl">0</span>, <span class="fl">0.5</span><span class="op">)</span></span>
 <span><span class="va">us_counties</span><span class="op">$</span><span class="va">group4_sim_risk</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_county</span>, <span class="fl">0</span>, <span class="fl">0.5</span><span class="op">)</span></span></code></pre></div>
-<p><img src="simulation_files/figure-html/unnamed-chunk-9-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-9-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 <div class="section level3">
@@ -178,7 +177,7 @@ following:</div>
 <span><span class="co">##  Mean   : 0.00000  </span></span>
 <span><span class="co">##  3rd Qu.: 0.76249  </span></span>
 <span><span class="co">##  Max.   : 3.41413</span></span></code></pre>
-<p><img src="simulation_files/figure-html/unnamed-chunk-11-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-11-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 <div class="section level3">
@@ -213,7 +212,7 @@ well.</div>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Extract Population variable for use later</span></span>
 <span><span class="va">POP</span> <span class="op">&lt;-</span> <span class="va">us_counties</span><span class="op">$</span><span class="va">POPESTIMATE2023</span></span></code></pre></div>
-<p><img src="simulation_files/figure-html/unnamed-chunk-13-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-13-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 <div class="section level3">
@@ -230,7 +229,7 @@ the package <strong>SUMMER</strong>.</div>
 <span><span class="va">ind.ef.g2</span> <span class="op">&lt;-</span> <span class="va">ind.ef</span><span class="op">[</span><span class="fl">2</span>, <span class="op">]</span></span>
 <span><span class="va">ind.ef.g3</span> <span class="op">&lt;-</span> <span class="va">ind.ef</span><span class="op">[</span><span class="fl">3</span>, <span class="op">]</span></span>
 <span><span class="va">ind.ef.g4</span> <span class="op">&lt;-</span> <span class="va">ind.ef</span><span class="op">[</span><span class="fl">4</span>, <span class="op">]</span></span></code></pre></div>
-<p><img src="simulation_files/figure-html/unnamed-chunk-16-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-16-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 </div>
@@ -306,7 +305,7 @@ each group.</div>
 <span><span class="op">}</span></span>
 <span></span>
 <span><span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">M0_df</span><span class="op">$</span><span class="va">OBS_SIM</span><span class="op">)</span><span class="op">!=</span><span class="va">total_obs</span><span class="op">)</span><span class="op">{</span><span class="kw"><a href="https://rdrr.io/r/base/warning.html" class="external-link">warning</a></span><span class="op">(</span><span class="st">"Observed values and expected values do not match."</span><span class="op">)</span><span class="op">}</span></span></code></pre></div>
-<p><img src="simulation_files/figure-html/unnamed-chunk-18-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-18-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 <div class="section level3">
@@ -362,7 +361,7 @@ each group.</div>
 <span><span class="op">}</span></span>
 <span></span>
 <span><span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">M0_df</span><span class="op">$</span><span class="va">OBS_DIF</span><span class="op">)</span><span class="op">!=</span><span class="va">total_obs</span><span class="op">)</span><span class="op">{</span><span class="kw"><a href="https://rdrr.io/r/base/warning.html" class="external-link">warning</a></span><span class="op">(</span><span class="st">"Observed values and expected values do not match."</span><span class="op">)</span><span class="op">}</span></span></code></pre></div>
-<p><img src="simulation_files/figure-html/unnamed-chunk-20-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-20-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 </div>
@@ -484,19 +483,19 @@ risk groups dont go to far below .</div>
 <div class="section level4">
 <h4 id="v1---equal-weights">V1 - Equal Weights<a class="anchor" aria-label="anchor" href="#v1---equal-weights"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-22-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-22-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 <div class="section level4">
 <h4 id="v2---heterogeneity-max-risk">V2 - Heterogeneity Max Risk<a class="anchor" aria-label="anchor" href="#v2---heterogeneity-max-risk"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-23-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-23-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 <div class="section level4">
 <h4 id="v3---last-effect-max-risk">V3 - Last Effect Max Risk<a class="anchor" aria-label="anchor" href="#v3---last-effect-max-risk"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-24-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-24-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 </div>
@@ -603,19 +602,19 @@ cases among the counties using the total risk assigned.</div>
 <div class="section level4">
 <h4 id="v1---equal-weights-1">V1 - Equal Weights<a class="anchor" aria-label="anchor" href="#v1---equal-weights-1"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-26-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-26-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 <div class="section level4">
 <h4 id="v2---heterogeneity-max-risk-1">V2 - Heterogeneity Max Risk<a class="anchor" aria-label="anchor" href="#v2---heterogeneity-max-risk-1"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-27-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-27-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 <div class="section level4">
 <h4 id="v3---last-effect-max-risk-1">V3 - Last Effect Max Risk<a class="anchor" aria-label="anchor" href="#v3---last-effect-max-risk-1"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-28-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-28-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 </div>
@@ -731,19 +730,19 @@ cases among the counties using the total risk assigned.</div>
 <div class="section level4">
 <h4 id="v1---equal-weights-2">V1 - Equal Weights<a class="anchor" aria-label="anchor" href="#v1---equal-weights-2"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-30-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-30-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 <div class="section level4">
 <h4 id="v2---heterogeneity-max-risk-2">V2 - Heterogeneity Max Risk<a class="anchor" aria-label="anchor" href="#v2---heterogeneity-max-risk-2"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-31-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-31-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 <div class="section level4">
 <h4 id="v3---last-effect-max-risk-2">V3 - Last Effect Max Risk<a class="anchor" aria-label="anchor" href="#v3---last-effect-max-risk-2"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-32-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-32-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 </div>
@@ -850,19 +849,19 @@ cases among the counties using the total risk assigned.</div>
 <div class="section level4">
 <h4 id="v1---equal-weights-3">V1 - Equal Weights<a class="anchor" aria-label="anchor" href="#v1---equal-weights-3"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-34-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-34-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 <div class="section level4">
 <h4 id="v2---heterogeneity-max-risk-3">V2 - Heterogeneity Max Risk<a class="anchor" aria-label="anchor" href="#v2---heterogeneity-max-risk-3"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-35-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-35-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 <div class="section level4">
 <h4 id="v3---last-effect-max-risk-3">V3 - Last Effect Max Risk<a class="anchor" aria-label="anchor" href="#v3---last-effect-max-risk-3"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-36-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-36-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 </div>
@@ -978,19 +977,19 @@ cases among the counties using the total risk assigned.</div>
 <div class="section level4">
 <h4 id="v1---equal-weights-4">V1 - Equal Weights<a class="anchor" aria-label="anchor" href="#v1---equal-weights-4"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-38-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-38-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 <div class="section level4">
 <h4 id="v2---heterogeneity-max-risk-4">V2 - Heterogeneity Max Risk<a class="anchor" aria-label="anchor" href="#v2---heterogeneity-max-risk-4"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-39-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-39-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 <div class="section level4">
 <h4 id="v3---last-effect-max-risk-4">V3 - Last Effect Max Risk<a class="anchor" aria-label="anchor" href="#v3---last-effect-max-risk-4"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-40-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-40-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 </div>
@@ -1097,19 +1096,19 @@ cases among the counties using the total risk assigned.</div>
 <div class="section level4">
 <h4 id="v1---equal-weights-5">V1 - Equal Weights<a class="anchor" aria-label="anchor" href="#v1---equal-weights-5"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-42-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-42-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 <div class="section level4">
 <h4 id="v2---heterogeneity-max-risk-5">V2 - Heterogeneity Max Risk<a class="anchor" aria-label="anchor" href="#v2---heterogeneity-max-risk-5"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-43-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-43-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 <div class="section level4">
 <h4 id="v3---last-effect-max-risk-5">V3 - Last Effect Max Risk<a class="anchor" aria-label="anchor" href="#v3---last-effect-max-risk-5"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-44-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-44-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 </div>
@@ -1225,19 +1224,19 @@ cases among the counties using the total risk assigned.</div>
 <div class="section level4">
 <h4 id="v1---equal-weights-6">V1 - Equal Weights<a class="anchor" aria-label="anchor" href="#v1---equal-weights-6"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-46-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-46-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 <div class="section level4">
 <h4 id="v2---heterogeneity-max-risk-6">V2 - Heterogeneity Max Risk<a class="anchor" aria-label="anchor" href="#v2---heterogeneity-max-risk-6"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-47-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-47-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 <div class="section level4">
 <h4 id="v3---last-effect-max-risk-6">V3 - Last Effect Max Risk<a class="anchor" aria-label="anchor" href="#v3---last-effect-max-risk-6"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-48-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-48-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 </div>
@@ -1344,19 +1343,19 @@ cases among the counties using the total risk assigned.</div>
 <div class="section level4">
 <h4 id="v1---equal-weights-7">V1 - Equal Weights<a class="anchor" aria-label="anchor" href="#v1---equal-weights-7"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-50-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-50-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 <div class="section level4">
 <h4 id="v2---heterogeneity-max-risk-7">V2 - Heterogeneity Max Risk<a class="anchor" aria-label="anchor" href="#v2---heterogeneity-max-risk-7"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-51-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-51-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 <div class="section level4">
 <h4 id="v3---last-effect-max-risk-7">V3 - Last Effect Max Risk<a class="anchor" aria-label="anchor" href="#v3---last-effect-max-risk-7"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-52-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-52-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 </div>
@@ -1472,19 +1471,19 @@ cases among the counties using the total risk assigned.</div>
 <div class="section level4">
 <h4 id="v1---equal-weights-8">V1 - Equal Weights<a class="anchor" aria-label="anchor" href="#v1---equal-weights-8"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-54-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-54-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 <div class="section level4">
 <h4 id="v2---heterogeneity-max-risk-8">V2 - Heterogeneity Max Risk<a class="anchor" aria-label="anchor" href="#v2---heterogeneity-max-risk-8"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-55-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-55-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 <div class="section level4">
 <h4 id="v3---last-effect-max-risk-8">V3 - Last Effect Max Risk<a class="anchor" aria-label="anchor" href="#v3---last-effect-max-risk-8"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-56-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-56-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 </div>
@@ -1591,19 +1590,19 @@ cases among the counties using the total risk assigned.</div>
 <div class="section level4">
 <h4 id="v1---equal-weights-9">V1 - Equal Weights<a class="anchor" aria-label="anchor" href="#v1---equal-weights-9"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-58-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-58-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 <div class="section level4">
 <h4 id="v2---heterogeneity-max-risk-9">V2 - Heterogeneity Max Risk<a class="anchor" aria-label="anchor" href="#v2---heterogeneity-max-risk-9"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-59-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-59-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 <div class="section level4">
 <h4 id="v3---last-effect-max-risk-9">V3 - Last Effect Max Risk<a class="anchor" aria-label="anchor" href="#v3---last-effect-max-risk-9"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-60-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-60-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 </div>
@@ -1719,19 +1718,19 @@ cases among the counties using the total risk assigned.</div>
 <div class="section level4">
 <h4 id="v1---equal-weights-10">V1 - Equal Weights<a class="anchor" aria-label="anchor" href="#v1---equal-weights-10"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-62-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-62-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 <div class="section level4">
 <h4 id="v2---heterogeneity-max-risk-10">V2 - Heterogeneity Max Risk<a class="anchor" aria-label="anchor" href="#v2---heterogeneity-max-risk-10"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-63-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-63-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 <div class="section level4">
 <h4 id="v3---last-effect-max-risk-10">V3 - Last Effect Max Risk<a class="anchor" aria-label="anchor" href="#v3---last-effect-max-risk-10"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-64-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-64-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 </div>
@@ -1838,19 +1837,19 @@ cases among the counties using the total risk assigned.</div>
 <div class="section level4">
 <h4 id="v1---equal-weights-11">V1 - Equal Weights<a class="anchor" aria-label="anchor" href="#v1---equal-weights-11"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-66-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-66-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 <div class="section level4">
 <h4 id="v2---heterogeneity-max-risk-11">V2 - Heterogeneity Max Risk<a class="anchor" aria-label="anchor" href="#v2---heterogeneity-max-risk-11"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-67-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-67-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 <div class="section level4">
 <h4 id="v3---last-effect-max-risk-11">V3 - Last Effect Max Risk<a class="anchor" aria-label="anchor" href="#v3---last-effect-max-risk-11"></a>
 </h4>
-<p><img src="simulation_files/figure-html/unnamed-chunk-68-1.png" class="r-plt" width="1152" style="display: block; margin: auto;"></p>
+<p><img src="simulation_files/figure-html/unnamed-chunk-68-1.png" class="r-plt" alt="" width="700" style="display: block; margin: auto;"></p>
 <hr>
 </div>
 </div>
@@ -1861,17 +1860,14 @@ cases among the counties using the total risk assigned.</div>
 <div class="line-block">      Lastly, we save all the necessary objects
 that we will be using in the analysis part and the results part.</div>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/save.html" class="external-link">save</a></span><span class="op">(</span><span class="va">M0_df</span>, <span class="va">M1_df</span>, <span class="va">M2_df</span>, <span class="va">M3_df</span>, <span class="va">M4_df</span>, <span class="va">M5_df</span>, <span class="va">M6_df</span>, <span class="va">W</span>, <span class="va">graph</span>, <span class="va">us_counties</span>, file<span class="op">=</span><span class="st">"./Datos/sim_data.Rdata"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">sp_object_sim</span> <span class="op">&lt;-</span> <span class="va">us_counties</span> </span>
+<span><span class="va">sp_object_sim</span><span class="op">$</span><span class="va">ind.ef.g1</span> <span class="op">&lt;-</span> <span class="va">ind.ef.g1</span></span>
+<span><span class="va">sp_object_sim</span><span class="op">$</span><span class="va">ind.ef.g2</span> <span class="op">&lt;-</span> <span class="va">ind.ef.g2</span></span>
+<span><span class="va">sp_object_sim</span><span class="op">$</span><span class="va">ind.ef.g3</span> <span class="op">&lt;-</span> <span class="va">ind.ef.g3</span></span>
+<span><span class="va">sp_object_sim</span><span class="op">$</span><span class="va">ind.ef.g4</span> <span class="op">&lt;-</span> <span class="va">ind.ef.g4</span></span>
+<span><span class="va">sp_object_sim</span><span class="op">$</span><span class="va">EXP</span> <span class="op">&lt;-</span> <span class="va">EXP</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3107</span><span class="op">]</span></span>
 <span></span>
-<span><span class="va">sp_object</span> <span class="op">&lt;-</span> <span class="va">us_counties</span> <span class="op">%&gt;%</span> <span class="fu">select</span><span class="op">(</span><span class="va">geometry</span>, <span class="va">NAME</span>, <span class="va">NAMELSAD</span>, </span>
-<span>                                    <span class="va">group1_dif_risk</span>, <span class="va">group2_dif_risk</span>, <span class="va">group3_dif_risk</span>, <span class="va">group4_dif_risk</span>, <span class="va">group1_sim_risk</span>, <span class="va">group2_sim_risk</span>, <span class="va">group3_sim_risk</span>, <span class="va">group4_sim_risk</span>, </span>
-<span>                                    <span class="va">Temp_Scale</span>, <span class="va">POP_DENS_Scale</span><span class="op">)</span></span>
-<span><span class="va">sp_object</span><span class="op">$</span><span class="va">ind.ef.g2</span> <span class="op">&lt;-</span> <span class="va">ind.ef.g2</span></span>
-<span><span class="va">sp_object</span><span class="op">$</span><span class="va">ind.ef.g1</span> <span class="op">&lt;-</span> <span class="va">ind.ef.g1</span></span>
-<span><span class="va">sp_object</span><span class="op">$</span><span class="va">ind.ef.g3</span> <span class="op">&lt;-</span> <span class="va">ind.ef.g3</span></span>
-<span><span class="va">sp_object</span><span class="op">$</span><span class="va">ind.ef.g4</span> <span class="op">&lt;-</span> <span class="va">ind.ef.g4</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/save.html" class="external-link">save</a></span><span class="op">(</span><span class="va">sp_object</span>, file<span class="op">=</span><span class="st">"./Datos/sp_object.Rdata"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/save.html" class="external-link">save</a></span><span class="op">(</span><span class="va">data_risk</span>, file<span class="op">=</span><span class="st">"./Datos/risk_sim.Rdata"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/save.html" class="external-link">save</a></span><span class="op">(</span><span class="va">sp_object_sim</span>, file<span class="op">=</span><span class="st">"./Datos/sp_object_sim.Rdata"</span><span class="op">)</span></span></code></pre></div>
 <hr>
 <p><br></p>
 <div></div>

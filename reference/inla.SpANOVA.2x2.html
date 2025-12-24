@@ -85,7 +85,6 @@ are O3 and the last n values are O4"><meta property="og:image" content="https://
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Vignettes</h6></li>
     <li><a class="dropdown-item" href="../articles/simulation.html">Simulation Study - Data Creation</a></li>
-    <li><a class="dropdown-item" href="../articles/example.html">Usage Example</a></li>
   </ul></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
@@ -146,9 +145,12 @@ are O3 and the last n values are O4</p>
 <span>  sp.prior <span class="op">=</span> <span class="st">"sdunif"</span>,</span>
 <span>  pc.prec.val <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0.01</span><span class="op">)</span>,</span>
 <span>  sp.copy.fixed <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  save.res <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  save.res <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  save.random <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  save.hyper <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  save.hyper <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  save.fixed <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  save.mod.data <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  verbose.INLA <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -206,6 +208,18 @@ are O3 and the last n values are O4</p>
 
 <dt id="arg-save-hyper">save.hyper<a class="anchor" aria-label="anchor" href="#arg-save-hyper"></a></dt>
 <dd><p>Save hyperparameter values from each individual model, default is TRUE</p></dd>
+
+
+<dt id="arg-save-fixed">save.fixed<a class="anchor" aria-label="anchor" href="#arg-save-fixed"></a></dt>
+<dd><p>Save values adjusted from the fixed effects or not from the different models, default is TRUE</p></dd>
+
+
+<dt id="arg-save-mod-data">save.mod.data<a class="anchor" aria-label="anchor" href="#arg-save-mod-data"></a></dt>
+<dd><p>Save modelling data to run the model afterwards</p></dd>
+
+
+<dt id="arg-verbose-inla">verbose.INLA<a class="anchor" aria-label="anchor" href="#arg-verbose-inla"></a></dt>
+<dd><p>Verbose option for INLA, default is FALSE</p></dd>
 
 </dl></div>
     <div class="section level2">

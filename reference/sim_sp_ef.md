@@ -10,4 +10,4 @@ sim_sp_ef
 
 ## Format
 
-Matrix Each column contains one of the simulated spatial effect
+Each column contains one of the simulated spatial effect

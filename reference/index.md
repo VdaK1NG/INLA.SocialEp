@@ -6,6 +6,8 @@ Wrapper functions for several advanced disease mapping models in INLA.
 
 - [`inla.SpANOVA.2x2()`](https://vdak1ng.github.io/INLA.SocialEp/reference/inla.SpANOVA.2x2.md)
   : Apply SpANOVA modelization using a wrapper function in INLA
+- [`inla.rerun.SpANOVA()`](https://vdak1ng.github.io/INLA.SocialEp/reference/inla.rerun.SpANOVA.md)
+  : Run the desire specification from a SpANOVA object
 
 ## Model evaluation
 
@@ -29,6 +31,10 @@ Prepare datasets for analysis.
 
 - [`inla.full.graph()`](https://vdak1ng.github.io/INLA.SocialEp/reference/inla.full.graph.md)
   : Make a fully connected graph for INLA
+- [`convert_col()`](https://vdak1ng.github.io/INLA.SocialEp/reference/convert_col.md)
+  : Generate stable color labels
+- [`plot(`*`<SpANOVA>`*`)`](https://vdak1ng.github.io/INLA.SocialEp/reference/plot.SpANOVA.md)
+  : Represent different values from SpANOVA modelling
 
 ## Package Data
 
@@ -39,8 +45,10 @@ Several datasets for simulating data.
 - [`pop_data_us_23`](https://vdak1ng.github.io/INLA.SocialEp/reference/pop_data_us_23.md)
   : Population per US County - Year 2023
 - [`temp_data_us_23`](https://vdak1ng.github.io/INLA.SocialEp/reference/temp_data_us_23.md)
-  : TMean Temperature 2023
+  : Mean Temperature 2023
 - [`us_county_23`](https://vdak1ng.github.io/INLA.SocialEp/reference/us_county_23.md)
   : US County 2023
 - [`sim_sp_ef`](https://vdak1ng.github.io/INLA.SocialEp/reference/sim_sp_ef.md)
   : Simulated spatial effects
+- [`sp_object_sim`](https://vdak1ng.github.io/INLA.SocialEp/reference/sp_object_sim.md)
+  : Simulated Datasets
