@@ -15,7 +15,7 @@
 Source:
 [`DESCRIPTION`](https://github.com/VdaK1NG/INLA.SocialEp/blob/main/DESCRIPTION)
 
-Escobar-Hernández P, Palmí-Perales F, López-Quílez A (2025).
+Escobar-Hernández P, Palmí-Perales F, López-Quílez A (2026).
 *INLA.SocialEp: Implementation of Advanced Social Disease Mapping
 Techniques in INLA*. R package version 1.1,
 <https://github.com/VdaK1NG/INLA.SocialEp>.
@@ -23,7 +23,7 @@ Techniques in INLA*. R package version 1.1,
     @Manual{,
       title = {INLA.SocialEp: Implementation of Advanced Social Disease Mapping Techniques in INLA},
       author = {Pablo Escobar-Hernández and Francisco Palmí-Perales and Antonio López-Quílez},
-      year = {2025},
+      year = {2026},
       note = {R package version 1.1},
       url = {https://github.com/VdaK1NG/INLA.SocialEp},
     }
