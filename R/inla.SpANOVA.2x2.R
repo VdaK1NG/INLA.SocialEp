@@ -3,39 +3,8 @@
 #' This function is a wrapper for multidimensional spatial factor models
 #' in INLA, using a sequential shared spatial effects with nested structure
 #' as discussed in AÑADIR REFERENCIA. <br/>
-#' <br/>
-#' <b>DISCLAIMER:</b> Observed and expected values have to be given in an specific order.
-#' Consider n the number of areas, the first n values (1:n) of the obs (exp) should be the ones belonging to the
-#' FIRST level (the first position of the <b>lev.fac1</b> vector argument) of the
-#' FIRST factor (the first position of the <b>fac.names</b> vector argument) and
-#' to the FIRST level (the first position of the <b>lev.fac2</b> vector argument)
-#' of the SECOND factor (the second position of the <b>fac.names</b> vector argument).
-#' The n following values ((n+1):2n) of the obs (exp) should be the ones
-#' belonging to the FIRST level (the first position of the <b>lev.fac1</b> vector
-#' argument) of the FIRST factor (the first position of the fac.names</b>
-#' vector argument) and to the SECOND level (the second position of the
-#' <b>lev.fac2</b> vector argument) of the SECOND factor (the second position of
-#' the <b>fac.names</b> vector argument).<br/>
-#' <br/>
-#' The n following values ((2n+1):3n) of the obs (exp) should be the ones
-#' belonging to the SECOND level (the second position of the <b>lev.fac1</b> vector
-#' argument) of the FIRST factor (the first position of the <b>fac.names</b>
-#' vector argument) and to the FIRST level (the first position of the
-#' <b>lev.fac2</b> vector argument) of the SECOND factor (the second position of
-#' the <b>fac.names</b> vector argument).<br/>
-#' <br/>
-#' The n following values ((3n+1):4n) of the obs (exp) should be the ones
-#' belonging to the SECOND level (the second position of the <b>lev.fac1</b> vector
-#' argument) of the FIRST factor (the first position of the <b>fac.names</b>
-#' vector argument) and to the SECOND level (the second position of the
-#' <b>lev.fac2</b> vector argument) of the SECOND factor (the second position of
-#' the <b>fac.names</b> vector argument).<br/>
-#' <br/>
-#' The first n values are O1, the second n values are O2, the third n values
-#' are O3 and the last n values are O4
 #'
-#' @param obs Vector of observed values
-#' @param exp Vector of expected values
+#' @param data Dataframe containing the number of events observed on column obs, the expected values on column exp, the level for factor 1 on column lev.fac1 and the level for factor 1 on column lev.fac2
 #' @param gr Graph for the underlying spatial structure
 #' @param fac.names Names of the factors included
 #' @param lev.fac1 Levels of the first factor included
@@ -53,7 +22,7 @@
 #' @return List with all the models analyzed and a summary table with the most common performance metrics.
 #' @export
 
-inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, lev.fac2 = NULL, scale.mod=TRUE, sp.prior="sdunif", pc.prec.val = c(1, 0.01),
+inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fac2 = NULL, scale.mod=TRUE, sp.prior="sdunif", pc.prec.val = c(1, 0.01),
                              sp.copy.fixed=TRUE, save.res=FALSE, save.random=TRUE, save.hyper=TRUE, save.fixed=TRUE, save.mod.data=FALSE, verbose.INLA=FALSE) {
 
   ## Print warnings (warnings are printed as they occur)
@@ -73,6 +42,23 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
 
   ## Get maximum number of groups/diseases
   n.groups <- base::prod(n.levels)
+
+  ## Check that the levels from both factors are the same on the dataframe and the values provided
+  if(sum(lev.fac1 %in% data$lev.fac1)!=2){"Levels for factor 1 are not the same in data and function argument lev.fac1"}
+  if(sum(lev.fac2 %in% data$lev.fac2)!=2){"Levels for factor 2 are not the same in data and function argument lev.fac2"}
+
+  ## Extract obs and exp values from the dataframe
+  obs_G1 <- data$obs[data$lev.fac1==lev.fac1[1] & data$lev.fac2==lev.fac2[1]]
+  obs_G2 <- data$obs[data$lev.fac1==lev.fac1[1] & data$lev.fac2==lev.fac2[2]]
+  obs_G3 <- data$obs[data$lev.fac1==lev.fac1[2] & data$lev.fac2==lev.fac2[1]]
+  obs_G4 <- data$obs[data$lev.fac1==lev.fac1[2] & data$lev.fac2==lev.fac2[2]]
+  obs <- c(obs_G1, obs_G2, obs_G3, obs_G4)
+
+  exp_G1 <- data$exp[data$lev.fac1==lev.fac1[1] & data$lev.fac2==lev.fac2[1]]
+  exp_G2 <- data$exp[data$lev.fac1==lev.fac1[1] & data$lev.fac2==lev.fac2[2]]
+  exp_G3 <- data$exp[data$lev.fac1==lev.fac1[2] & data$lev.fac2==lev.fac2[1]]
+  exp_G4 <- data$exp[data$lev.fac1==lev.fac1[2] & data$lev.fac2==lev.fac2[2]]
+  exp <- c(exp_G1, exp_G2, exp_G3, exp_G4)
 
   ## Check if obs and exp are the same
   #if (sum(obs) != as.integer(sum(exp))){
@@ -269,7 +255,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
 
   ####################################################### MODEL 0 #######################################################
   # This scenario considers a different intercept in the linear predictor of each group
-  # and one individual IID Effect. (ResMod in the article)
+  # and one individual IID Effect.
 
   # Formulas for the model
   formula <- OBS_f1l1_f2l1 ~ 0 +
@@ -301,17 +287,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$CPU <- ResMod$cpu.used
 
     # LOOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=-1)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=-1)
     list_temp$loocv <- round(-mean(log(data_temp$cv)), 2)
 
     # LGOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=3)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=3)
     list_temp$lgocv.m3 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=5)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=5)
     list_temp$lgocv.m5 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=10)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=10)
     list_temp$lgocv.m10 <- round(-mean(log(data_temp$cv)), 2)
 
     # Extract Residuals
@@ -357,7 +343,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
 
   ####################################################### MODEL 1 #######################################################
   # This scenario considers only a different intercept and a different spatial
-  # effect in the linear predictor of each group. (ResMod in the article)
+  # effect in the linear predictor of each group.
 
   # Individual spatial effects - phi_g
   data.INLA$phi_1 <- data.INLA$ID_g1
@@ -417,17 +403,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$CPU <- ResMod$cpu.used
 
     # LOOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=-1)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=-1)
     list_temp$loocv <- round(-mean(log(data_temp$cv)), 2)
 
     # LGOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=3)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=3)
     list_temp$lgocv.m3 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=5)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=5)
     list_temp$lgocv.m5 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=10)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=10)
     list_temp$lgocv.m10 <- round(-mean(log(data_temp$cv)), 2)
 
     # Extract Residuals
@@ -528,17 +514,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$CPU <- ResMod$cpu.used
 
     # LOOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=-1)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=-1)
     list_temp$loocv <- round(-mean(log(data_temp$cv)), 2)
 
     # LGOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=3)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=3)
     list_temp$lgocv.m3 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=5)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=5)
     list_temp$lgocv.m5 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=10)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=10)
     list_temp$lgocv.m10 <- round(-mean(log(data_temp$cv)), 2)
 
     # Extract Residuals
@@ -622,17 +608,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$CPU <- ResMod$cpu.used
 
     # LOOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=-1)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=-1)
     list_temp$loocv <- round(-mean(log(data_temp$cv)), 2)
 
     # LGOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=3)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=3)
     list_temp$lgocv.m3 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=5)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=5)
     list_temp$lgocv.m5 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=10)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=10)
     list_temp$lgocv.m10 <- round(-mean(log(data_temp$cv)), 2)
 
     # Extract Residuals
@@ -716,17 +702,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$CPU <- ResMod$cpu.used
 
     # LOOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=-1)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=-1)
     list_temp$loocv <- round(-mean(log(data_temp$cv)), 2)
 
     # LGOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=3)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=3)
     list_temp$lgocv.m3 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=5)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=5)
     list_temp$lgocv.m5 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=10)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=10)
     list_temp$lgocv.m10 <- round(-mean(log(data_temp$cv)), 2)
 
     # Extract Residuals
@@ -810,17 +796,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$CPU <- ResMod$cpu.used
 
     # LOOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=-1)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=-1)
     list_temp$loocv <- round(-mean(log(data_temp$cv)), 2)
 
     # LGOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=3)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=3)
     list_temp$lgocv.m3 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=5)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=5)
     list_temp$lgocv.m5 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=10)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=10)
     list_temp$lgocv.m10 <- round(-mean(log(data_temp$cv)), 2)
 
     # Extract Residuals
@@ -931,17 +917,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$CPU <- ResMod$cpu.used
 
     # LOOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=-1)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=-1)
     list_temp$loocv <- round(-mean(log(data_temp$cv)), 2)
 
     # LGOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=3)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=3)
     list_temp$lgocv.m3 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=5)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=5)
     list_temp$lgocv.m5 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=10)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=10)
     list_temp$lgocv.m10 <- round(-mean(log(data_temp$cv)), 2)
 
     # Extract Residuals
@@ -1018,7 +1004,7 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
                      control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
-  list_temp <- list() = verbose.INLA
+  list_temp <- list()
 
   if(save.mod.data==TRUE){
     list_temp$formula <- formula
@@ -1033,17 +1019,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$CPU <- ResMod$cpu.used
 
     # LOOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=-1)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=-1)
     list_temp$loocv <- round(-mean(log(data_temp$cv)), 2)
 
     # LGOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=3)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=3)
     list_temp$lgocv.m3 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=5)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=5)
     list_temp$lgocv.m5 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=10)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=10)
     list_temp$lgocv.m10 <- round(-mean(log(data_temp$cv)), 2)
 
     # Extract Residuals
@@ -1148,17 +1134,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$CPU <- ResMod$cpu.used
 
     # LOOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=-1)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=-1)
     list_temp$loocv <- round(-mean(log(data_temp$cv)), 2)
 
     # LGOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=3)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=3)
     list_temp$lgocv.m3 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=5)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=5)
     list_temp$lgocv.m5 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=10)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=10)
     list_temp$lgocv.m10 <- round(-mean(log(data_temp$cv)), 2)
 
     # Extract Residuals
@@ -1250,17 +1236,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$CPU <- ResMod$cpu.used
 
     # LOOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=-1)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=-1)
     list_temp$loocv <- round(-mean(log(data_temp$cv)), 2)
 
     # LGOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=3)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=3)
     list_temp$lgocv.m3 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=5)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=5)
     list_temp$lgocv.m5 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=10)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=10)
     list_temp$lgocv.m10 <- round(-mean(log(data_temp$cv)), 2)
 
     # Extract Residuals
@@ -1384,17 +1370,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$CPU <- ResMod$cpu.used
 
     # LOOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=-1)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=-1)
     list_temp$loocv <- round(-mean(log(data_temp$cv)), 2)
 
     # LGOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=3)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=3)
     list_temp$lgocv.m3 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=5)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=5)
     list_temp$lgocv.m5 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=10)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=10)
     list_temp$lgocv.m10 <- round(-mean(log(data_temp$cv)), 2)
 
     # Extract Residuals
@@ -1495,17 +1481,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$CPU <- ResMod$cpu.used
 
     # LOOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=-1)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=-1)
     list_temp$loocv <- round(-mean(log(data_temp$cv)), 2)
 
     # LGOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=3)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=3)
     list_temp$lgocv.m3 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=5)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=5)
     list_temp$lgocv.m5 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=10)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=10)
     list_temp$lgocv.m10 <- round(-mean(log(data_temp$cv)), 2)
 
     # Extract Residuals
@@ -1606,17 +1592,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$CPU <- ResMod$cpu.used
 
     # LOOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=-1)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=-1)
     list_temp$loocv <- round(-mean(log(data_temp$cv)), 2)
 
     # LGOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=3)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=3)
     list_temp$lgocv.m3 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=5)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=5)
     list_temp$lgocv.m5 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=10)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=10)
     list_temp$lgocv.m10 <- round(-mean(log(data_temp$cv)), 2)
 
     # Extract Residuals
@@ -1718,17 +1704,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$CPU <- ResMod$cpu.used
 
     # LOOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=-1)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=-1)
     list_temp$loocv <- round(-mean(log(data_temp$cv)), 2)
 
     # LGOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=3)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=3)
     list_temp$lgocv.m3 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=5)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=5)
     list_temp$lgocv.m5 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=10)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=10)
     list_temp$lgocv.m10 <- round(-mean(log(data_temp$cv)), 2)
 
     # Extract Residuals
@@ -1864,17 +1850,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$CPU <- ResMod$cpu.used
 
     # LOOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=-1)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=-1)
     list_temp$loocv <- round(-mean(log(data_temp$cv)), 2)
 
     # LGOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=3)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=3)
     list_temp$lgocv.m3 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=5)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=5)
     list_temp$lgocv.m5 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=10)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=10)
     list_temp$lgocv.m10 <- round(-mean(log(data_temp$cv)), 2)
 
     # Extract Residuals
@@ -1981,17 +1967,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$CPU <- ResMod$cpu.used
 
     # LOOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=-1)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=-1)
     list_temp$loocv <- round(-mean(log(data_temp$cv)), 2)
 
     # LGOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=3)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=3)
     list_temp$lgocv.m3 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=5)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=5)
     list_temp$lgocv.m5 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=10)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=10)
     list_temp$lgocv.m10 <- round(-mean(log(data_temp$cv)), 2)
 
     # Extract Residuals
@@ -2098,17 +2084,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$CPU <- ResMod$cpu.used
 
     # LOOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=-1)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=-1)
     list_temp$loocv <- round(-mean(log(data_temp$cv)), 2)
 
     # LGOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=3)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=3)
     list_temp$lgocv.m3 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=5)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=5)
     list_temp$lgocv.m5 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=10)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=10)
     list_temp$lgocv.m10 <- round(-mean(log(data_temp$cv)), 2)
 
     # Extract Residuals
@@ -2215,17 +2201,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$CPU <- ResMod$cpu.used
 
     # LOOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=-1)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=-1)
     list_temp$loocv <- round(-mean(log(data_temp$cv)), 2)
 
     # LGOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=3)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=3)
     list_temp$lgocv.m3 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=5)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=5)
     list_temp$lgocv.m5 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=10)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=10)
     list_temp$lgocv.m10 <- round(-mean(log(data_temp$cv)), 2)
 
     # Extract Residuals
@@ -2332,17 +2318,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$CPU <- ResMod$cpu.used
 
     # LOOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=-1)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=-1)
     list_temp$loocv <- round(-mean(log(data_temp$cv)), 2)
 
     # LGOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=3)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=3)
     list_temp$lgocv.m3 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=5)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=5)
     list_temp$lgocv.m5 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=10)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=10)
     list_temp$lgocv.m10 <- round(-mean(log(data_temp$cv)), 2)
 
     # Extract Residuals
@@ -2449,17 +2435,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$CPU <- ResMod$cpu.used
 
     # LOOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=-1)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=-1)
     list_temp$loocv <- round(-mean(log(data_temp$cv)), 2)
 
     # LGOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=3)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=3)
     list_temp$lgocv.m3 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=5)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=5)
     list_temp$lgocv.m5 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=10)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=10)
     list_temp$lgocv.m10 <- round(-mean(log(data_temp$cv)), 2)
 
     # Extract Residuals
@@ -2566,17 +2552,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$CPU <- ResMod$cpu.used
 
     # LOOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=-1)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=-1)
     list_temp$loocv <- round(-mean(log(data_temp$cv)), 2)
 
     # LGOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=3)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=3)
     list_temp$lgocv.m3 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=5)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=5)
     list_temp$lgocv.m5 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=10)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=10)
     list_temp$lgocv.m10 <- round(-mean(log(data_temp$cv)), 2)
 
     # Extract Residuals
@@ -2683,17 +2669,17 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
     list_temp$CPU <- ResMod$cpu.used
 
     # LOOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=-1)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=-1)
     list_temp$loocv <- round(-mean(log(data_temp$cv)), 2)
 
     # LGOCV
-    data_temp <- inla.group.cv(ResMod, num.level.sets=3)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=3)
     list_temp$lgocv.m3 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=5)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=5)
     list_temp$lgocv.m5 <- round(-mean(log(data_temp$cv)), 2)
 
-    data_temp <- inla.group.cv(ResMod, num.level.sets=10)
+    data_temp <- INLA::inla.group.cv(ResMod, num.level.sets=10)
     list_temp$lgocv.m10 <- round(-mean(log(data_temp$cv)), 2)
 
     # Extract Residuals
@@ -2816,10 +2802,10 @@ inla.SpANOVA.2x2 <- function(obs, exp, gr, fac.names = NULL, lev.fac1 = NULL, le
                                    paste0("phi_3(", lev.fac1[2], "-", lev.fac2[1], ")"), paste0("phi_4(", lev.fac1[2], "-", lev.fac2[2], ")"))
 
   # M2
-  data.models[[3]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[1], "-", lev.fac2[1], "]"))
-  data.models[[4]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[1], "-", lev.fac2[2], "]"))
-  data.models[[5]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[2], "-", lev.fac2[1], "]"))
-  data.models[[6]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[2], "-", lev.fac2[2], "]"))
+  data.models[[3]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[1], "-", lev.fac2[1], "])"))
+  data.models[[4]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[1], "-", lev.fac2[2], "])"))
+  data.models[[5]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[2], "-", lev.fac2[1], "])"))
+  data.models[[6]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[2], "-", lev.fac2[2], "])"))
 
   # M3
   data.models[[7]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[1], "-", lev.fac2[1], "])"), paste0("phi_21(", lev.fac1[2], " effect", ")"))

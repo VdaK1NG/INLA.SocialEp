@@ -19,15 +19,15 @@ inla.full.graph <- function(sp_obj, graph, thresh = 0.10, snap = 5e-07, distance
   sp_obj_sf <- st_as_sf(sp_obj)
 
   # Basic checks
-  if (is.null(graph$cc) || is.null(graph$cc$nodes)) stop("Graph does not have the expected structure.")
+  if (is.null(graph$cc) || is.null(graph$cc$nodes)) stop("Graph does not have the expected structure. \n")
 
   # Turn thresh into the correct value
-  if (!is.numeric(thresh) || length(thresh) != 1 || thresh < 0) stop("Thresh must be a number >= 0 (ex. 0.1 or 10).")
+  if (!is.numeric(thresh) || length(thresh) != 1 || thresh < 0) stop("Thresh must be a number >= 0 (ex. 0.1 or 10). \n")
   thresh_prop <- if (thresh > 1) thresh / 100 else thresh
 
   n_nodes <- graph$cc$nodes
   if (length(n_nodes) == 1) {
-    cat("-> Graph only has 1 node, no need to fix it\n")
+    cat("-> Graph only has 1 node, no need to fix it \n")
     return(list(adj = poly2nb(sp_obj, snap = snap), graph = graph, connected_pairs = NULL))
   } else {
     cat(paste0("-> Graph has ", length(n_nodes), " components; connecting with thresh = ", thresh_prop, "\n"))
@@ -122,7 +122,7 @@ inla.full.graph <- function(sp_obj, graph, thresh = 0.10, snap = 5e-07, distance
       dist_val <- subm[row_idx, col_idx]
 
       if (is.na(node1) || is.na(node2)) {
-        warning(sprintf("---> Could not map ids to indices: %s - %s. Skipping.", node1_name, node2_name))
+        warning(sprintf("---> Could not map ids to indices: %s - %s. Skipping. \n", node1_name, node2_name))
         next
       }
 
@@ -140,7 +140,7 @@ inla.full.graph <- function(sp_obj, graph, thresh = 0.10, snap = 5e-07, distance
         component_joined = i,
         stringsAsFactors = FALSE
       )
-      cat(sprintf("---> (added) Connected %d(%s) <-> %d(%s) (d=%g, dist_min=%g, limit=%g)\n",
+      cat(sprintf("---> (added) Connected %d(%s) <-> %d(%s) (d=%g, dist_min=%g, limit=%g) \n",
                   node1, node1_name, node2, node2_name, dist_val, dist_min, limit))
     }
 

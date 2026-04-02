@@ -15,7 +15,7 @@ inla.MRRMSE <- function(fit_values, sim_values, n.sim=1){
   if(length(fit_values)!=length(sim_values)){stop("Vector of simulated values has different length than the vector of fitted values")}
 
   # Estimate MRRMSE
-  MRRMSE <- median(sqrt(Reduce("+",mapply(function(x,y){((x-y)/y)^2}, x=adj_risk, y=real_risk, SIMPLIFY=FALSE))/n.sim))
+  MRRMSE <- median(sqrt(Reduce("+",mapply(function(x,y){((x-y)/y)^2}, x=fit_values, y=sim_values, SIMPLIFY=FALSE))/n.sim))
 
   # Return values
   return(MRRMSE)
