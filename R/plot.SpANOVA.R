@@ -221,7 +221,7 @@ plot.SpANOVA <- function(
         na.col = NA
       )
 
-      fig_values1 <- fig_fig1$colors[which(fig_fig1$tags %in% cut(pull(sp_object, sp1),  breaks=breaks))]
+      fig_values1 <- fig_fig1$colors[which(fig_fig1$tags %in% cut(dplyr::pull(sp_object, sp1),  breaks=breaks))]
 
       fig1 <- ggplot2::ggplot(data=sp_object) +
         geom_sf(aes(fill=cut(sp1,  breaks=breaks)), colour=col_frontiers) +
@@ -267,7 +267,7 @@ plot.SpANOVA <- function(
         na.col = NA
       )
 
-      fig_values2 <- fig_fig2$colors[which(fig_fig2$tags %in% cut(pull(sp_object, sp2),  breaks=breaks))]
+      fig_values2 <- fig_fig2$colors[which(fig_fig2$tags %in% cut(dplyr::pull(sp_object, sp2),  breaks=breaks))]
 
       fig2 <- ggplot2::ggplot(data=sp_object) +
         geom_sf(aes(fill=cut(sp2,  breaks=breaks)), colour=col_frontiers) +
@@ -312,7 +312,7 @@ plot.SpANOVA <- function(
         na.col = NA
       )
 
-      fig_values3 <- fig_fig3$colors[which(fig_fig3$tags %in% cut(pull(sp_object, sp3),  breaks=breaks))]
+      fig_values3 <- fig_fig3$colors[which(fig_fig3$tags %in% cut(dplyr::pull(sp_object, sp3),  breaks=breaks))]
 
       fig3 <- ggplot2::ggplot(data=sp_object) +
         geom_sf(aes(fill=cut(sp3,  breaks=breaks)), colour=col_frontiers) +
@@ -357,7 +357,7 @@ plot.SpANOVA <- function(
         na.col = NA
       )
 
-      fig_values4 <- fig_fig4$colors[which(fig_fig4$tags %in% cut(pull(sp_object, sp4),  breaks=breaks))]
+      fig_values4 <- fig_fig4$colors[which(fig_fig4$tags %in% cut(dplyr::pull(sp_object, sp4),  breaks=breaks))]
 
       fig4 <- ggplot2::ggplot(data=sp_object) +
         geom_sf(aes(fill=cut(sp4,  breaks=breaks)), colour=col_frontiers) +
@@ -401,7 +401,7 @@ plot.SpANOVA <- function(
       na.col = NA
     )
 
-    fig_values1 <- fig_fig1$colors[which(fig_fig1$tags %in% cut(pull(sp_object, sp1),  breaks=breaks))]
+    fig_values1 <- fig_fig1$colors[which(fig_fig1$tags %in% cut(dplyr::pull(sp_object, sp1),  breaks=breaks))]
 
     fig1 <- ggplot2::ggplot(data=sp_object) +
       geom_sf(aes(fill=cut(sp1,  breaks=breaks)), colour=col_frontiers) +
@@ -429,7 +429,7 @@ plot.SpANOVA <- function(
       na.col = NA
     )
 
-    fig_values2 <- fig_fig2$colors[which(fig_fig2$tags %in% cut(pull(sp_object, sp2),  breaks=breaks))]
+    fig_values2 <- fig_fig2$colors[which(fig_fig2$tags %in% cut(dplyr::pull(sp_object, sp2),  breaks=breaks))]
 
     fig2 <- ggplot2::ggplot(data=sp_object) +
       geom_sf(aes(fill=cut(sp2,  breaks=breaks)), colour=col_frontiers) +
@@ -457,7 +457,7 @@ plot.SpANOVA <- function(
       na.col = NA
     )
 
-    fig_values3 <- fig_fig3$colors[which(fig_fig3$tags %in% cut(pull(sp_object, sp3),  breaks=breaks))]
+    fig_values3 <- fig_fig3$colors[which(fig_fig3$tags %in% cut(dplyr::pull(sp_object, sp3),  breaks=breaks))]
 
     fig3 <- ggplot2::ggplot(data=sp_object) +
       geom_sf(aes(fill=cut(sp3,  breaks=breaks)), colour=col_frontiers) +
@@ -485,7 +485,7 @@ plot.SpANOVA <- function(
       na.col = NA
     )
 
-    fig_values4 <- fig_fig4$colors[which(fig_fig4$tags %in% cut(pull(sp_object, sp4),  breaks=breaks))]
+    fig_values4 <- fig_fig4$colors[which(fig_fig4$tags %in% cut(dplyr::pull(sp_object, sp4),  breaks=breaks))]
 
     fig4 <- ggplot2::ggplot(data=sp_object) +
       geom_sf(aes(fill=cut(sp4,  breaks=breaks)), colour=col_frontiers) +

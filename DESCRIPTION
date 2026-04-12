@@ -20,6 +20,7 @@ Imports:
     broom,
     sf, 
     tidyr,
+    stringr,
     scales, 
     igraph,
     reactable

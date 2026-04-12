@@ -33,7 +33,7 @@ convert_col <- function(data,
   } else {
     paste0("[", left, ",", rightb, ")")
   }
-  labs <- str_replace_all(labs, "(?<=\\d)\\.0(?=[,\\]])", "")
+  labs <- stringr::str_replace_all(labs, "(?<=\\d)\\.0(?=[,\\]])", "")
 
   data_lab <- if (is.numeric(data)) {
     as.character(base::cut(data, breaks = breaks, right = right, include.lowest = include.lowest))

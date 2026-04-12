@@ -14,24 +14,20 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
+install.packages("INLA", repos=c(getOption("repos"), INLA="https://inla.r-inla-download.org/R/stable"), dep=TRUE)
+library("dplyr")
+library("ggplot2")
 ```
 
 # Introduction
 
 ```{r setup}
-install.packages("INLA", repos=c(getOption("repos"), INLA="https://inla.r-inla-download.org/R/stable"), dep=TRUE)
 library("INLA.SocialEp")
 ```
 
 # Understanding the inputs
 
-<b>DISCLAIMER:</b> Observed and expected values have to be given in an specific order. Consider n the number of areas, the first n values (1:n) of the obs (exp) should be the ones belonging to the FIRST level (the first position of the <b>lev.fac1</b> vector argument) of the FIRST factor (the first position of the <b>fac.names</b> vector argument) and to the FIRST level (the first position of the <b>lev.fac2</b> vector argument) of the SECOND factor (the second position of the <b>fac.names</b> vector argument). The n following values ((n+1):2n) of the obs (exp) should be the ones belonging to the FIRST level (the first position of the <b>lev.fac1</b> vector argument) of the FIRST factor (the first position of the fac.names</b> vector argument) and to the SECOND level (the second position of the <b>lev.fac2</b> vector argument) of the SECOND factor (the second position of the <b>fac.names</b> vector argument).<br/>
-<br/>
-The n following values ((2n+1):3n) of the obs (exp) should be the ones belonging to the SECOND level (the second position of the <b>lev.fac1</b> vector argument) of the FIRST factor (the first position of the <b>fac.names</b> vector argument) and to the FIRST level (the first position of the <b>lev.fac2</b> vector argument) of the SECOND factor (the second position of the <b>fac.names</b> vector argument).<br/>
-<br/>
-The n following values ((3n+1):4n) of the obs (exp) should be the ones belonging to the SECOND level (the second position of the <b>lev.fac1</b> vector argument) of the FIRST factor (the first position of the <b>fac.names</b> vector argument) and to the SECOND level (the second position of the <b>lev.fac2</b> vector argument) of the SECOND factor (the second position of the <b>fac.names</b> vector argument).<br/>
-<br/>
-The first n values are O1, the second n values are O2, the third n values are O3 and the last n values are O4.
+User needs to provide a graph for the function that can be prepared from an sf object like:
 
 ```{r}
 sec.nb <- spdep::poly2nb(sp_object_sim, snap=0.0000005)
@@ -39,39 +35,34 @@ spdep::nb2INLA("MapGraph", sec.nb)
 graph_states <- INLA::inla.read.graph("MapGraph")
 ```
 
+Moreover, the over user needs to provide the data with a data.frame that has the following structure:
+
+  * **obs**: contains the observations for the response variable per area and group.
+  * **exp**: contains the expected values per area and group.
+  * **lev.fac1**: contains the levels of *factor 1* per area and group.
+  * **lev.fac2**: contains the levels of *factor 2* per area and group.
+
+```{r}
+data_mod <- data.frame(
+  "obs" = c(sp_object_sim$OBS_M6_SIM_G1_v3, sp_object_sim$OBS_M6_SIM_G2_v3, 
+            sp_object_sim$OBS_M6_SIM_G3_v3, sp_object_sim$OBS_M6_SIM_G4_v3),
+  "exp" = c(sp_object_sim$EXP, sp_object_sim$EXP, sp_object_sim$EXP, sp_object_sim$EXP),
+  "lev.fac1" = c(rep("F1L1", graph_states$n*2), rep("F1L2", graph_states$n*2)), 
+  "lev.fac2" = c(rep("F2L1", graph_states$n), rep("F2L2", graph_states$n), rep("F2L1", graph_states$n), rep("F2L2", graph_states$n))
+)
+```
 
 # Customizing parameters
 
 There are three mainly aspects regarding the modelization and post-processing that can be modified by the user:
 
-  * **Prior Specification**:
-  * **Shared Copies in INLA**:
-  * **Saving Options**:
-
-## Prior specification
-
-## Shared Copies in INLA
-
-## Saving Inputs
-
-# Modelling
-
-## Understanding the output
-
-## High Dimension Datasets
-
-In case that you are working with a high dimensional datasets where the number of areas is high, we advise running the `inla.SpANOVA.2x2` with the option `save.mod.data=TRUE`, which will save all the necessary information to run the desired specification afterwards, and all the saving inputs options as `FALSE`. This will allow you to run through all the possible configurations without saving the complete results, which should speed things up and avoid saving undesired results.
+  * **Prior Specification**: the function allows the user to choose between uniform prior (`sp.prior = "pc.prec"`) or Penalized-Complexity priors (`sp.prior = "pc.prec"`), with the user being able to modify the paremeters of the PC prior using option `pc.prec.val = c(1, 0.01)`.
+  * **Shared Copies in INLA**: you can control if you want the shared copies to be fixed with option `sp.copy.fixed=TRUE`.
+  * **Scaled Spatial Effects**: this option controls whether the random spatial effects have their variance scaled (`TRUE`) or not (`FALSE`).
+  
+We can now run the model:
 
 ```{r chunk2}
-data_mod <- data.frame(
-  "obs" = c(sp_object_sim$OBS_M6_SIM_G1_v3, sp_object_sim$OBS_M6_SIM_G2_v3, 
-          sp_object_sim$OBS_M6_SIM_G3_v3, sp_object_sim$OBS_M6_SIM_G4_v3),
-  "exp" = c(sp_object_sim$EXP, sp_object_sim$EXP, sp_object_sim$EXP, sp_object_sim$EXP),
-  "lev.fac1" = c(rep("F1L1", graph_states$n*2), rep("F1L2", graph_states$n*2)), 
-  "lev.fac2" = c(rep("F2L1", graph_states$n), rep("F2L2", graph_states$n), rep("F2L1", graph_states$n), rep("F2L2", graph_states$n))
-)
-
-
 ResMod <- inla.SpANOVA.2x2(
   data = data_mod,
   gr = graph_states,
@@ -87,27 +78,18 @@ ResMod <- inla.SpANOVA.2x2(
   save.hyper=FALSE, 
   save.mod.data=TRUE
   )
-
-ResMod$summary
 ```
 
-After that we can re-run the model of choice, which in this case is BLABLA. We are free to change some of the parameters now, so we will try the sdunif prior, and setting `scale.mod=TRUE` and `sp.copy.fixed=TRUE`:
+After that we can run the function `inla.null.sp()`. In this case, we will set the threshold for considering a spatial effect as spurious if the standard deviation is below $0.125$:
 
-```{r chunk3, eval=FALSE}
-ResMod_fin <- inla.rerun.SpANOVA(
-  SpANOVA_obj = ResMod, 
-  n_mod = 20, 
-  gr = graph_states, 
-  scale.mod = TRUE, 
-  sp.prior = "sdunif", 
-  sp.copy.fixed = TRUE
-)
+```{r chunk3}
+ResMod <- inla.null.sp(ResMod, thres = 0.125)
 ```
 
-Since it is an INLA object we can run a summary:
+And we can finally check the summary of the results obtained:
 
 ```{r chunk4, eval=FALSE}
-summary(ResMod)
+ResMod$Summary
 ```
 
 We can also check the spatial effects adjusted:
@@ -128,7 +110,6 @@ plot.SpANOVA(
 )
 ```
 
-
 As well as the adjusted relative risks:
 
 ```{r chunk6, eval=FALSE}
@@ -147,8 +128,4 @@ plot.SpANOVA(
 )
 ```
 
-# References
-
-
 ***
-
