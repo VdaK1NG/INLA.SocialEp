@@ -2,7 +2,6 @@
 title: "Simulation Study - Data Creation"
 author: "P. Escobar-Hernandez, A. López-Quílez, F. Palmí-Perales"
 output: rmarkdown::html_document
-  toc_float: false
 vignette: >
   %\VignetteIndexEntry{Simulation Study - Data Creation}
   %\VignetteEngine{knitr::rmarkdown}

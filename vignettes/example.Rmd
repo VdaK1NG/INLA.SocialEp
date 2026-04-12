@@ -1,7 +1,6 @@
 ---
 title: "Usage Example"
 output: rmarkdown::html_document
-  toc_float: false
 vignette: >
   %\VignetteIndexEntry{Usage Example}
   %\VignetteEngine{knitr::rmarkdown}
