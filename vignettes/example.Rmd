@@ -1,6 +1,7 @@
 ---
 title: "Usage Example"
 output: rmarkdown::html_document
+  toc_float: false
 vignette: >
   %\VignetteIndexEntry{Usage Example}
   %\VignetteEngine{knitr::rmarkdown}
@@ -35,7 +36,7 @@ spdep::nb2INLA("MapGraph", sec.nb)
 graph_states <- INLA::inla.read.graph("MapGraph")
 ```
 
-Moreover, the over user needs to provide the data with a data.frame that has the following structure:
+Moreover, the user needs to provide the data with a data.frame that has the following structure:
 
   * **obs**: contains the observations for the response variable per area and group.
   * **exp**: contains the expected values per area and group.
@@ -88,13 +89,13 @@ ResMod <- inla.null.sp(ResMod, thres = 0.125)
 
 And we can finally check the summary of the results obtained:
 
-```{r chunk4, eval=FALSE}
+```{r chunk4}
 ResMod$Summary
 ```
 
 We can also check the spatial effects adjusted:
 
-```{r chunk5, eval=FALSE}
+```{r chunk5}
 plot.SpANOVA(
   obj=ResMod,
   obj_type="SpANOVA",
@@ -112,7 +113,7 @@ plot.SpANOVA(
 
 As well as the adjusted relative risks:
 
-```{r chunk6, eval=FALSE}
+```{r chunk6}
 plot.SpANOVA(
   obj=ResMod,
   obj_type="SpANOVA",
