@@ -14,7 +14,6 @@ Depends:
     R (>= 4.1.0)
 Imports:
     dplyr, 
-    ggraph,
     spdep,
     ggplot2,
     gridExtra,
@@ -22,7 +21,6 @@ Imports:
     sf, 
     tidyr,
     scales, 
-    SUMMER,
     igraph,
     reactable
 Suggests:
@@ -31,10 +29,12 @@ Suggests:
     forcats,
     foreach,
     furrr,
+    ggraph,
     future,
     future.apply,
     ggplot2,
     knitr,
+    SUMMER,
     progress,
     progressr,
     purrr,
