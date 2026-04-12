@@ -106,13 +106,13 @@ ResMod_fin <- inla.rerun.SpANOVA(
 
 Since it is an INLA object we can run a summary:
 
-```{r chunk4}
+```{r chunk4, eval=FALSE}
 summary(ResMod)
 ```
 
 We can also check the spatial effects adjusted:
 
-```{r chunk5}
+```{r chunk5, eval=FALSE}
 plot.SpANOVA(
   obj=ResMod,
   obj_type="SpANOVA",
@@ -131,7 +131,7 @@ plot.SpANOVA(
 
 As well as the adjusted relative risks:
 
-```{r chunk6}
+```{r chunk6, eval=FALSE}
 plot.SpANOVA(
   obj=ResMod,
   obj_type="SpANOVA",
