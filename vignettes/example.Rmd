@@ -87,11 +87,13 @@ ResMod <- inla.SpANOVA.2x2(
   save.hyper=FALSE, 
   save.mod.data=TRUE
   )
+
+ResMod$summary
 ```
 
 After that we can re-run the model of choice, which in this case is BLABLA. We are free to change some of the parameters now, so we will try the sdunif prior, and setting `scale.mod=TRUE` and `sp.copy.fixed=TRUE`:
 
-```{r chunk3}
+```{r chunk3, eval=FALSE}
 ResMod_fin <- inla.rerun.SpANOVA(
   SpANOVA_obj = ResMod, 
   n_mod = 20, 
@@ -105,7 +107,7 @@ ResMod_fin <- inla.rerun.SpANOVA(
 Since it is an INLA object we can run a summary:
 
 ```{r chunk4}
-summary(ResMod_fin)
+summary(ResMod)
 ```
 
 We can also check the spatial effects adjusted:
