@@ -63,9 +63,17 @@ There are three mainly aspects regarding the modelization and post-processing th
 In case that you are working with a high dimensional datasets where the number of areas is high, we advise running the `inla.SpANOVA.2x2` with the option `save.mod.data=TRUE`, which will save all the necessary information to run the desired specification afterwards, and all the saving inputs options as `FALSE`. This will allow you to run through all the possible configurations without saving the complete results, which should speed things up and avoid saving undesired results.
 
 ```{r chunk2}
+data_mod <- data.frame(
+  "obs" = c(sp_object_sim$OBS_M6_SIM_G1_v3, sp_object_sim$OBS_M6_SIM_G2_v3, 
+          sp_object_sim$OBS_M6_SIM_G3_v3, sp_object_sim$OBS_M6_SIM_G4_v3),
+  "exp" = c(sp_object_sim$EXP, sp_object_sim$EXP, sp_object_sim$EXP, sp_object_sim$EXP),
+  "lev.fac1" = c(rep("F1L1", graph_states$n*2), rep("F1L2", graph_states$n*2)), 
+  "lev.fac2" = c(rep("F2L1", graph_states$n), rep("F2L2", graph_states$n), rep("F2L1", graph_states$n), rep("F2L2", graph_states$n))
+)
+
+
 ResMod <- inla.SpANOVA.2x2(
-  obs = c(sp_object_sim$OBS_M6_SIM_G1_v3, sp_object_sim$OBS_M6_SIM_G2_v3, sp_object_sim$OBS_M6_SIM_G3_v3, sp_object_sim$OBS_M6_SIM_G4_v3), 
-  exp = c(sp_object_sim$EXP, sp_object_sim$EXP, sp_object_sim$EXP, sp_object_sim$EXP), 
+  data = data_mod,
   gr = graph_states,
   fac.names = c("F1", "F2"),
   lev.fac1 = c("F1L1", "F1L2"),
