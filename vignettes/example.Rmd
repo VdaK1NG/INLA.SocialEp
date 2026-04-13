@@ -95,7 +95,7 @@ ResMod$Summary
 We can also check the spatial effects adjusted:
 
 ```{r chunk5}
-INLA.SocialEp::plot.SpANOVA(
+INLA.SocialEp::rep.SpANOVA(
   obj=ResMod,
   obj_type="SpANOVA",
   fill_by="Spatial",
@@ -113,7 +113,7 @@ INLA.SocialEp::plot.SpANOVA(
 As well as the adjusted relative risks:
 
 ```{r chunk6}
-INLA.SocialEp::plot.SpANOVA(
+INLA.SocialEp::rep.SpANOVA(
   obj=ResMod,
   obj_type="SpANOVA",
   fill_by="RR",
