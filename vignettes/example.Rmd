@@ -21,7 +21,7 @@ library("ggplot2")
 
 # Introduction
 
-```{r setup}
+```{r}
 library("INLA.SocialEp")
 ```
 
@@ -63,7 +63,7 @@ There are three mainly aspects regarding the modelization and post-processing th
 We can now run the model:
 
 ```{r chunk2}
-ResMod <- inla.SpANOVA.2x2(
+ResMod <- INLA.SocialEp::inla.SpANOVA.2x2(
   data = data_mod,
   gr = graph_states,
   fac.names = c("F1", "F2"),
@@ -83,7 +83,7 @@ ResMod <- inla.SpANOVA.2x2(
 After that we can run the function `inla.null.sp()`. In this case, we will set the threshold for considering a spatial effect as spurious if the standard deviation is below $0.125$:
 
 ```{r chunk3}
-ResMod <- inla.null.sp(ResMod, thres = 0.125)
+ResMod <- INLA.SocialEp::inla.null.sp(ResMod, thres = 0.125)
 ```
 
 And we can finally check the summary of the results obtained:
@@ -95,7 +95,7 @@ ResMod$Summary
 We can also check the spatial effects adjusted:
 
 ```{r chunk5}
-plot.SpANOVA(
+INLA.SocialEp::plot.SpANOVA(
   obj=ResMod,
   obj_type="SpANOVA",
   fill_by="Spatial",
@@ -113,7 +113,7 @@ plot.SpANOVA(
 As well as the adjusted relative risks:
 
 ```{r chunk6}
-plot.SpANOVA(
+INLA.SocialEp::plot.SpANOVA(
   obj=ResMod,
   obj_type="SpANOVA",
   fill_by="RR",

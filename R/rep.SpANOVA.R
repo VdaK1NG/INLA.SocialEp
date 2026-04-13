@@ -17,7 +17,7 @@
 #' @return Representation of the values desired using ggplot2 as baseline
 #' @export
 
-plot.SpANOVA <- function(
+rep.SpANOVA <- function(
     obj,
     obj_type=c("SpANOVA", "INLA"),
     fill_by=c("Spatial", "Heterogeneity", "RR"),

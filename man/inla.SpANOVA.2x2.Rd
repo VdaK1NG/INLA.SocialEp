@@ -5,8 +5,7 @@
 \title{Apply SpANOVA modelization using a wrapper function in INLA}
 \usage{
 inla.SpANOVA.2x2(
-  obs,
-  exp,
+  data,
   gr,
   fac.names = NULL,
   lev.fac1 = NULL,
@@ -24,9 +23,7 @@ inla.SpANOVA.2x2(
 )
 }
 \arguments{
-\item{obs}{Vector of observed values}
-
-\item{exp}{Vector of expected values}
+\item{data}{Dataframe containing the number of events observed on column obs, the expected values on column exp, the level for factor 1 on column lev.fac1 and the level for factor 1 on column lev.fac2}
 
 \item{gr}{Graph for the underlying spatial structure}
 
@@ -63,34 +60,4 @@ List with all the models analyzed and a summary table with the most common perfo
 This function is a wrapper for multidimensional spatial factor models
 in INLA, using a sequential shared spatial effects with nested structure
 as discussed in AÑADIR REFERENCIA. \if{html}{\out{<br/>}}
-\if{html}{\out{<br/>}}
-\if{html}{\out{<b>}}DISCLAIMER:\if{html}{\out{</b>}} Observed and expected values have to be given in an specific order.
-Consider n the number of areas, the first n values (1:n) of the obs (exp) should be the ones belonging to the
-FIRST level (the first position of the \if{html}{\out{<b>}}lev.fac1\if{html}{\out{</b>}} vector argument) of the
-FIRST factor (the first position of the \if{html}{\out{<b>}}fac.names\if{html}{\out{</b>}} vector argument) and
-to the FIRST level (the first position of the \if{html}{\out{<b>}}lev.fac2\if{html}{\out{</b>}} vector argument)
-of the SECOND factor (the second position of the \if{html}{\out{<b>}}fac.names\if{html}{\out{</b>}} vector argument).
-The n following values ((n+1):2n) of the obs (exp) should be the ones
-belonging to the FIRST level (the first position of the \if{html}{\out{<b>}}lev.fac1\if{html}{\out{</b>}} vector
-argument) of the FIRST factor (the first position of the fac.names\if{html}{\out{</b>}}
-vector argument) and to the SECOND level (the second position of the
-\if{html}{\out{<b>}}lev.fac2\if{html}{\out{</b>}} vector argument) of the SECOND factor (the second position of
-the \if{html}{\out{<b>}}fac.names\if{html}{\out{</b>}} vector argument).\if{html}{\out{<br/>}}
-\if{html}{\out{<br/>}}
-The n following values ((2n+1):3n) of the obs (exp) should be the ones
-belonging to the SECOND level (the second position of the \if{html}{\out{<b>}}lev.fac1\if{html}{\out{</b>}} vector
-argument) of the FIRST factor (the first position of the \if{html}{\out{<b>}}fac.names\if{html}{\out{</b>}}
-vector argument) and to the FIRST level (the first position of the
-\if{html}{\out{<b>}}lev.fac2\if{html}{\out{</b>}} vector argument) of the SECOND factor (the second position of
-the \if{html}{\out{<b>}}fac.names\if{html}{\out{</b>}} vector argument).\if{html}{\out{<br/>}}
-\if{html}{\out{<br/>}}
-The n following values ((3n+1):4n) of the obs (exp) should be the ones
-belonging to the SECOND level (the second position of the \if{html}{\out{<b>}}lev.fac1\if{html}{\out{</b>}} vector
-argument) of the FIRST factor (the first position of the \if{html}{\out{<b>}}fac.names\if{html}{\out{</b>}}
-vector argument) and to the SECOND level (the second position of the
-\if{html}{\out{<b>}}lev.fac2\if{html}{\out{</b>}} vector argument) of the SECOND factor (the second position of
-the \if{html}{\out{<b>}}fac.names\if{html}{\out{</b>}} vector argument).\if{html}{\out{<br/>}}
-\if{html}{\out{<br/>}}
-The first n values are O1, the second n values are O2, the third n values
-are O3 and the last n values are O4
 }
