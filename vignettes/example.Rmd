@@ -92,7 +92,7 @@ And we can finally check the summary of the results obtained:
 ResMod$Summary
 ```
 
-We can also plot the spatial effects adjusted for each of the models using the function `rep.SpANOVA()``:
+We can also plot the spatial effects adjusted for each of the models using the function `plot.SpANOVA()``:
 
 ```{r include=FALSE}
 library("stringr")
@@ -138,7 +138,7 @@ convert_col <- function(data,
 }
 
 
-rep.SpANOVA <- function(
+plot.SpANOVA <- function(
     obj,
     obj_type=c("SpANOVA", "INLA"),
     fill_by=c("Spatial", "Heterogeneity", "RR"),
@@ -631,8 +631,8 @@ rep.SpANOVA <- function(
 ```
 
 
-```{r chunk5}
-rep.SpANOVA(
+```{r chunk5, eval=FALSE}
+plot.SpANOVA(
   obj=ResMod,
   obj_type="SpANOVA",
   fill_by="Spatial",
@@ -649,8 +649,8 @@ rep.SpANOVA(
 
 As well as the adjusted relative risks:
 
-```{r chunk6}
-INLA.SocialEp::rep.SpANOVA(
+```{r chunk6, eval=FALSE}
+INLA.SocialEp::plot.SpANOVA(
   obj=ResMod,
   obj_type="SpANOVA",
   fill_by="RR",

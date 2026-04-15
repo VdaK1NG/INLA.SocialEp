@@ -50,7 +50,7 @@ reference:
   contents:
   - inla.full.graph
   - convert_col
-  - rep.SpANOVA
+  - plot.SpANOVA
 - title: Package Data
 - subtitle: Datasets
   desc: |
