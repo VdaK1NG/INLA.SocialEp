@@ -83,7 +83,7 @@ ResMod <- INLA.SocialEp::inla.SpANOVA.2x2(
 And we can check the summary of the results obtained:
 
 ```{r chunk4}
-table(ResMod$Summary)
+ResMod$Summary
 ```
 
 We can also plot the spatial effects adjusted for each of the models using the function `plot.SpANOVA()``:
