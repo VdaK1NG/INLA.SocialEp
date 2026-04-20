@@ -19,11 +19,13 @@
 #' @param save.hyper Save hyperparameter values from each individual model, default is TRUE
 #' @param verbose.INLA Verbose option for INLA, default is FALSE
 #' @param save.mod.data Save modelling data to run the model afterwards
+#' @param thres thres value for inla.null.sp function
 #' @return List with all the models analyzed and a summary table with the most common performance metrics.
 #' @export
 
 inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fac2 = NULL, scale.mod=TRUE, sp.prior="sdunif", pc.prec.val = c(1, 0.01),
-                             sp.copy.fixed=TRUE, save.res=FALSE, save.random=TRUE, save.hyper=TRUE, save.fixed=TRUE, save.mod.data=FALSE, verbose.INLA=FALSE) {
+                             sp.copy.fixed=TRUE, save.res=FALSE, save.random=TRUE, save.hyper=TRUE, save.fixed=TRUE, save.mod.data=FALSE, verbose.INLA=FALSE,
+                             thres=0.125) {
 
   ## Print warnings (warnings are printed as they occur)
   options(warn=1)
@@ -2984,10 +2986,11 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     )
   )
 
+  data_summary$CPU <- round(data_summary$CPU, 2)
+
   data.models[[23]] <- data_summary
   names(data.models)[23] <- "Summary"
-  data.models <- INLA.SocialEp::inla.null.sp(data.models)
-  print(data_summary)
+  data.models <- INLA.SocialEp::inla.null.sp(data.models, thres = 0.125)
 
   # Devolvemos lista con todos los modelos
   return(data.models)

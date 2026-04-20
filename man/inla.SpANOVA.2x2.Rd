@@ -19,7 +19,8 @@ inla.SpANOVA.2x2(
   save.hyper = TRUE,
   save.fixed = TRUE,
   save.mod.data = FALSE,
-  verbose.INLA = FALSE
+  verbose.INLA = FALSE,
+  thres = 0.125
 )
 }
 \arguments{
@@ -52,6 +53,8 @@ inla.SpANOVA.2x2(
 \item{save.mod.data}{Save modelling data to run the model afterwards}
 
 \item{verbose.INLA}{Verbose option for INLA, default is FALSE}
+
+\item{thres}{thres value for inla.null.sp function}
 }
 \value{
 List with all the models analyzed and a summary table with the most common performance metrics.

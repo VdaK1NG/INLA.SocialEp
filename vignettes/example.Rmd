@@ -80,16 +80,10 @@ ResMod <- INLA.SocialEp::inla.SpANOVA.2x2(
   )
 ```
 
-After that we can run the function `inla.null.sp()`. In this case, we will set the threshold for considering a spatial effect as spurious if the standard deviation is below $0.125$:
-
-```{r chunk3}
-ResMod <- INLA.SocialEp::inla.null.sp(ResMod, thres = 0.125)
-```
-
-And we can finally check the summary of the results obtained:
+And we can check the summary of the results obtained:
 
 ```{r chunk4}
-ResMod$Summary
+table(ResMod$Summary)
 ```
 
 We can also plot the spatial effects adjusted for each of the models using the function `plot.SpANOVA()``:
@@ -650,7 +644,7 @@ plot.SpANOVA(
 As well as the adjusted relative risks:
 
 ```{r chunk6, eval=FALSE}
-INLA.SocialEp::plot.SpANOVA(
+plot.SpANOVA(
   obj=ResMod,
   obj_type="SpANOVA",
   fill_by="RR",
