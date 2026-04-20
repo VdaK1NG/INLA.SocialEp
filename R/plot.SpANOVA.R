@@ -65,10 +65,10 @@ plot.SpANOVA <- function(
       sp_object$sp4 <- obj[[n_mod]]$summary.fitted.values$mean[(3*nrow(sp_object)+1):(4*nrow(sp_object))]
     }else if(fill_by=="Spatial"){
       if(n_mod == 1){
-        sp_object$sp1 <- NA
-        sp_object$sp2 <- NA
-        sp_object$sp3 <- NA
-        sp_object$sp4 <- NA
+        sp_object$sp1 <- "No Value"
+        sp_object$sp2 <- "No Value"
+        sp_object$sp3 <- "No Value"
+        sp_object$sp4 <- "No Value"
       }else if(n_mod == 2){
         sp_object$sp1 <- obj[[n_mod]]$summary.random$phi_1$mean
         sp_object$sp2 <- obj[[n_mod]]$summary.random$phi_2$mean
@@ -76,24 +76,24 @@ plot.SpANOVA <- function(
         sp_object$sp4 <- obj[[n_mod]]$summary.random$phi_4$mean
       }else if(n_mod %in% c(3, 4, 5, 6)){
         sp_object$sp1 <- obj[[n_mod]]$summary.random$phi_11$mean
-        sp_object$sp2 <- NA
-        sp_object$sp3 <- NA
-        sp_object$sp4 <- NA
+        sp_object$sp2 <- "No Value"
+        sp_object$sp3 <- "No Value"
+        sp_object$sp4 <- "No Value"
       }else if(n_mod %in% c(7, 8)){
         sp_object$sp1 <- obj[[n_mod]]$summary.random$phi_11$mean
         sp_object$sp2 <- obj[[n_mod]]$summary.random$phi_21$mean
-        sp_object$sp3 <- NA
-        sp_object$sp4 <- NA
+        sp_object$sp3 <- "No Value"
+        sp_object$sp4 <- "No Value"
       }else if(n_mod %in% c(9, 10)){
         sp_object$sp1 <- obj[[n_mod]]$summary.random$phi_11$mean
         sp_object$sp2 <- obj[[n_mod]]$summary.random$phi_12$mean
-        sp_object$sp3 <- NA
-        sp_object$sp4 <- NA
+        sp_object$sp3 <- "No Value"
+        sp_object$sp4 <- "No Value"
       }else if(n_mod %in% c(11, 12, 13, 14)){
         sp_object$sp1 <- obj[[n_mod]]$summary.random$phi_11$mean
         sp_object$sp2 <- obj[[n_mod]]$summary.random$phi_12$mean
         sp_object$sp3 <- obj[[n_mod]]$summary.random$phi_21$mean
-        sp_object$sp4 <- NA
+        sp_object$sp4 <- "No Value"
       }else if(n_mod %in% c(15, 16, 17, 18, 19, 20, 21, 22)){
         sp_object$sp1 <- obj[[n_mod]]$summary.random$phi_11$mean
         sp_object$sp2 <- obj[[n_mod]]$summary.random$phi_12$mean
@@ -114,10 +114,10 @@ plot.SpANOVA <- function(
       sp_object$sp4 <- obj$summary.fitted.values$mean[(3*nrow(sp_object)+1):(4*nrow(sp_object))]
     }else if(fill_by=="Spatial"){
       if(n_mod == 1){
-        sp_object$sp1 <- NA
-        sp_object$sp2 <- NA
-        sp_object$sp3 <- NA
-        sp_object$sp4 <- NA
+        sp_object$sp1 <- "No Value"
+        sp_object$sp2 <- "No Value"
+        sp_object$sp3 <- "No Value"
+        sp_object$sp4 <- "No Value"
       }else if(n_mod == 2){
         sp_object$sp1 <- obj$summary.random$phi_1$mean
         sp_object$sp2 <- obj$summary.random$phi_2$mean
@@ -125,24 +125,24 @@ plot.SpANOVA <- function(
         sp_object$sp4 <- obj$summary.random$phi_4$mean
       }else if(n_mod %in% c(3, 4, 5, 6)){
         sp_object$sp1 <- obj$summary.random$phi_11$mean
-        sp_object$sp2 <- NA
-        sp_object$sp3 <- NA
-        sp_object$sp4 <- NA
+        sp_object$sp2 <- "No Value"
+        sp_object$sp3 <- "No Value"
+        sp_object$sp4 <- "No Value"
       }else if(n_mod %in% c(7, 8)){
         sp_object$sp1 <- obj$summary.random$phi_11$mean
         sp_object$sp2 <- obj$summary.random$phi_21$mean
-        sp_object$sp3 <- NA
-        sp_object$sp4 <- NA
+        sp_object$sp3 <- "No Value"
+        sp_object$sp4 <- "No Value"
       }else if(n_mod %in% c(9, 10)){
         sp_object$sp1 <- obj$summary.random$phi_11$mean
         sp_object$sp2 <- obj$summary.random$phi_12$mean
-        sp_object$sp3 <- NA
-        sp_object$sp4 <- NA
+        sp_object$sp3 <- "No Value"
+        sp_object$sp4 <- "No Value"
       }else if(n_mod %in% c(11, 12, 13, 14)){
         sp_object$sp1 <- obj$summary.random$phi_11$mean
         sp_object$sp2 <- obj$summary.random$phi_12$mean
         sp_object$sp3 <- obj$summary.random$phi_21$mean
-        sp_object$sp4 <- NA
+        sp_object$sp4 <- "No Value"
       }else if(n_mod %in% c(15, 16, 17, 18, 19, 20, 21, 22)){
         sp_object$sp1 <- obj$summary.random$phi_11$mean
         sp_object$sp2 <- obj$summary.random$phi_12$mean
@@ -153,10 +153,10 @@ plot.SpANOVA <- function(
   }
 
   # Estimate standard deviation for each effect
-  sd_sp1 <- round(sd(pull(sp_object, sp1)), 2)
-  sd_sp2 <- round(sd(pull(sp_object, sp2)), 2)
-  sd_sp3 <- round(sd(pull(sp_object, sp3)), 2)
-  sd_sp4 <- round(sd(pull(sp_object, sp4)), 2)
+  sd_sp1 <- round(sd(pull(sp_object, sp1)), 3)
+  sd_sp2 <- round(sd(pull(sp_object, sp2)), 3)
+  sd_sp3 <- round(sd(pull(sp_object, sp3)), 3)
+  sd_sp4 <- round(sd(pull(sp_object, sp4)), 3)
 
   # Create titles
   if(fill_by=="Spatial"){
@@ -211,7 +211,7 @@ plot.SpANOVA <- function(
   # Prepare Figures
   if(fill_by %in% c("Spatial", "Heterogeneity")){
     # Create fig1
-    if(sum(is.na(sp_object$sp1))==0){
+    if(sum(sp_object$sp1=="No Value")==0){
       fig_fig1 <- convert_col(
         data = sp_object$sp1,
         breaks = breaks,
@@ -241,7 +241,7 @@ plot.SpANOVA <- function(
     }else{
       fig1 <- ggplot2::ggplot(data=sp_object) +
         geom_sf(aes(fill=sp1), colour=col_frontiers) +
-        scale_fill_manual(name=scale_name) +
+        scale_fill_manual(values="grey24", name=scale_name) +
         ggtitle(title1, subtitle = paste0("No Effect")) +
         theme(
           plot.title = element_text(size=14, face= "bold", colour= "black", hjust = 0),
@@ -257,7 +257,7 @@ plot.SpANOVA <- function(
 
 
     # Create fig2
-    if(sum(is.na(sp_object$sp2))==0){
+    if(sum(sp_object$sp2=="No Value")==0){
       fig_fig2 <- convert_col(
         data = sp_object$sp2,
         breaks = breaks,
@@ -287,7 +287,7 @@ plot.SpANOVA <- function(
     }else{
       fig2 <- ggplot2::ggplot(data=sp_object) +
         geom_sf(aes(fill=sp2), colour=col_frontiers) +
-        scale_fill_manual(name=scale_name) +
+        scale_fill_manual(values="grey24", name=scale_name) +
         ggtitle(title2, subtitle = paste0("No Effect")) +
         theme(
           plot.title = element_text(size=14, face= "bold", colour= "black", hjust = 0),
@@ -302,7 +302,7 @@ plot.SpANOVA <- function(
     }
 
     # Create fig3
-    if(sum(is.na(sp_object$sp3))==0){
+    if(sum(sp_object$sp3=="No Value")==0){
       fig_fig3 <- convert_col(
         data = sp_object$sp3,
         breaks = breaks,
@@ -332,7 +332,7 @@ plot.SpANOVA <- function(
     }else{
       fig3 <- ggplot2::ggplot(data=sp_object) +
         geom_sf(aes(fill=sp3), colour=col_frontiers) +
-        scale_fill_manual(name=scale_name) +
+        scale_fill_manual(values="grey24", name=scale_name) +
         ggtitle(title3, subtitle = paste0("No Effect")) +
         theme(
           plot.title = element_text(size=14, face= "bold", colour= "black", hjust = 0),
@@ -347,7 +347,7 @@ plot.SpANOVA <- function(
     }
 
     # Create fig4
-    if(sum(is.na(sp_object$sp4))==0){
+    if(sum(sp_object$sp4=="No Value")==0){
       fig_fig4 <- convert_col(
         data = sp_object$sp4,
         breaks = breaks,
@@ -377,7 +377,7 @@ plot.SpANOVA <- function(
     }else{
       fig4 <- ggplot2::ggplot(data=sp_object) +
         geom_sf(aes(fill=sp4), colour=col_frontiers) +
-        scale_fill_manual(name=scale_name) +
+        scale_fill_manual(values="grey24", name=scale_name) +
         ggtitle(title4, subtitle = paste0("No Effect")) +
         theme(
           plot.title = element_text(size=14, face= "bold", colour= "black", hjust = 0),
