@@ -315,7 +315,7 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     if(save.hyper==TRUE){list_temp$summary.hyperpar <- ResMod$summary.hyperpar}
 
     # Extract RME for each group
-    list_temp$RME <- ResMod$summary.fitted.values$mean
+    list_temp$summary.fitted.values <- ResMod$summary.fitted.values
 
     # Clean Environment
     rm(ResMod)

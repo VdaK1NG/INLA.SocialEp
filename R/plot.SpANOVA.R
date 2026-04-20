@@ -6,7 +6,7 @@
 #' @param obj_type Type of object provided, options are SpANOVA or INLA after running inla.rerun.SpANOVA
 #' @param fill_by Values to represent, choosing between Spatial, Heterogeneity and RR
 #' @param n_mod Number of the model specification that the user wants to represent
-#' @param sp_object Spatial object to be plotted
+#' @param sp_obj Spatial object to be plotted
 #' @param breaks Breaks for the color palette in case the user wants to modify the default ones
 #' @param fil_scale Vector of colors in case the user wants to modify the default ones
 #' @param col_frontiers Colour for the lines that define each polygon, default is black
@@ -22,7 +22,7 @@ plot.SpANOVA <- function(
     obj_type=c("SpANOVA", "INLA"),
     fill_by=c("Spatial", "Heterogeneity", "RR"),
     n_mod,
-    sp_object,
+    sp_obj,
     breaks=NA,
     fil_scale=c("#133BF2", "#7189F7", "#FFFFFF", "#FF867A", "#FF2F1B"),
     col_frontiers="black",
@@ -54,109 +54,109 @@ plot.SpANOVA <- function(
   # Prepare data to plot
   if(obj_type=="SpANOVA"){
     if(fill_by=="Heterogeneity"){
-      sp_object$sp1 <- obj[[n_mod]]$summary.random$omega_j$mean[1:nrow(sp_object)]
-      sp_object$sp2 <- obj[[n_mod]]$summary.random$omega_j$mean[(nrow(sp_object)+1):(2*nrow(sp_object))]
-      sp_object$sp3 <- obj[[n_mod]]$summary.random$omega_j$mean[((2*nrow(sp_object)+1)):(3*nrow(sp_object))]
-      sp_object$sp4 <- obj[[n_mod]]$summary.random$omega_j$mean[(3*nrow(sp_object)+1):(4*nrow(sp_object))]
+      sp_obj$sp1 <- obj[[n_mod]]$summary.random$omega_j$mean[1:nrow(sp_obj)]
+      sp_obj$sp2 <- obj[[n_mod]]$summary.random$omega_j$mean[(nrow(sp_obj)+1):(2*nrow(sp_obj))]
+      sp_obj$sp3 <- obj[[n_mod]]$summary.random$omega_j$mean[((2*nrow(sp_obj)+1)):(3*nrow(sp_obj))]
+      sp_obj$sp4 <- obj[[n_mod]]$summary.random$omega_j$mean[(3*nrow(sp_obj)+1):(4*nrow(sp_obj))]
     }else if(fill_by=="RR"){
-      sp_object$sp1 <- obj[[n_mod]]$summary.fitted.values$mean[1:nrow(sp_object)]
-      sp_object$sp2 <- obj[[n_mod]]$summary.fitted.values$mean[(nrow(sp_object)+1):(2*nrow(sp_object))]
-      sp_object$sp3 <- obj[[n_mod]]$summary.fitted.values$mean[((2*nrow(sp_object)+1)):(3*nrow(sp_object))]
-      sp_object$sp4 <- obj[[n_mod]]$summary.fitted.values$mean[(3*nrow(sp_object)+1):(4*nrow(sp_object))]
+      sp_obj$sp1 <- obj[[n_mod]]$summary.fitted.values$mean[1:nrow(sp_obj)]
+      sp_obj$sp2 <- obj[[n_mod]]$summary.fitted.values$mean[(nrow(sp_obj)+1):(2*nrow(sp_obj))]
+      sp_obj$sp3 <- obj[[n_mod]]$summary.fitted.values$mean[((2*nrow(sp_obj)+1)):(3*nrow(sp_obj))]
+      sp_obj$sp4 <- obj[[n_mod]]$summary.fitted.values$mean[(3*nrow(sp_obj)+1):(4*nrow(sp_obj))]
     }else if(fill_by=="Spatial"){
       if(n_mod == 1){
-        sp_object$sp1 <- "No Value"
-        sp_object$sp2 <- "No Value"
-        sp_object$sp3 <- "No Value"
-        sp_object$sp4 <- "No Value"
+        sp_obj$sp1 <- "No Value"
+        sp_obj$sp2 <- "No Value"
+        sp_obj$sp3 <- "No Value"
+        sp_obj$sp4 <- "No Value"
       }else if(n_mod == 2){
-        sp_object$sp1 <- obj[[n_mod]]$summary.random$phi_1$mean
-        sp_object$sp2 <- obj[[n_mod]]$summary.random$phi_2$mean
-        sp_object$sp3 <- obj[[n_mod]]$summary.random$phi_3$mean
-        sp_object$sp4 <- obj[[n_mod]]$summary.random$phi_4$mean
+        sp_obj$sp1 <- obj[[n_mod]]$summary.random$phi_1$mean
+        sp_obj$sp2 <- obj[[n_mod]]$summary.random$phi_2$mean
+        sp_obj$sp3 <- obj[[n_mod]]$summary.random$phi_3$mean
+        sp_obj$sp4 <- obj[[n_mod]]$summary.random$phi_4$mean
       }else if(n_mod %in% c(3, 4, 5, 6)){
-        sp_object$sp1 <- obj[[n_mod]]$summary.random$phi_11$mean
-        sp_object$sp2 <- "No Value"
-        sp_object$sp3 <- "No Value"
-        sp_object$sp4 <- "No Value"
+        sp_obj$sp1 <- obj[[n_mod]]$summary.random$phi_11$mean
+        sp_obj$sp2 <- "No Value"
+        sp_obj$sp3 <- "No Value"
+        sp_obj$sp4 <- "No Value"
       }else if(n_mod %in% c(7, 8)){
-        sp_object$sp1 <- obj[[n_mod]]$summary.random$phi_11$mean
-        sp_object$sp2 <- obj[[n_mod]]$summary.random$phi_21$mean
-        sp_object$sp3 <- "No Value"
-        sp_object$sp4 <- "No Value"
+        sp_obj$sp1 <- obj[[n_mod]]$summary.random$phi_11$mean
+        sp_obj$sp2 <- obj[[n_mod]]$summary.random$phi_21$mean
+        sp_obj$sp3 <- "No Value"
+        sp_obj$sp4 <- "No Value"
       }else if(n_mod %in% c(9, 10)){
-        sp_object$sp1 <- obj[[n_mod]]$summary.random$phi_11$mean
-        sp_object$sp2 <- obj[[n_mod]]$summary.random$phi_12$mean
-        sp_object$sp3 <- "No Value"
-        sp_object$sp4 <- "No Value"
+        sp_obj$sp1 <- obj[[n_mod]]$summary.random$phi_11$mean
+        sp_obj$sp2 <- obj[[n_mod]]$summary.random$phi_12$mean
+        sp_obj$sp3 <- "No Value"
+        sp_obj$sp4 <- "No Value"
       }else if(n_mod %in% c(11, 12, 13, 14)){
-        sp_object$sp1 <- obj[[n_mod]]$summary.random$phi_11$mean
-        sp_object$sp2 <- obj[[n_mod]]$summary.random$phi_12$mean
-        sp_object$sp3 <- obj[[n_mod]]$summary.random$phi_21$mean
-        sp_object$sp4 <- "No Value"
+        sp_obj$sp1 <- obj[[n_mod]]$summary.random$phi_11$mean
+        sp_obj$sp2 <- obj[[n_mod]]$summary.random$phi_12$mean
+        sp_obj$sp3 <- obj[[n_mod]]$summary.random$phi_21$mean
+        sp_obj$sp4 <- "No Value"
       }else if(n_mod %in% c(15, 16, 17, 18, 19, 20, 21, 22)){
-        sp_object$sp1 <- obj[[n_mod]]$summary.random$phi_11$mean
-        sp_object$sp2 <- obj[[n_mod]]$summary.random$phi_12$mean
-        sp_object$sp3 <- obj[[n_mod]]$summary.random$phi_21$mean
-        sp_object$sp4 <- obj[[n_mod]]$summary.random$phi_22$mean
+        sp_obj$sp1 <- obj[[n_mod]]$summary.random$phi_11$mean
+        sp_obj$sp2 <- obj[[n_mod]]$summary.random$phi_12$mean
+        sp_obj$sp3 <- obj[[n_mod]]$summary.random$phi_21$mean
+        sp_obj$sp4 <- obj[[n_mod]]$summary.random$phi_22$mean
       }
     }
   }else if(obj_type=="INLA"){
     if(fill_by=="Heterogeneity"){
-      sp_object$sp1 <- obj$summary.random$omega_j$mean[1:nrow(sp_object)]
-      sp_object$sp2 <- obj$summary.random$omega_j$mean[(nrow(sp_object)+1):(2*nrow(sp_object))]
-      sp_object$sp3 <- obj$summary.random$omega_j$mean[((2*nrow(sp_object)+1)):(3*nrow(sp_object))]
-      sp_object$sp4 <- obj$summary.random$omega_j$mean[(3*nrow(sp_object)+1):(4*nrow(sp_object))]
+      sp_obj$sp1 <- obj$summary.random$omega_j$mean[1:nrow(sp_obj)]
+      sp_obj$sp2 <- obj$summary.random$omega_j$mean[(nrow(sp_obj)+1):(2*nrow(sp_obj))]
+      sp_obj$sp3 <- obj$summary.random$omega_j$mean[((2*nrow(sp_obj)+1)):(3*nrow(sp_obj))]
+      sp_obj$sp4 <- obj$summary.random$omega_j$mean[(3*nrow(sp_obj)+1):(4*nrow(sp_obj))]
     }else if(fill_by=="RR"){
-      sp_object$sp1 <- obj$summary.fitted.values$mean[1:nrow(sp_object)]
-      sp_object$sp2 <- obj$summary.fitted.values$mean[(nrow(sp_object)+1):(2*nrow(sp_object))]
-      sp_object$sp3 <- obj$summary.fitted.values$mean[((2*nrow(sp_object)+1)):(3*nrow(sp_object))]
-      sp_object$sp4 <- obj$summary.fitted.values$mean[(3*nrow(sp_object)+1):(4*nrow(sp_object))]
+      sp_obj$sp1 <- obj$summary.fitted.values$mean[1:nrow(sp_obj)]
+      sp_obj$sp2 <- obj$summary.fitted.values$mean[(nrow(sp_obj)+1):(2*nrow(sp_obj))]
+      sp_obj$sp3 <- obj$summary.fitted.values$mean[((2*nrow(sp_obj)+1)):(3*nrow(sp_obj))]
+      sp_obj$sp4 <- obj$summary.fitted.values$mean[(3*nrow(sp_obj)+1):(4*nrow(sp_obj))]
     }else if(fill_by=="Spatial"){
       if(n_mod == 1){
-        sp_object$sp1 <- "No Value"
-        sp_object$sp2 <- "No Value"
-        sp_object$sp3 <- "No Value"
-        sp_object$sp4 <- "No Value"
+        sp_obj$sp1 <- "No Value"
+        sp_obj$sp2 <- "No Value"
+        sp_obj$sp3 <- "No Value"
+        sp_obj$sp4 <- "No Value"
       }else if(n_mod == 2){
-        sp_object$sp1 <- obj$summary.random$phi_1$mean
-        sp_object$sp2 <- obj$summary.random$phi_2$mean
-        sp_object$sp3 <- obj$summary.random$phi_3$mean
-        sp_object$sp4 <- obj$summary.random$phi_4$mean
+        sp_obj$sp1 <- obj$summary.random$phi_1$mean
+        sp_obj$sp2 <- obj$summary.random$phi_2$mean
+        sp_obj$sp3 <- obj$summary.random$phi_3$mean
+        sp_obj$sp4 <- obj$summary.random$phi_4$mean
       }else if(n_mod %in% c(3, 4, 5, 6)){
-        sp_object$sp1 <- obj$summary.random$phi_11$mean
-        sp_object$sp2 <- "No Value"
-        sp_object$sp3 <- "No Value"
-        sp_object$sp4 <- "No Value"
+        sp_obj$sp1 <- obj$summary.random$phi_11$mean
+        sp_obj$sp2 <- "No Value"
+        sp_obj$sp3 <- "No Value"
+        sp_obj$sp4 <- "No Value"
       }else if(n_mod %in% c(7, 8)){
-        sp_object$sp1 <- obj$summary.random$phi_11$mean
-        sp_object$sp2 <- obj$summary.random$phi_21$mean
-        sp_object$sp3 <- "No Value"
-        sp_object$sp4 <- "No Value"
+        sp_obj$sp1 <- obj$summary.random$phi_11$mean
+        sp_obj$sp2 <- obj$summary.random$phi_21$mean
+        sp_obj$sp3 <- "No Value"
+        sp_obj$sp4 <- "No Value"
       }else if(n_mod %in% c(9, 10)){
-        sp_object$sp1 <- obj$summary.random$phi_11$mean
-        sp_object$sp2 <- obj$summary.random$phi_12$mean
-        sp_object$sp3 <- "No Value"
-        sp_object$sp4 <- "No Value"
+        sp_obj$sp1 <- obj$summary.random$phi_11$mean
+        sp_obj$sp2 <- obj$summary.random$phi_12$mean
+        sp_obj$sp3 <- "No Value"
+        sp_obj$sp4 <- "No Value"
       }else if(n_mod %in% c(11, 12, 13, 14)){
-        sp_object$sp1 <- obj$summary.random$phi_11$mean
-        sp_object$sp2 <- obj$summary.random$phi_12$mean
-        sp_object$sp3 <- obj$summary.random$phi_21$mean
-        sp_object$sp4 <- "No Value"
+        sp_obj$sp1 <- obj$summary.random$phi_11$mean
+        sp_obj$sp2 <- obj$summary.random$phi_12$mean
+        sp_obj$sp3 <- obj$summary.random$phi_21$mean
+        sp_obj$sp4 <- "No Value"
       }else if(n_mod %in% c(15, 16, 17, 18, 19, 20, 21, 22)){
-        sp_object$sp1 <- obj$summary.random$phi_11$mean
-        sp_object$sp2 <- obj$summary.random$phi_12$mean
-        sp_object$sp3 <- obj$summary.random$phi_21$mean
-        sp_object$sp4 <- obj$summary.random$phi_22$mean
+        sp_obj$sp1 <- obj$summary.random$phi_11$mean
+        sp_obj$sp2 <- obj$summary.random$phi_12$mean
+        sp_obj$sp3 <- obj$summary.random$phi_21$mean
+        sp_obj$sp4 <- obj$summary.random$phi_22$mean
       }
     }
   }
 
   # Estimate standard deviation for each effect
-  sd_sp1 <- round(sd(pull(sp_object, sp1)), 3)
-  sd_sp2 <- round(sd(pull(sp_object, sp2)), 3)
-  sd_sp3 <- round(sd(pull(sp_object, sp3)), 3)
-  sd_sp4 <- round(sd(pull(sp_object, sp4)), 3)
+  sd_sp1 <- round(sd(sp_obj$sp1), 3)
+  sd_sp2 <- round(sd(sp_obj$sp2), 3)
+  sd_sp3 <- round(sd(sp_obj$sp3), 3)
+  sd_sp4 <- round(sd(sp_obj$sp4), 3)
 
   # Create titles
   if(fill_by=="Spatial"){
@@ -211,9 +211,9 @@ plot.SpANOVA <- function(
   # Prepare Figures
   if(fill_by %in% c("Spatial", "Heterogeneity")){
     # Create fig1
-    if(sum(sp_object$sp1=="No Value")==0){
+    if(sum(sp_obj$sp1=="No Value")==0){
       fig_fig1 <- convert_col(
-        data = sp_object$sp1,
+        data = sp_obj$sp1,
         breaks = breaks,
         pal_fun = CScale,
         right = TRUE,
@@ -221,9 +221,9 @@ plot.SpANOVA <- function(
         na.col = NA
       )
 
-      fig_values1 <- fig_fig1$colors[which(fig_fig1$tags %in% cut(dplyr::pull(sp_object, sp1),  breaks=breaks))]
+      fig_values1 <- fig_fig1$colors[which(fig_fig1$tags %in% cut(sp_obj$sp1,  breaks=breaks))]
 
-      fig1 <- ggplot2::ggplot(data=sp_object) +
+      fig1 <- ggplot2::ggplot(data=sp_obj) +
         geom_sf(aes(fill=cut(sp1,  breaks=breaks)), colour=col_frontiers) +
         geom_sf(aes(), fill=fig_fig1$fill_by, colour=col_frontiers) +
         ggtitle(title1, subtitle = ifelse(sd_sp1 < sp_null, paste0("Standard Deviation = ", sd_sp1, "*"), paste0("Standard Deviation = ", sd_sp1))) +
@@ -239,7 +239,7 @@ plot.SpANOVA <- function(
           legend.position = legend.position
         )
     }else{
-      fig1 <- ggplot2::ggplot(data=sp_object) +
+      fig1 <- ggplot2::ggplot(data=sp_obj) +
         geom_sf(aes(fill=sp1), colour=col_frontiers) +
         scale_fill_manual(values="grey24", name=scale_name) +
         ggtitle(title1, subtitle = paste0("No Effect")) +
@@ -257,9 +257,9 @@ plot.SpANOVA <- function(
 
 
     # Create fig2
-    if(sum(sp_object$sp2=="No Value")==0){
+    if(sum(sp_obj$sp2=="No Value")==0){
       fig_fig2 <- convert_col(
-        data = sp_object$sp2,
+        data = sp_obj$sp2,
         breaks = breaks,
         pal_fun = CScale,
         right = TRUE,
@@ -267,9 +267,9 @@ plot.SpANOVA <- function(
         na.col = NA
       )
 
-      fig_values2 <- fig_fig2$colors[which(fig_fig2$tags %in% cut(dplyr::pull(sp_object, sp2),  breaks=breaks))]
+      fig_values2 <- fig_fig2$colors[which(fig_fig2$tags %in% cut(sp_obj$sp2,  breaks=breaks))]
 
-      fig2 <- ggplot2::ggplot(data=sp_object) +
+      fig2 <- ggplot2::ggplot(data=sp_obj) +
         geom_sf(aes(fill=cut(sp2,  breaks=breaks)), colour=col_frontiers) +
         geom_sf(aes(), fill=fig_fig2$fill_by, colour=col_frontiers) +
         ggtitle(title2, subtitle = ifelse(sd_sp2 < sp_null, paste0("Standard Deviation = ", sd_sp2, "*"), paste0("Standard Deviation = ", sd_sp2))) +
@@ -285,7 +285,7 @@ plot.SpANOVA <- function(
           legend.position = legend.position
         )
     }else{
-      fig2 <- ggplot2::ggplot(data=sp_object) +
+      fig2 <- ggplot2::ggplot(data=sp_obj) +
         geom_sf(aes(fill=sp2), colour=col_frontiers) +
         scale_fill_manual(values="grey24", name=scale_name) +
         ggtitle(title2, subtitle = paste0("No Effect")) +
@@ -302,9 +302,9 @@ plot.SpANOVA <- function(
     }
 
     # Create fig3
-    if(sum(sp_object$sp3=="No Value")==0){
+    if(sum(sp_obj$sp3=="No Value")==0){
       fig_fig3 <- convert_col(
-        data = sp_object$sp3,
+        data = sp_obj$sp3,
         breaks = breaks,
         pal_fun = CScale,
         right = TRUE,
@@ -312,9 +312,9 @@ plot.SpANOVA <- function(
         na.col = NA
       )
 
-      fig_values3 <- fig_fig3$colors[which(fig_fig3$tags %in% cut(dplyr::pull(sp_object, sp3),  breaks=breaks))]
+      fig_values3 <- fig_fig3$colors[which(fig_fig3$tags %in% cut(sp_obj$sp3,  breaks=breaks))]
 
-      fig3 <- ggplot2::ggplot(data=sp_object) +
+      fig3 <- ggplot2::ggplot(data=sp_obj) +
         geom_sf(aes(fill=cut(sp3,  breaks=breaks)), colour=col_frontiers) +
         geom_sf(aes(), fill=fig_fig3$fill_by, colour=col_frontiers) +
         ggtitle(title3, subtitle = ifelse(sd_sp3 < sp_null, paste0("Standard Deviation = ", sd_sp3, "*"), paste0("Standard Deviation = ", sd_sp3))) +
@@ -330,7 +330,7 @@ plot.SpANOVA <- function(
           legend.position = legend.position
         )
     }else{
-      fig3 <- ggplot2::ggplot(data=sp_object) +
+      fig3 <- ggplot2::ggplot(data=sp_obj) +
         geom_sf(aes(fill=sp3), colour=col_frontiers) +
         scale_fill_manual(values="grey24", name=scale_name) +
         ggtitle(title3, subtitle = paste0("No Effect")) +
@@ -347,9 +347,9 @@ plot.SpANOVA <- function(
     }
 
     # Create fig4
-    if(sum(sp_object$sp4=="No Value")==0){
+    if(sum(sp_obj$sp4=="No Value")==0){
       fig_fig4 <- convert_col(
-        data = sp_object$sp4,
+        data = sp_obj$sp4,
         breaks = breaks,
         pal_fun = CScale,
         right = TRUE,
@@ -357,9 +357,9 @@ plot.SpANOVA <- function(
         na.col = NA
       )
 
-      fig_values4 <- fig_fig4$colors[which(fig_fig4$tags %in% cut(dplyr::pull(sp_object, sp4),  breaks=breaks))]
+      fig_values4 <- fig_fig4$colors[which(fig_fig4$tags %in% cut(sp_obj$sp4,  breaks=breaks))]
 
-      fig4 <- ggplot2::ggplot(data=sp_object) +
+      fig4 <- ggplot2::ggplot(data=sp_obj) +
         geom_sf(aes(fill=cut(sp4,  breaks=breaks)), colour=col_frontiers) +
         geom_sf(aes(), fill=fig_fig4$fill_by, colour=col_frontiers) +
         ggtitle(title4, subtitle = ifelse(sd_sp4 < sp_null, paste0("Standard Deviation = ", sd_sp4, "*"), paste0("Standard Deviation = ", sd_sp4))) +
@@ -375,7 +375,7 @@ plot.SpANOVA <- function(
           legend.position = legend.position
         )
     }else{
-      fig4 <- ggplot2::ggplot(data=sp_object) +
+      fig4 <- ggplot2::ggplot(data=sp_obj) +
         geom_sf(aes(fill=sp4), colour=col_frontiers) +
         scale_fill_manual(values="grey24", name=scale_name) +
         ggtitle(title4, subtitle = paste0("No Effect")) +
@@ -393,7 +393,7 @@ plot.SpANOVA <- function(
   }else if(fill_by == "RR"){
     # Create fig1
     fig_fig1 <- convert_col(
-      data = sp_object$sp1,
+      data = sp_obj$sp1,
       breaks = breaks,
       pal_fun = CScale,
       right = TRUE,
@@ -401,9 +401,9 @@ plot.SpANOVA <- function(
       na.col = NA
     )
 
-    fig_values1 <- fig_fig1$colors[which(fig_fig1$tags %in% cut(dplyr::pull(sp_object, sp1),  breaks=breaks))]
+    fig_values1 <- fig_fig1$colors[which(fig_fig1$tags %in% cut(sp_obj$sp1,  breaks=breaks))]
 
-    fig1 <- ggplot2::ggplot(data=sp_object) +
+    fig1 <- ggplot2::ggplot(data=sp_obj) +
       geom_sf(aes(fill=cut(sp1,  breaks=breaks)), colour=col_frontiers) +
       geom_sf(aes(), fill=fig_fig1$fill_by, colour=col_frontiers) +
       ggtitle(title1, subtitle = groups_names[1]) +
@@ -421,7 +421,7 @@ plot.SpANOVA <- function(
 
     # Create fig2
     fig_fig2 <- convert_col(
-      data = sp_object$sp2,
+      data = sp_obj$sp2,
       breaks = breaks,
       pal_fun = CScale,
       right = TRUE,
@@ -429,9 +429,9 @@ plot.SpANOVA <- function(
       na.col = NA
     )
 
-    fig_values2 <- fig_fig2$colors[which(fig_fig2$tags %in% cut(dplyr::pull(sp_object, sp2),  breaks=breaks))]
+    fig_values2 <- fig_fig2$colors[which(fig_fig2$tags %in% cut(sp_obj$sp2,  breaks=breaks))]
 
-    fig2 <- ggplot2::ggplot(data=sp_object) +
+    fig2 <- ggplot2::ggplot(data=sp_obj) +
       geom_sf(aes(fill=cut(sp2,  breaks=breaks)), colour=col_frontiers) +
       geom_sf(aes(), fill=fig_fig2$fill_by, colour=col_frontiers) +
       ggtitle(title2, subtitle = groups_names[2]) +
@@ -449,7 +449,7 @@ plot.SpANOVA <- function(
 
     # Create fig3
     fig_fig3 <- convert_col(
-      data = sp_object$sp3,
+      data = sp_obj$sp3,
       breaks = breaks,
       pal_fun = CScale,
       right = TRUE,
@@ -457,9 +457,9 @@ plot.SpANOVA <- function(
       na.col = NA
     )
 
-    fig_values3 <- fig_fig3$colors[which(fig_fig3$tags %in% cut(dplyr::pull(sp_object, sp3),  breaks=breaks))]
+    fig_values3 <- fig_fig3$colors[which(fig_fig3$tags %in% cut(sp_obj$sp3,  breaks=breaks))]
 
-    fig3 <- ggplot2::ggplot(data=sp_object) +
+    fig3 <- ggplot2::ggplot(data=sp_obj) +
       geom_sf(aes(fill=cut(sp3,  breaks=breaks)), colour=col_frontiers) +
       geom_sf(aes(), fill=fig_fig3$fill_by, colour=col_frontiers) +
       ggtitle(title3, subtitle = groups_names[3]) +
@@ -477,7 +477,7 @@ plot.SpANOVA <- function(
 
     # Create fig4
     fig_fig4 <- convert_col(
-      data = sp_object$sp4,
+      data = sp_obj$sp4,
       breaks = breaks,
       pal_fun = CScale,
       right = TRUE,
@@ -485,9 +485,9 @@ plot.SpANOVA <- function(
       na.col = NA
     )
 
-    fig_values4 <- fig_fig4$colors[which(fig_fig4$tags %in% cut(dplyr::pull(sp_object, sp4),  breaks=breaks))]
+    fig_values4 <- fig_fig4$colors[which(fig_fig4$tags %in% cut(sp_obj$sp4,  breaks=breaks))]
 
-    fig4 <- ggplot2::ggplot(data=sp_object) +
+    fig4 <- ggplot2::ggplot(data=sp_obj) +
       geom_sf(aes(fill=cut(sp4,  breaks=breaks)), colour=col_frontiers) +
       geom_sf(aes(), fill=fig_fig4$fill_by, colour=col_frontiers) +
       ggtitle(title4, subtitle = groups_names[4]) +

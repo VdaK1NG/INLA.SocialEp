@@ -1,6 +1,6 @@
 #' Extract null effects from SR-ANOVA models
 #'
-#' This function extracts the total number of null spatial effects inside a 
+#' This function extracts the total number of null spatial effects inside a
 #' SR-ANOVA object, for each one of the different specifications included.
 #'
 #' @param mod Mod file coming from a SR-ANOVA object
@@ -28,9 +28,9 @@ inla.null.sp <- function(mod, thres = 0.125) {
       }
     })
   }
-  
+
   summary_temp <- mod$Summary
-  
+
   # compute sds for each model block (NA where field not present)
   M_2  <- get_sds(2,  c("phi_1",  "phi_2",  "phi_3",  "phi_4"))
   M_3  <- get_sds(3,  c("phi_11"))
@@ -53,8 +53,7 @@ inla.null.sp <- function(mod, thres = 0.125) {
   M_20 <- get_sds(20, c("phi_11", "phi_12", "phi_21", "phi_22"))
   M_21 <- get_sds(21, c("phi_11", "phi_12", "phi_21", "phi_22"))
   M_22 <- get_sds(22, c("phi_11", "phi_12", "phi_21", "phi_22"))
-  
-  # build n_null: first element 0 (as in your original code), then counts
+
   n_null <- c(
     0,
     sum(M_2  <= thres, na.rm = TRUE),
@@ -79,7 +78,7 @@ inla.null.sp <- function(mod, thres = 0.125) {
     sum(M_21 <= thres, na.rm = TRUE),
     sum(M_22 <= thres, na.rm = TRUE)
   )
-  
+
   summary_temp$sp.null <- n_null
   mod$Summary <- summary_temp
   return(mod)
