@@ -22,7 +22,8 @@ inla.SpANOVA.2x2(
   save.hyper = TRUE,
   save.fixed = TRUE,
   save.mod.data = FALSE,
-  verbose.INLA = FALSE
+  verbose.INLA = FALSE,
+  thres = 0.125
 )
 ```
 
@@ -93,6 +94,10 @@ inla.SpANOVA.2x2(
 - verbose.INLA:
 
   Verbose option for INLA, default is FALSE
+
+- thres:
+
+  thres value for inla.null.sp function
 
 ## Value
 
