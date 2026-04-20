@@ -166,35 +166,35 @@ plot.SpANOVA <- function(
       title3 <- "No Effect"
       title4 <- "No Effect"
     }else if(n_mod == 2){
-      title1 <- bquote("Spatial Effect | "~phi[1])
-      title2 <- bquote("Spatial Effect | "~phi[2])
-      title3 <- bquote("Spatial Effect | "~phi[3])
-      title4 <- bquote("Spatial Effect | "~phi[4])
+      title1 <- bquote(bold("Spatial Effect | "~phi[1]))
+      title2 <- bquote(bold("Spatial Effect | "~phi[2]))
+      title3 <- bquote(bold("Spatial Effect | "~phi[3]))
+      title4 <- bquote(bold("Spatial Effect | "~phi[4]))
     }else if(n_mod %in% c(3, 4, 5, 6)){
-      title1 <- bquote("Spatial Effect | "~phi[11])
+      title1 <- bquote(bold("Spatial Effect | "~phi[11]))
       title2 <- "No Effect"
       title3 <- "No Effect"
       title4 <- "No Effect"
     }else if(n_mod %in% c(7, 8)){
-      title1 <- bquote("Spatial Effect | "~phi[11])
-      title2 <- bquote("Spatial Effect | "~phi[12])
+      title1 <- bquote(bold("Spatial Effect | "~phi[11]))
+      title2 <- bquote(bold("Spatial Effect | "~phi[12]))
       title3 <- "No Effect"
       title4 <- "No Effect"
     }else if(n_mod %in% c(9, 10)){
-      title1 <- bquote("Spatial Effect | "~phi[11])
-      title2 <- bquote("Spatial Effect | "~phi[21])
+      title1 <- bquote(bold("Spatial Effect | "~phi[11]))
+      title2 <- bquote(bold("Spatial Effect | "~phi[21]))
       title3 <- "No Effect"
       title4 <- "No Effect"
     }else if(n_mod %in% c(11, 12, 13, 14)){
-      title1 <- bquote("Spatial Effect | "~phi[11])
-      title2 <- bquote("Spatial Effect | "~phi[12])
-      title3 <- bquote("Spatial Effect | "~phi[21])
+      title1 <- bquote(bold("Spatial Effect | "~phi[11]))
+      title2 <- bquote(bold("Spatial Effect | "~phi[12]))
+      title3 <- bquote(bold("Spatial Effect | "~phi[21]))
       title4 <- "No Effect"
     }else if(n_mod %in% c(15, 16, 17, 18, 19, 20, 21, 22)){
-      title1 <- bquote("Spatial Effect | "~phi[11])
-      title2 <- bquote("Spatial Effect | "~phi[12])
-      title3 <- bquote("Spatial Effect | "~phi[21])
-      title4 <- bquote("Spatial Effect | "~phi[22])
+      title1 <- bquote(bold("Spatial Effect | "~phi[11]))
+      title2 <- bquote(bold("Spatial Effect | "~phi[12]))
+      title3 <- bquote(bold("Spatial Effect | "~phi[21]))
+      title4 <- bquote(bold("Spatial Effect | "~phi[22]))
     }
   }else if(fill_by=="RR"){
     title1 <- paste0("Relative Risk Adjusted | G1")
@@ -202,10 +202,10 @@ plot.SpANOVA <- function(
     title3 <- paste0("Relative Risk Adjusted | G3")
     title4 <- paste0("Relative Risk Adjusted | G4")
   }else if(fill_by=="Heterogeneity"){
-    title1 <- bquote("Heterogeneity Effect | "~omega[1])
-    title2 <- bquote("Heterogeneity Effect | "~omega[2])
-    title3 <- bquote("Heterogeneity Effect | "~omega[3])
-    title4 <- bquote("Heterogeneity Effect | "~omega[4])
+    title1 <- bquote(bold("Heterogeneity Effect | "~omega[1]))
+    title2 <- bquote(bold("Heterogeneity Effect | "~omega[2]))
+    title3 <- bquote(bold("Heterogeneity Effect | "~omega[3]))
+    title4 <- bquote(bold("Heterogeneity Effect | "~omega[4]))
   }
 
   # Prepare Figures
