@@ -88,7 +88,7 @@ ResMod$Summary
 
 We can also plot the spatial effects adjusted for each of the models using the function `plotSpANOVA()`:
 
-```{r chunk5, eval=TRUE}
+```{r chunk5, eval=FALSE}
 INLA.SocialEp::plotSpANOVA(
   obj=ResMod,
   obj_type="SpANOVA",
@@ -105,7 +105,7 @@ INLA.SocialEp::plotSpANOVA(
 
 As well as the adjusted relative risks:
 
-```{r chunk6, eval=TRUE}
+```{r chunk6, eval=FALSE}
 INLA.SocialEp::plotSpANOVA(
   obj=ResMod,
   obj_type="SpANOVA",
