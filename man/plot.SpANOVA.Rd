@@ -9,7 +9,7 @@
   obj_type = c("SpANOVA", "INLA"),
   fill_by = c("Spatial", "Heterogeneity", "RR"),
   n_mod,
-  sp_object,
+  sp_obj,
   breaks = NA,
   fil_scale = c("#133BF2", "#7189F7", "#FFFFFF", "#FF867A", "#FF2F1B"),
   col_frontiers = "black",
@@ -28,7 +28,7 @@
 
 \item{n_mod}{Number of the model specification that the user wants to represent}
 
-\item{sp_object}{Spatial object to be plotted}
+\item{sp_obj}{Spatial object to be plotted}
 
 \item{breaks}{Breaks for the color palette in case the user wants to modify the default ones}
 
