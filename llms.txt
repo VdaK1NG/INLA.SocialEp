@@ -108,7 +108,7 @@ Prepare datasets for analysis.
   : Make a fully connected graph for INLA
 - [`convert_col()`](https://vdak1ng.github.io/INLA.SocialEp/reference/convert_col.md)
   : Generate stable color labels
-- [`plot(`*`<SpANOVA>`*`)`](https://vdak1ng.github.io/INLA.SocialEp/reference/plot.SpANOVA.md)
+- [`plotSpANOVA()`](https://vdak1ng.github.io/INLA.SocialEp/reference/plotSpANOVA.md)
   : Represent different values from SpANOVA modelling
 
 ## Package Data
