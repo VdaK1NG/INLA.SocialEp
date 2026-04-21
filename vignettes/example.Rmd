@@ -63,7 +63,6 @@ There are three mainly aspects regarding the modelization and post-processing th
 We can now run the model:
 
 ```{r chunk2}
-library("INLA.SocialEp")
 ResMod <- INLA.SocialEp::inla.SpANOVA.2x2(
   data = data_mod,
   gr = graph_states,
@@ -87,11 +86,10 @@ And we can check the summary of the results obtained:
 ResMod$Summary
 ```
 
-We can also plot the spatial effects adjusted for each of the models using the function `plot.SpANOVA()`:
+We can also plot the spatial effects adjusted for each of the models using the function `plotSpANOVA()`:
 
 ```{r chunk5, eval=TRUE}
-library("INLA.SocialEp")
-INLA.SocialEp::plot.SpANOVA(
+INLA.SocialEp::plotSpANOVA(
   obj=ResMod,
   obj_type="SpANOVA",
   fill_by="Spatial",
@@ -108,8 +106,7 @@ INLA.SocialEp::plot.SpANOVA(
 As well as the adjusted relative risks:
 
 ```{r chunk6, eval=TRUE}
-library("INLA.SocialEp")
-INLA.SocialEp::plot.SpANOVA(
+INLA.SocialEp::plotSpANOVA(
   obj=ResMod,
   obj_type="SpANOVA",
   fill_by="RR",
