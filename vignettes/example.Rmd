@@ -108,6 +108,7 @@ INLA.SocialEp::plot.SpANOVA(
 As well as the adjusted relative risks:
 
 ```{r chunk6, eval=TRUE}
+library("INLA.SocialEp")
 INLA.SocialEp::plot.SpANOVA(
   obj=ResMod,
   obj_type="SpANOVA",
