@@ -14,6 +14,7 @@
 #' @param sp_null Threshold desired to considered a spatial effect represented null, default is 0.125
 #' @param legend.position Position for the legend of the plot
 #' @param ncol_fig Number of columns desired for the grid of figures
+#' @param groups_names Names of the different groups
 #' @return Representation of the values desired using ggplot2 as baseline
 #' @export
 
@@ -29,6 +30,7 @@ plotSpANOVA <- function(
     scale_name="Values",
     sp_null=0.125,
     legend.position="right",
+    groups_names=c("G1", "G2", "G3", "G4"),
     ncol_fig=2
     ){
 
@@ -48,8 +50,8 @@ plotSpANOVA <- function(
   CScale <- grDevices::colorRampPalette(fil_scale)
 
   # Retrieve groups
-  groups_names <- obj[[n_mod]]$groups
-  sp_names <- obj[[n_mod]]$sp_effects
+  #groups_names <- obj[[n_mod]]$groups
+  #sp_names <- obj[[n_mod]]$sp_effects
 
   # Prepare data to plot
   if(obj_type=="SpANOVA"){

@@ -50,31 +50,15 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
   if(sum(lev.fac2 %in% data$lev.fac2)!=2){"Levels for factor 2 are not the same in data and function argument lev.fac2"}
 
   ## Extract obs and exp values from the dataframe
-  obs_G1 <- data$obs[data$lev.fac1==lev.fac1[1] & data$lev.fac2==lev.fac2[1]]
-  obs_G2 <- data$obs[data$lev.fac1==lev.fac1[1] & data$lev.fac2==lev.fac2[2]]
-  obs_G3 <- data$obs[data$lev.fac1==lev.fac1[2] & data$lev.fac2==lev.fac2[1]]
-  obs_G4 <- data$obs[data$lev.fac1==lev.fac1[2] & data$lev.fac2==lev.fac2[2]]
-  obs <- c(obs_G1, obs_G2, obs_G3, obs_G4)
+  obs_F1L1_F2L1 <- data$obs[data$lev.fac1==lev.fac1[1] & data$lev.fac2==lev.fac2[1]]
+  obs_F1L1_F2L2 <- data$obs[data$lev.fac1==lev.fac1[1] & data$lev.fac2==lev.fac2[2]]
+  obs_F1L2_F2L1 <- data$obs[data$lev.fac1==lev.fac1[2] & data$lev.fac2==lev.fac2[1]]
+  obs_F1L2_F2L2 <- data$obs[data$lev.fac1==lev.fac1[2] & data$lev.fac2==lev.fac2[2]]
 
-  exp_G1 <- data$exp[data$lev.fac1==lev.fac1[1] & data$lev.fac2==lev.fac2[1]]
-  exp_G2 <- data$exp[data$lev.fac1==lev.fac1[1] & data$lev.fac2==lev.fac2[2]]
-  exp_G3 <- data$exp[data$lev.fac1==lev.fac1[2] & data$lev.fac2==lev.fac2[1]]
-  exp_G4 <- data$exp[data$lev.fac1==lev.fac1[2] & data$lev.fac2==lev.fac2[2]]
-  exp <- c(exp_G1, exp_G2, exp_G3, exp_G4)
-
-  ## Check if obs and exp are the same
-  #if (sum(obs) != as.integer(sum(exp))){
-  #  stop("ERROR: Number of total observations and expected values are not the same.")
-  #}
-
-  ## Check if data has the proper length
-  if (length(obs) != n.areas*n.groups){
-    stop("ERROR: The length of the observations does not correspond with the number of groups and areas.")
-  }
-
-  if (length(exp) != n.areas*n.groups){
-    stop("ERROR: The length of the expected values does not correspond with the number of groups and areas.")
-  }
+  exp_F1L1_F2L1 <- data$exp[data$lev.fac1==lev.fac1[1] & data$lev.fac2==lev.fac2[1]]
+  exp_F1L1_F2L2 <- data$exp[data$lev.fac1==lev.fac1[1] & data$lev.fac2==lev.fac2[2]]
+  exp_F1L2_F2L1 <- data$exp[data$lev.fac1==lev.fac1[2] & data$lev.fac2==lev.fac2[1]]
+  exp_F1L2_F2L2 <- data$exp[data$lev.fac1==lev.fac1[2] & data$lev.fac2==lev.fac2[2]]
 
   ## Empty list
   data.INLA <- list(OBS_f1l1_f2l1 = matrix(NA, nrow = n.areas*n.groups, ncol = n.groups), EXP_f1l1_f2l1 = matrix(NA, nrow = n.areas),
@@ -91,150 +75,166 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
 
   ## Here we order the Observed and Expected values following the default order: ------------------
   # O1, O2, O3 and O4
-  data.INLA$OBS_f1l1_f2l1[1:n.areas, 1] <- obs[1:n.areas] # O1
-  data.INLA$OBS_f1l1_f2l1[n.areas + 1:n.areas, 2] <- obs[n.areas + 1:n.areas] # O2
-  data.INLA$OBS_f1l1_f2l1[2*n.areas + 1:n.areas, 3] <- obs[2*n.areas + 1:n.areas] # O3
-  data.INLA$OBS_f1l1_f2l1[3*n.areas + 1:n.areas, 4] <- obs[3*n.areas + 1:n.areas] # O4
+  data.INLA$OBS_f1l1_f2l1[1:n.areas, 1] <- obs_F1L1_F2L1 # O1
+  data.INLA$OBS_f1l1_f2l1[n.areas + 1:n.areas, 2] <- obs_F1L1_F2L2 # O2
+  data.INLA$OBS_f1l1_f2l1[2*n.areas + 1:n.areas, 3] <- obs_F1L2_F2L1 # O3
+  data.INLA$OBS_f1l1_f2l1[3*n.areas + 1:n.areas, 4] <- obs_F1L2_F2L2 # O4
   # E1, E2, E3 and E4
-  data.INLA$EXP_f1l1_f2l1[1:n.areas] <- exp[1:n.areas] # E1
-  data.INLA$EXP_f1l1_f2l1[n.areas + 1:n.areas] <- exp[n.areas + 1:n.areas] # E2
-  data.INLA$EXP_f1l1_f2l1[2*n.areas + 1:n.areas] <- exp[2*n.areas + 1:n.areas] # E3
-  data.INLA$EXP_f1l1_f2l1[3*n.areas + 1:n.areas] <- exp[3*n.areas + 1:n.areas] # E4
+  data.INLA$EXP_f1l1_f2l1[1:n.areas] <- exp_F1L1_F2L1 # E1
+  data.INLA$EXP_f1l1_f2l1[n.areas + 1:n.areas] <- exp_F1L1_F2L2 # E2
+  data.INLA$EXP_f1l1_f2l1[2*n.areas + 1:n.areas] <- exp_F1L2_F2L1 # E3
+  data.INLA$EXP_f1l1_f2l1[3*n.areas + 1:n.areas] <- exp_F1L2_F2L2 # E4
 
   ## Here we order the Observed and Expected values following this order: ------------------
   # O3, O4, O1 and O2
-  data.INLA$OBS_f1l2_f2l1[1:n.areas, 1] <- obs[2*n.areas + 1:n.areas] # O3
-  data.INLA$OBS_f1l2_f2l1[n.areas + 1:n.areas, 2] <- obs[3*n.areas + 1:n.areas] # O4
-  data.INLA$OBS_f1l2_f2l1[2*n.areas + 1:n.areas, 3] <- obs[1:n.areas] # O1
-  data.INLA$OBS_f1l2_f2l1[3*n.areas + 1:n.areas, 4] <- obs[n.areas + 1:n.areas] # O2
+  data.INLA$OBS_f1l2_f2l1[1:n.areas, 1] <- obs_F1L2_F2L1 # O3
+  data.INLA$OBS_f1l2_f2l1[n.areas + 1:n.areas, 2] <- obs_F1L2_F2L2 # O4
+  data.INLA$OBS_f1l2_f2l1[2*n.areas + 1:n.areas, 3] <- obs_F1L1_F2L1 # O1
+  data.INLA$OBS_f1l2_f2l1[3*n.areas + 1:n.areas, 4] <- obs_F1L1_F2L2 # O2
   # E3, E4, E1 and E2
-  data.INLA$EXP_f1l2_f2l1[1:n.areas] <- exp[2*n.areas + 1:n.areas] # E3
-  data.INLA$EXP_f1l2_f2l1[n.areas + 1:n.areas] <- exp[3*n.areas + 1:n.areas] # E4
-  data.INLA$EXP_f1l2_f2l1[2*n.areas + 1:n.areas] <- exp[1:n.areas] # E1
-  data.INLA$EXP_f1l2_f2l1[3*n.areas + 1:n.areas] <- exp[n.areas + 1:n.areas] # E2
+  data.INLA$EXP_f1l2_f2l1[1:n.areas] <- exp_F1L2_F2L1 # E3
+  data.INLA$EXP_f1l2_f2l1[n.areas + 1:n.areas] <- exp_F1L2_F2L2 # E4
+  data.INLA$EXP_f1l2_f2l1[2*n.areas + 1:n.areas] <- exp_F1L1_F2L1 # E1
+  data.INLA$EXP_f1l2_f2l1[3*n.areas + 1:n.areas] <- exp_F1L1_F2L2 # E2
 
   ## Here we order the Observed and Expected values following this order: ------------------
   # O2, O1, O4 and O3
-  data.INLA$OBS_f1l1_f2l2[1:n.areas, 1] <- obs[n.areas + 1:n.areas]  # O2
-  data.INLA$OBS_f1l1_f2l2[n.areas + 1:n.areas, 2] <- obs[1:n.areas] # O1
-  data.INLA$OBS_f1l1_f2l2[2*n.areas + 1:n.areas, 3] <- obs[3*n.areas + 1:n.areas] # O4
-  data.INLA$OBS_f1l1_f2l2[3*n.areas + 1:n.areas, 4] <- obs[2*n.areas + 1:n.areas] # O3
+  data.INLA$OBS_f1l1_f2l2[1:n.areas, 1] <- obs_F1L1_F2L2  # O2
+  data.INLA$OBS_f1l1_f2l2[n.areas + 1:n.areas, 2] <- obs_F1L1_F2L1 # O1
+  data.INLA$OBS_f1l1_f2l2[2*n.areas + 1:n.areas, 3] <- obs_F1L2_F2L2 # O4
+  data.INLA$OBS_f1l1_f2l2[3*n.areas + 1:n.areas, 4] <- obs_F1L2_F2L1 # O3
   # E2, E1, E4 and E3
-  data.INLA$EXP_f1l1_f2l2[1:n.areas, 1] <- exp[n.areas + 1:n.areas]  # E2
-  data.INLA$EXP_f1l1_f2l2[n.areas + 1:n.areas] <- exp[1:n.areas] # E1
-  data.INLA$EXP_f1l1_f2l2[2*n.areas + 1:n.areas] <- exp[3*n.areas + 1:n.areas] # E4
-  data.INLA$EXP_f1l1_f2l2[3*n.areas + 1:n.areas] <- exp[2*n.areas + 1:n.areas] # E3
+  data.INLA$EXP_f1l1_f2l2[1:n.areas, 1] <- exp_F1L1_F2L2  # E2
+  data.INLA$EXP_f1l1_f2l2[n.areas + 1:n.areas] <- exp_F1L1_F2L1 # E1
+  data.INLA$EXP_f1l1_f2l2[2*n.areas + 1:n.areas] <- exp_F1L2_F2L2 # E4
+  data.INLA$EXP_f1l1_f2l2[3*n.areas + 1:n.areas] <- exp_F1L2_F2L1 # E3
 
   ## Here we order the Observed and Expected values following this order: ------------------
   # O4, O3, O2 and O1
-  data.INLA$OBS_f1l2_f2l2[1:n.areas, 1] <- obs[3*n.areas + 1:n.areas] # E4
-  data.INLA$OBS_f1l2_f2l2[n.areas + 1:n.areas, 2] <- obs[2*n.areas + 1:n.areas] # E3
-  data.INLA$OBS_f1l2_f2l2[2*n.areas + 1:n.areas, 3] <- obs[n.areas + 1:n.areas] # E2
-  data.INLA$OBS_f1l2_f2l2[3*n.areas + 1:n.areas, 4] <- obs[1:n.areas] # E1
+  data.INLA$OBS_f1l2_f2l2[1:n.areas, 1] <- obs_F1L2_F2L2 # O4
+  data.INLA$OBS_f1l2_f2l2[n.areas + 1:n.areas, 2] <- obs_F1L2_F2L1 # O3
+  data.INLA$OBS_f1l2_f2l2[2*n.areas + 1:n.areas, 3] <- obs_F1L1_F2L2 # O2
+  data.INLA$OBS_f1l2_f2l2[3*n.areas + 1:n.areas, 4] <- obs_F1L1_F2L1 # O1
   # E4, E3, E2 and E1
-  data.INLA$EXP_f1l2_f2l2[1:n.areas, 1] <- exp[3*n.areas + 1:n.areas] # E4
-  data.INLA$EXP_f1l2_f2l2[n.areas + 1:n.areas] <- exp[2*n.areas + 1:n.areas] # E3
-  data.INLA$EXP_f1l2_f2l2[2*n.areas + 1:n.areas] <- exp[n.areas + 1:n.areas] # E2
-  data.INLA$EXP_f1l2_f2l2[3*n.areas + 1:n.areas] <- exp[1:n.areas] # E1
+  data.INLA$EXP_f1l2_f2l2[1:n.areas, 1] <- exp_F1L2_F2L2 # E4
+  data.INLA$EXP_f1l2_f2l2[n.areas + 1:n.areas] <- exp_F1L2_F2L1 # E3
+  data.INLA$EXP_f1l2_f2l2[2*n.areas + 1:n.areas] <- exp_F1L1_F2L2 # E2
+  data.INLA$EXP_f1l2_f2l2[3*n.areas + 1:n.areas] <- exp_F1L1_F2L1 # E1
 
   #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
 
   ## Here the observed are ordered following this order: ------------------
   # O1, O3, O2 and O4
-  data.INLA$OBS_f2l1_f1l1[1:n.areas, 1] <- obs[1:n.areas] # O1
-  data.INLA$OBS_f2l1_f1l1[n.areas + 1:n.areas, 2] <- obs[2*n.areas + 1:n.areas] # O3
-  data.INLA$OBS_f2l1_f1l1[2*n.areas + 1:n.areas, 3] <- obs[n.areas + 1:n.areas] # O2
-  data.INLA$OBS_f2l1_f1l1[3*n.areas + 1:n.areas, 4] <- obs[3*n.areas + 1:n.areas]  # O4
+  data.INLA$OBS_f2l1_f1l1[1:n.areas, 1] <- obs_F1L1_F2L1 # O1
+  data.INLA$OBS_f2l1_f1l1[n.areas + 1:n.areas, 2] <- obs_F1L2_F2L1 # O3
+  data.INLA$OBS_f2l1_f1l1[2*n.areas + 1:n.areas, 3] <- obs_F1L1_F2L2 # O2
+  data.INLA$OBS_f2l1_f1l1[3*n.areas + 1:n.areas, 4] <- obs_F1L2_F2L2 # O4
   # E1, E3, E2 and E4
-  data.INLA$EXP_f2l1_f1l1[1:n.areas] <- exp[1:n.areas] # O1
-  data.INLA$EXP_f2l1_f1l1[n.areas + 1:n.areas] <- exp[2*n.areas + 1:n.areas] # O3
-  data.INLA$EXP_f2l1_f1l1[2*n.areas + 1:n.areas] <- exp[n.areas + 1:n.areas] # O2
-  data.INLA$EXP_f2l1_f1l1[3*n.areas + 1:n.areas] <- exp[3*n.areas + 1:n.areas]  # O4
+  data.INLA$EXP_f2l1_f1l1[1:n.areas] <- exp_F1L1_F2L1 # O1
+  data.INLA$EXP_f2l1_f1l1[n.areas + 1:n.areas] <- exp_F1L2_F2L1 # O3
+  data.INLA$EXP_f2l1_f1l1[2*n.areas + 1:n.areas] <- exp_F1L1_F2L2 # O2
+  data.INLA$EXP_f2l1_f1l1[3*n.areas + 1:n.areas] <- exp_F1L2_F2L2 # O4
 
   ## Here the observed are ordered following this order: ------------------
   # O2, O4, O1 and O3
-  data.INLA$OBS_f2l2_f1l1[1:n.areas, 1] <- obs[n.areas + 1:n.areas] # O2
-  data.INLA$OBS_f2l2_f1l1[n.areas + 1:n.areas, 2] <- obs[3*n.areas + 1:n.areas] # O4
-  data.INLA$OBS_f2l2_f1l1[2*n.areas + 1:n.areas, 3] <- obs[1:n.areas] # O1
-  data.INLA$OBS_f2l2_f1l1[3*n.areas + 1:n.areas, 4] <- obs[2*n.areas + 1:n.areas] # O3
+  data.INLA$OBS_f2l2_f1l1[1:n.areas, 1] <- obs_F1L1_F2L2 # O2
+  data.INLA$OBS_f2l2_f1l1[n.areas + 1:n.areas, 2] <- obs_F1L2_F2L2 # O4
+  data.INLA$OBS_f2l2_f1l1[2*n.areas + 1:n.areas, 3] <- obs_F1L1_F2L1 # O1
+  data.INLA$OBS_f2l2_f1l1[3*n.areas + 1:n.areas, 4] <- obs_F1L2_F2L1 # O3
   # E2, E4, E1 and E3
-  data.INLA$EXP_f2l2_f1l1[1:n.areas] <- exp[n.areas + 1:n.areas] # E2
-  data.INLA$EXP_f2l2_f1l1[n.areas + 1:n.areas] <- exp[3*n.areas + 1:n.areas] # E4
-  data.INLA$EXP_f2l2_f1l1[2*n.areas + 1:n.areas] <- exp[1:n.areas] # E1
-  data.INLA$EXP_f2l2_f1l1[3*n.areas + 1:n.areas] <- exp[2*n.areas + 1:n.areas] # E3
+  data.INLA$EXP_f2l2_f1l1[1:n.areas] <- exp_F1L1_F2L2 # E2
+  data.INLA$EXP_f2l2_f1l1[n.areas + 1:n.areas] <- exp_F1L2_F2L2 # E4
+  data.INLA$EXP_f2l2_f1l1[2*n.areas + 1:n.areas] <- exp_F1L1_F2L1 # E1
+  data.INLA$EXP_f2l2_f1l1[3*n.areas + 1:n.areas] <- exp_F1L2_F2L1 # E3
 
   ## Here the observed are ordered following this order: ------------------
   # O3, O1, O4 and O2
-  data.INLA$OBS_f2l1_f1l2[1:n.areas, 1] <- obs[2*n.areas + 1:n.areas] # O3
-  data.INLA$OBS_f2l1_f1l2[n.areas + 1:n.areas, 2] <- obs[1:n.areas] # O1
-  data.INLA$OBS_f2l1_f1l2[2*n.areas + 1:n.areas, 3] <- obs[3*n.areas + 1:n.areas] # O4
-  data.INLA$OBS_f2l1_f1l2[3*n.areas + 1:n.areas, 4] <- obs[n.areas + 1:n.areas] # O2
+  data.INLA$OBS_f2l1_f1l2[1:n.areas, 1] <- obs_F1L2_F2L1 # O3
+  data.INLA$OBS_f2l1_f1l2[n.areas + 1:n.areas, 2] <- obs_F1L1_F2L1 # O1
+  data.INLA$OBS_f2l1_f1l2[2*n.areas + 1:n.areas, 3] <- obs_F1L2_F2L2 # O4
+  data.INLA$OBS_f2l1_f1l2[3*n.areas + 1:n.areas, 4] <- obs_F1L1_F2L2 # O2
   # E3, E1, E4 and E2
-  data.INLA$EXP_f2l1_f1l2[1:n.areas] <- exp[2*n.areas + 1:n.areas] # E3
-  data.INLA$EXP_f2l1_f1l2[n.areas + 1:n.areas] <- exp[1:n.areas] # E1
-  data.INLA$EXP_f2l1_f1l2[2*n.areas + 1:n.areas] <- exp[3*n.areas + 1:n.areas] # E4
-  data.INLA$EXP_f2l1_f1l2[3*n.areas + 1:n.areas] <- exp[n.areas + 1:n.areas] # E2
+  data.INLA$EXP_f2l1_f1l2[1:n.areas] <- exp_F1L2_F2L1 # E3
+  data.INLA$EXP_f2l1_f1l2[n.areas + 1:n.areas] <- exp_F1L1_F2L1 # E1
+  data.INLA$EXP_f2l1_f1l2[2*n.areas + 1:n.areas] <- exp_F1L2_F2L2 # E4
+  data.INLA$EXP_f2l1_f1l2[3*n.areas + 1:n.areas] <- exp_F1L1_F2L2 # E2
 
   ## Here the observed are ordered following this order: ------------------
   # O4, O2, O3 and O1
-  data.INLA$OBS_f2l2_f1l2[1:n.areas, 1] <- obs[3*n.areas + 1:n.areas] # O4
-  data.INLA$OBS_f2l2_f1l2[n.areas + 1:n.areas, 2] <- obs[n.areas + 1:n.areas] # O2
-  data.INLA$OBS_f2l2_f1l2[2*n.areas + 1:n.areas, 3] <- obs[2*n.areas + 1:n.areas] # O3
-  data.INLA$OBS_f2l2_f1l2[3*n.areas + 1:n.areas, 4] <- obs[1:n.areas] # O1
+  data.INLA$OBS_f2l2_f1l2[1:n.areas, 1] <- obs_F1L2_F2L2 # O4
+  data.INLA$OBS_f2l2_f1l2[n.areas + 1:n.areas, 2] <- obs_F1L1_F2L2 # O2
+  data.INLA$OBS_f2l2_f1l2[2*n.areas + 1:n.areas, 3] <- obs_F1L2_F2L1 # O3
+  data.INLA$OBS_f2l2_f1l2[3*n.areas + 1:n.areas, 4] <- obs_F1L1_F2L1 # O1
   # E4, E2, E3 and E1
-  data.INLA$EXP_f2l2_f1l2[1:n.areas] <- exp[3*n.areas + 1:n.areas] # E4
-  data.INLA$EXP_f2l2_f1l2[n.areas + 1:n.areas] <- exp[n.areas + 1:n.areas] # E2
-  data.INLA$EXP_f2l2_f1l2[2*n.areas + 1:n.areas] <- exp[2*n.areas + 1:n.areas] # E3
-  data.INLA$EXP_f2l2_f1l2[3*n.areas + 1:n.areas] <- exp[1:n.areas] # E1
+  data.INLA$EXP_f2l2_f1l2[1:n.areas] <- exp_F1L2_F2L2 # E4
+  data.INLA$EXP_f2l2_f1l2[n.areas + 1:n.areas] <- exp_F1L1_F2L2 # E2
+  data.INLA$EXP_f2l2_f1l2[2*n.areas + 1:n.areas] <- exp_F1L2_F2L1 # E3
+  data.INLA$EXP_f2l2_f1l2[3*n.areas + 1:n.areas] <- exp_F1L1_F2L1 # E1
 
   ## Intercepts for each group ------------------
   # Here the sequence is: "f1l1-f2l1" "f1l1-f2l2" "f1l2-f2l1" "f1l2-f2l2"
-  data.INLA$alpha_f1l1_f2l1 <- rep(c(paste0(lev.fac1[1], "-", lev.fac2[1]), paste0(lev.fac1[1], "-", lev.fac2[2]),
-                                     paste0(lev.fac1[2], "-", lev.fac2[1]), paste0(lev.fac1[2], "-", lev.fac2[2])),
+  data.INLA$alpha_f1l1_f2l1 <- rep(c(paste0(lev.fac1[1], "-", lev.fac2[1]),
+                                     paste0(lev.fac1[1], "-", lev.fac2[2]),
+                                     paste0(lev.fac1[2], "-", lev.fac2[1]),
+                                     paste0(lev.fac1[2], "-", lev.fac2[2])),
                                    each = n.areas)
   data.INLA$alpha_f1l1_f2l1 <- as.factor(data.INLA$alpha_f1l1_f2l1)
 
   # Here the sequence is: "f1l2-f2l1" "f1l2-f2l2" "f1l1-f2l1" "f1l1-f2l2"
-  data.INLA$alpha_f1l2_f2l1 <- rep(c(paste0(lev.fac1[2], "-", lev.fac2[1]), paste0(lev.fac1[2], "-", lev.fac2[2]),
-                                     paste0(lev.fac1[1], "-", lev.fac2[1]), paste0(lev.fac1[1], "-", lev.fac2[2])),
+  data.INLA$alpha_f1l2_f2l1 <- rep(c(paste0(lev.fac1[2], "-", lev.fac2[1]),
+                                     paste0(lev.fac1[2], "-", lev.fac2[2]),
+                                     paste0(lev.fac1[1], "-", lev.fac2[1]),
+                                     paste0(lev.fac1[1], "-", lev.fac2[2])),
                                    each = n.areas)
   data.INLA$alpha_f1l2_f2l1 <- as.factor(data.INLA$alpha_f1l2_f2l1)
 
   # Here the sequence is: "f1l1-f2l2" "f1l1-f2l1" "f1l2-f2l2" "f1l2-f2l1"
-  data.INLA$alpha_f1l1_f2l2 <- rep(c(paste0(lev.fac1[1], "-", lev.fac2[2]), paste0(lev.fac1[1], "-", lev.fac2[1]),
-                                     paste0(lev.fac1[2], "-", lev.fac2[2]), paste0(lev.fac1[2], "-", lev.fac2[1])),
+  data.INLA$alpha_f1l1_f2l2 <- rep(c(paste0(lev.fac1[1], "-", lev.fac2[2]),
+                                     paste0(lev.fac1[1], "-", lev.fac2[1]),
+                                     paste0(lev.fac1[2], "-", lev.fac2[2]),
+                                     paste0(lev.fac1[2], "-", lev.fac2[1])),
                                    each = n.areas)
   data.INLA$alpha_f1l1_f2l2 <- as.factor(data.INLA$alpha_f1l1_f2l2)
 
   # Here the sequence is: "f1l2-f2l2" "f1l2-f2l1" "f1l1-f2l2" "f1l1-f2l1"
-  data.INLA$alpha_f1l2_f2l2 <- rep(c(paste0(lev.fac1[2], "-", lev.fac2[2]), paste0(lev.fac1[2], "-", lev.fac2[1]),
-                                     paste0(lev.fac1[1], "-", lev.fac2[2]), paste0(lev.fac1[1], "-", lev.fac2[1])),
+  data.INLA$alpha_f1l2_f2l2 <- rep(c(paste0(lev.fac1[2], "-", lev.fac2[2]),
+                                     paste0(lev.fac1[2], "-", lev.fac2[1]),
+                                     paste0(lev.fac1[1], "-", lev.fac2[2]),
+                                     paste0(lev.fac1[1], "-", lev.fac2[1])),
                                    each = n.areas)
   data.INLA$alpha_f1l2_f2l2 <- as.factor(data.INLA$alpha_f1l2_f2l2)
 
   #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
 
   # Here the sequence is: "f2l1-f1l1" "f2l1-f1l2" "f2l2-f1l1" "f2l2-f1l2"
-  data.INLA$alpha_f2l1_f1l1 <- rep(c(paste0(lev.fac2[1], "-", lev.fac1[1]), paste0(lev.fac2[1], "-", lev.fac1[2]),
-                                     paste0(lev.fac2[2], "-", lev.fac1[1]), paste0(lev.fac2[2], "-", lev.fac1[2])),
+  data.INLA$alpha_f2l1_f1l1 <- rep(c(paste0(lev.fac2[1], "-", lev.fac1[1]),
+                                     paste0(lev.fac2[1], "-", lev.fac1[2]),
+                                     paste0(lev.fac2[2], "-", lev.fac1[1]),
+                                     paste0(lev.fac2[2], "-", lev.fac1[2])),
                                    each = n.areas)
   data.INLA$alpha_f2l1_f1l1 <- as.factor(data.INLA$alpha_f2l1_f1l1)
 
   # Here the sequence is: "f2l2-f1l1" "f2l2-f1l2" "f2l1-f1l1" "f2l1-f1l2"
-  data.INLA$alpha_f2l2_f1l1 <- rep(c(paste0(lev.fac2[2], "-", lev.fac1[1]), paste0(lev.fac2[2], "-", lev.fac1[2]),
-                                     paste0(lev.fac2[1], "-", lev.fac1[1]), paste0(lev.fac2[1], "-", lev.fac1[2])),
+  data.INLA$alpha_f2l2_f1l1 <- rep(c(paste0(lev.fac2[2], "-", lev.fac1[1]),
+                                     paste0(lev.fac2[2], "-", lev.fac1[2]),
+                                     paste0(lev.fac2[1], "-", lev.fac1[1]),
+                                     paste0(lev.fac2[1], "-", lev.fac1[2])),
                                    each = n.areas)
   data.INLA$alpha_f2l2_f1l1 <- as.factor(data.INLA$alpha_f2l2_f1l1)
 
   # Here the sequence is: "f2l1-f1l2" "f2l1-f1l1" "f2l2-f1l2" "f2l2-f1l1"
-  data.INLA$alpha_f2l1_f1l2 <- rep(c(paste0(lev.fac2[1], "-", lev.fac1[2]), paste0(lev.fac2[1], "-", lev.fac1[1]),
-                                     paste0(lev.fac2[2], "-", lev.fac1[2]), paste0(lev.fac2[2], "-", lev.fac1[1])),
+  data.INLA$alpha_f2l1_f1l2 <- rep(c(paste0(lev.fac2[1], "-", lev.fac1[2]),
+                                     paste0(lev.fac2[1], "-", lev.fac1[1]),
+                                     paste0(lev.fac2[2], "-", lev.fac1[2]),
+                                     paste0(lev.fac2[2], "-", lev.fac1[1])),
                                    each = n.areas)
   data.INLA$alpha_f2l1_f1l2 <- as.factor(data.INLA$alpha_f2l1_f1l2)
 
   # Here the sequence is: "f2l2-f1l2" "f2l2-f1l1" "f2l1-f1l2" "f2l1-f1l1"
-  data.INLA$alpha_f2l2_f1l2 <- rep(c(paste0(lev.fac2[2], "-", lev.fac1[2]), paste0(lev.fac2[2], "-", lev.fac1[1]),
-                                     paste0(lev.fac2[1], "-", lev.fac1[2]), paste0(lev.fac2[1], "-", lev.fac1[1])),
+  data.INLA$alpha_f2l2_f1l2 <- rep(c(paste0(lev.fac2[2], "-", lev.fac1[2]),
+                                     paste0(lev.fac2[2], "-", lev.fac1[1]),
+                                     paste0(lev.fac2[1], "-", lev.fac1[2]),
+                                     paste0(lev.fac2[1], "-", lev.fac1[1])),
                                    each = n.areas)
   data.INLA$alpha_f2l2_f1l2 <- as.factor(data.INLA$alpha_f2l2_f1l2)
 
@@ -385,7 +385,7 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     f(omega_j, model = "iid")
 
   # Run Model
-  try(ResMod <- INLA::inla(formula = formula,data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l1,
+  try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
                      control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
 
@@ -2731,189 +2731,237 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
 
   ## Add the combination of the groups in the final order to each model for easier interpretation -------------------------------------
   # ResMod
-  data.models[[1]]$groups <- c(paste0(lev.fac1[1], "-", lev.fac2[1], " group"), paste0(lev.fac1[1], "-", lev.fac2[2], " group"),
-                               paste0(lev.fac1[2], "-", lev.fac2[1], " group"), paste0(lev.fac1[2], "-", lev.fac2[2], " group"))
+  data.models[[1]]$groups <- c(paste0(lev.fac1[1], "-", lev.fac2[1], " group"),
+                               paste0(lev.fac1[1], "-", lev.fac2[2], " group"),
+                               paste0(lev.fac1[2], "-", lev.fac2[1], " group"),
+                               paste0(lev.fac1[2], "-", lev.fac2[2], " group"))
   # ResMod
-  data.models[[2]]$groups <- c(paste0(lev.fac1[1], "-", lev.fac2[1], " group"), paste0(lev.fac1[1], "-", lev.fac2[2], " group"),
-                               paste0(lev.fac1[2], "-", lev.fac2[1], " group"), paste0(lev.fac1[2], "-", lev.fac2[2], " group"))
+  data.models[[2]]$groups <- c(paste0(lev.fac1[1], "-", lev.fac2[1], " group"),
+                               paste0(lev.fac1[1], "-", lev.fac2[2], " group"),
+                               paste0(lev.fac1[2], "-", lev.fac2[1], " group"),
+                               paste0(lev.fac1[2], "-", lev.fac2[2], " group"))
   # M2
-  data.models[[3]]$groups <- c(paste0(lev.fac1[1], "-", lev.fac2[1], " group"), paste0(lev.fac1[1], "-", lev.fac2[2], " group"),
-                               paste0(lev.fac1[2], "-", lev.fac2[1], " group"), paste0(lev.fac1[2], "-", lev.fac2[2], " group"))
+  data.models[[3]]$groups <- c(paste0(lev.fac1[1], "-", lev.fac2[1], " group"),
+                               paste0(lev.fac1[1], "-", lev.fac2[2], " group"),
+                               paste0(lev.fac1[2], "-", lev.fac2[1], " group"),
+                               paste0(lev.fac1[2], "-", lev.fac2[2], " group"))
 
-  data.models[[4]]$groups <- c(paste0(lev.fac1[1], "-", lev.fac2[2], " group"), paste0(lev.fac1[1], "-", lev.fac2[1], " group"),
-                               paste0(lev.fac1[2], "-", lev.fac2[2], " group"), paste0(lev.fac1[2], "-", lev.fac2[1], " group"))
+  data.models[[4]]$groups <- c(paste0(lev.fac1[2], "-", lev.fac2[1], " group"),
+                               paste0(lev.fac1[2], "-", lev.fac2[2], " group"),
+                               paste0(lev.fac1[1], "-", lev.fac2[1], " group"),
+                               paste0(lev.fac1[1], "-", lev.fac2[2], " group"))
 
-  data.models[[5]]$groups <- c(paste0(lev.fac1[2], "-", lev.fac2[1], " group"), paste0(lev.fac1[2], "-", lev.fac2[2], " group"),
-                               paste0(lev.fac1[1], "-", lev.fac2[1], " group"), paste0(lev.fac1[1], "-", lev.fac2[2], " group"))
+  data.models[[5]]$groups <- c(paste0(lev.fac1[1], "-", lev.fac2[2], " group"),
+                               paste0(lev.fac1[1], "-", lev.fac2[1], " group"),
+                               paste0(lev.fac1[2], "-", lev.fac2[2], " group"),
+                               paste0(lev.fac1[2], "-", lev.fac2[1], " group"))
 
-  data.models[[6]]$groups <- c(paste0(lev.fac1[2], "-", lev.fac2[2], " group"), paste0(lev.fac1[2], "-", lev.fac2[1], " group"),
-                               paste0(lev.fac1[1], "-", lev.fac2[2], " group"), paste0(lev.fac1[1], "-", lev.fac2[1], " group"))
+  data.models[[6]]$groups <- c(paste0(lev.fac1[2], "-", lev.fac2[2], " group"),
+                               paste0(lev.fac1[2], "-", lev.fac2[1], " group"),
+                               paste0(lev.fac1[1], "-", lev.fac2[2], " group"),
+                               paste0(lev.fac1[1], "-", lev.fac2[1], " group"))
   # M3
-  data.models[[7]]$groups <- c(paste0(lev.fac1[1], "-", lev.fac2[1], " group"), paste0(lev.fac1[1], "-", lev.fac2[2], " group"),
-                               paste0(lev.fac1[2], "-", lev.fac2[1], " group"), paste0(lev.fac1[2], "-", lev.fac2[2], " group"))
+  data.models[[7]]$groups <- c(paste0(lev.fac1[1], "-", lev.fac2[1], " group"),
+                               paste0(lev.fac1[1], "-", lev.fac2[2], " group"),
+                               paste0(lev.fac1[2], "-", lev.fac2[1], " group"),
+                               paste0(lev.fac1[2], "-", lev.fac2[2], " group"))
 
-  data.models[[8]]$groups <- c(paste0(lev.fac1[2], "-", lev.fac2[1], " group"), paste0(lev.fac1[2], "-", lev.fac2[2], " group"),
-                               paste0(lev.fac1[1], "-", lev.fac2[1], " group"), paste0(lev.fac1[1], "-", lev.fac2[2], " group"))
+  data.models[[8]]$groups <- c(paste0(lev.fac1[2], "-", lev.fac2[1], " group"),
+                               paste0(lev.fac1[2], "-", lev.fac2[2], " group"),
+                               paste0(lev.fac1[1], "-", lev.fac2[1], " group"),
+                               paste0(lev.fac1[1], "-", lev.fac2[2], " group"))
   # M4
-  data.models[[9]]$groups <- c(paste0(lev.fac1[1], "-", lev.fac2[1], " group"), paste0(lev.fac1[1], "-", lev.fac2[2], " group"),
-                               paste0(lev.fac1[2], "-", lev.fac2[1], " group"), paste0(lev.fac1[2], "-", lev.fac2[2], " group"))
+  data.models[[9]]$groups <- c(paste0(lev.fac1[1], "-", lev.fac2[1], " group"),
+                               paste0(lev.fac1[1], "-", lev.fac2[2], " group"),
+                               paste0(lev.fac1[2], "-", lev.fac2[1], " group"),
+                               paste0(lev.fac1[2], "-", lev.fac2[2], " group"))
 
-  data.models[[10]]$groups <- c(paste0(lev.fac1[1], "-", lev.fac2[2], " group"), paste0(lev.fac1[1], "-", lev.fac2[1], " group"),
-                                paste0(lev.fac1[2], "-", lev.fac2[2], " group"), paste0(lev.fac1[2], "-", lev.fac2[1], " group"))
+  data.models[[10]]$groups <- c(paste0(lev.fac1[1], "-", lev.fac2[2], " group"),
+                                paste0(lev.fac1[1], "-", lev.fac2[1], " group"),
+                                paste0(lev.fac1[2], "-", lev.fac2[2], " group"),
+                                paste0(lev.fac1[2], "-", lev.fac2[1], " group"))
   # M5
-  data.models[[11]]$groups <- c(paste0(lev.fac1[1], "-", lev.fac2[1], " group"), paste0(lev.fac1[1], "-", lev.fac2[2], " group"),
-                                paste0(lev.fac1[2], "-", lev.fac2[1], " group"), paste0(lev.fac1[2], "-", lev.fac2[2], " group"))
+  data.models[[11]]$groups <- c(paste0(lev.fac1[1], "-", lev.fac2[1], " group"),
+                                paste0(lev.fac1[1], "-", lev.fac2[2], " group"),
+                                paste0(lev.fac1[2], "-", lev.fac2[1], " group"),
+                                paste0(lev.fac1[2], "-", lev.fac2[2], " group"))
 
-  data.models[[12]]$groups <- c(paste0(lev.fac1[1], "-", lev.fac2[2], " group"), paste0(lev.fac1[1], "-", lev.fac2[1], " group"),
-                                paste0(lev.fac1[2], "-", lev.fac2[2], " group"), paste0(lev.fac1[2], "-", lev.fac2[1], " group"))
+  data.models[[12]]$groups <- c(paste0(lev.fac1[2], "-", lev.fac2[1], " group"),
+                                paste0(lev.fac1[2], "-", lev.fac2[2], " group"),
+                                paste0(lev.fac1[1], "-", lev.fac2[1], " group"),
+                                paste0(lev.fac1[1], "-", lev.fac2[2], " group"))
 
-  data.models[[13]]$groups <- c(paste0(lev.fac1[2], "-", lev.fac2[1], " group"), paste0(lev.fac1[2], "-", lev.fac2[2], " group"),
-                                paste0(lev.fac1[1], "-", lev.fac2[1], " group"), paste0(lev.fac1[1], "-", lev.fac2[2], " group"))
+  data.models[[13]]$groups <- c(paste0(lev.fac1[1], "-", lev.fac2[2], " group"),
+                                paste0(lev.fac1[1], "-", lev.fac2[1], " group"),
+                                paste0(lev.fac1[2], "-", lev.fac2[2], " group"),
+                                paste0(lev.fac1[2], "-", lev.fac2[1], " group"))
 
-  data.models[[14]]$groups <- c(paste0(lev.fac1[2], "-", lev.fac2[2], " group"), paste0(lev.fac1[2], "-", lev.fac2[1], " group"),
-                                paste0(lev.fac1[1], "-", lev.fac2[2], " group"), paste0(lev.fac1[1], "-", lev.fac2[1], " group"))
+  data.models[[14]]$groups <- c(paste0(lev.fac1[2], "-", lev.fac2[2], " group"),
+                                paste0(lev.fac1[2], "-", lev.fac2[1], " group"),
+                                paste0(lev.fac1[1], "-", lev.fac2[2], " group"),
+                                paste0(lev.fac1[1], "-", lev.fac2[1], " group"))
   # M6
-  data.models[[15]]$groups <- c(paste0(lev.fac1[1], "-", lev.fac2[1], " group"), paste0(lev.fac1[1], "-", lev.fac2[2], " group"),
-                                paste0(lev.fac1[2], "-", lev.fac2[1], " group"), paste0(lev.fac1[2], "-", lev.fac2[2], " group"))
+  data.models[[15]]$groups <- c(paste0(lev.fac1[1], "-", lev.fac2[1], " group"),
+                                paste0(lev.fac1[1], "-", lev.fac2[2], " group"),
+                                paste0(lev.fac1[2], "-", lev.fac2[1], " group"),
+                                paste0(lev.fac1[2], "-", lev.fac2[2], " group"))
 
-  data.models[[16]]$groups <- c(paste0(lev.fac1[1], "-", lev.fac2[2], " group"), paste0(lev.fac1[1], "-", lev.fac2[1], " group"),
-                                paste0(lev.fac1[2], "-", lev.fac2[2], " group"), paste0(lev.fac1[2], "-", lev.fac2[1], " group"))
+  data.models[[16]]$groups <- c(paste0(lev.fac1[2], "-", lev.fac2[1], " group"),
+                                paste0(lev.fac1[2], "-", lev.fac2[2], " group"),
+                                paste0(lev.fac1[1], "-", lev.fac2[1], " group"),
+                                paste0(lev.fac1[1], "-", lev.fac2[2], " group"))
 
-  data.models[[17]]$groups <- c(paste0(lev.fac1[2], "-", lev.fac2[1], " group"), paste0(lev.fac1[2], "-", lev.fac2[2], " group"),
-                                paste0(lev.fac1[1], "-", lev.fac2[1], " group"), paste0(lev.fac1[1], "-", lev.fac2[2], " group"))
+  data.models[[17]]$groups <- c(paste0(lev.fac1[1], "-", lev.fac2[2], " group"),
+                                paste0(lev.fac1[1], "-", lev.fac2[1], " group"),
+                                paste0(lev.fac1[2], "-", lev.fac2[2], " group"),
+                                paste0(lev.fac1[2], "-", lev.fac2[1], " group"))
 
-  data.models[[18]]$groups <- c(paste0(lev.fac1[2], "-", lev.fac2[2], " group"), paste0(lev.fac1[2], "-", lev.fac2[1], " group"),
-                                paste0(lev.fac1[1], "-", lev.fac2[2], " group"), paste0(lev.fac1[1], "-", lev.fac2[1], " group"))
+  data.models[[18]]$groups <- c(paste0(lev.fac1[2], "-", lev.fac2[2], " group"),
+                                paste0(lev.fac1[2], "-", lev.fac2[1], " group"),
+                                paste0(lev.fac1[1], "-", lev.fac2[2], " group"),
+                                paste0(lev.fac1[1], "-", lev.fac2[1], " group"))
 
-  data.models[[19]]$groups <- c(paste0(lev.fac2[1], "-", lev.fac1[1], " group"), paste0(lev.fac2[1], "-", lev.fac1[2], " group"),
-                                paste0(lev.fac2[2], "-", lev.fac1[1], " group"), paste0(lev.fac2[2], "-", lev.fac1[2], " group"))
+  data.models[[19]]$groups <- c(paste0(lev.fac2[1], "-", lev.fac1[1], " group"),
+                                paste0(lev.fac2[1], "-", lev.fac1[2], " group"),
+                                paste0(lev.fac2[2], "-", lev.fac1[1], " group"),
+                                paste0(lev.fac2[2], "-", lev.fac1[2], " group"))
 
-  data.models[[20]]$groups <- c(paste0(lev.fac2[1], "-", lev.fac1[2], " group"), paste0(lev.fac2[1], "-", lev.fac1[1], " group"),
-                                paste0(lev.fac2[2], "-", lev.fac1[2], " group"), paste0(lev.fac2[2], "-", lev.fac1[1], " group"))
+  data.models[[20]]$groups <- c(paste0(lev.fac2[2], "-", lev.fac1[1], " group"),
+                                paste0(lev.fac2[2], "-", lev.fac1[2], " group"),
+                                paste0(lev.fac2[1], "-", lev.fac1[1], " group"),
+                                paste0(lev.fac2[1], "-", lev.fac1[2], " group"))
 
-  data.models[[21]]$groups <- c(paste0(lev.fac2[2], "-", lev.fac1[1], " group"), paste0(lev.fac2[2], "-", lev.fac1[2], " group"),
-                                paste0(lev.fac2[1], "-", lev.fac1[1], " group"), paste0(lev.fac2[1], "-", lev.fac1[2], " group"))
+  data.models[[21]]$groups <- c(paste0(lev.fac2[1], "-", lev.fac1[2], " group"),
+                                paste0(lev.fac2[1], "-", lev.fac1[1], " group"),
+                                paste0(lev.fac2[2], "-", lev.fac1[2], " group"),
+                                paste0(lev.fac2[2], "-", lev.fac1[1], " group"))
 
-  data.models[[22]]$groups <- c(paste0(lev.fac2[2], "-", lev.fac1[2], " group"), paste0(lev.fac2[2], "-", lev.fac1[1], " group"),
-                                paste0(lev.fac2[1], "-", lev.fac1[2], " group"), paste0(lev.fac2[1], "-", lev.fac1[1], " group"))
+  data.models[[22]]$groups <- c(paste0(lev.fac2[2], "-", lev.fac1[2], " group"),
+                                paste0(lev.fac2[2], "-", lev.fac1[1], " group"),
+                                paste0(lev.fac2[1], "-", lev.fac1[2], " group"),
+                                paste0(lev.fac2[1], "-", lev.fac1[1], " group"))
 
   ## Add name of the level being adjusted in each shared spatial effect ---------------------------------------------------------------
 
   # ResMod
-  data.models[[2]]$sp_effects <- c(paste0("phi_1(", lev.fac1[1], "-", lev.fac2[1], ")"), paste0("phi_2(", lev.fac1[1], "-", lev.fac2[2], ")"),
-                                   paste0("phi_3(", lev.fac1[2], "-", lev.fac2[1], ")"), paste0("phi_4(", lev.fac1[2], "-", lev.fac2[2], ")"))
+  data.models[[2]]$sp_effects <- c(paste0("phi_1(", lev.fac1[1], "-", lev.fac2[1], ")"),
+                                   paste0("phi_2(", lev.fac1[1], "-", lev.fac2[2], ")"),
+                                   paste0("phi_3(", lev.fac1[2], "-", lev.fac2[1], ")"),
+                                   paste0("phi_4(", lev.fac1[2], "-", lev.fac2[2], ")"))
 
   # M2
   data.models[[3]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[1], "-", lev.fac2[1], "])"))
-  data.models[[4]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[1], "-", lev.fac2[2], "])"))
-  data.models[[5]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[2], "-", lev.fac2[1], "])"))
+  data.models[[4]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[2], "-", lev.fac2[1], "])"))
+  data.models[[5]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[1], "-", lev.fac2[2], "])"))
   data.models[[6]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[2], "-", lev.fac2[2], "])"))
 
   # M3
-  data.models[[7]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[1], "-", lev.fac2[1], "])"), paste0("phi_21(", lev.fac1[2], " effect", ")"))
+  data.models[[7]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[1], "-", lev.fac2[1], "])"),
+                                   paste0("phi_21(", lev.fac1[2], " effect", ")"))
 
-  data.models[[8]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[2], "-", lev.fac2[1], "])"), paste0("phi_21(", lev.fac1[1], " effect", ")"))
+  data.models[[8]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[2], "-", lev.fac2[1], "])"),
+                                   paste0("phi_21(", lev.fac1[1], " effect", ")"))
 
   # M4
-  data.models[[9]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[1], "-", lev.fac2[1], "])"), paste0("phi_12(", lev.fac2[2], " effect", ")"))
+  data.models[[9]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[1], "-", lev.fac2[1], "])"),
+                                   paste0("phi_12(", lev.fac2[2], " effect", ")"))
 
-  data.models[[10]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[1], "-", lev.fac2[2], "])"), paste0("phi_12(", lev.fac2[1], " effect", ")"))
-
-  # M5
-  data.models[[11]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[1], "-", lev.fac2[1], "])"), paste0("phi_21(", lev.fac1[2], " effect", ")"),
-                                    paste0("phi_12(", lev.fac2[2], " effect", ")"))
-
-  data.models[[12]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[1], "-", lev.fac2[2], "])"), paste0("phi_21(", lev.fac1[2], " effect", ")"),
+  data.models[[10]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[1], "-", lev.fac2[2], "])"),
                                     paste0("phi_12(", lev.fac2[1], " effect", ")"))
 
-  data.models[[13]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[2], "-", lev.fac2[1], "])"), paste0("phi_21(", lev.fac1[1], " effect", ")"),
+  # M5
+  data.models[[11]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[1], "-", lev.fac2[1], "])"),
+                                    paste0("phi_21(", lev.fac1[2], " effect", ")"),
                                     paste0("phi_12(", lev.fac2[2], " effect", ")"))
 
-  data.models[[14]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[2], "-", lev.fac2[2], "])"), paste0("phi_21(", lev.fac1[1], " effect", ")"),
+  data.models[[12]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[2], "-", lev.fac2[1], "])"),
+                                    paste0("phi_21(", lev.fac1[1], " effect", ")"),
+                                    paste0("phi_12(", lev.fac2[2], " effect", ")"))
+
+  data.models[[13]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[1], "-", lev.fac2[2], "])"),
+                                    paste0("phi_21(", lev.fac1[2], " effect", ")"),
+                                    paste0("phi_12(", lev.fac2[1], " effect", ")"))
+
+  data.models[[14]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[2], "-", lev.fac2[2], "])"),
+                                    paste0("phi_21(", lev.fac1[1], " effect", ")"),
                                     paste0("phi_12(", lev.fac2[1], " effect", ")"))
 
   # M6
-  data.models[[15]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[1], "-", lev.fac2[1], "])"), paste0("phi_21(", lev.fac1[2], " effect", ")"),
-                                    paste0("phi_12(", lev.fac1[1], "*", lev.fac2[2], " effect", ")"), paste0("phi_22(", lev.fac1[2], "*", lev.fac2[2], " effect", ")"))
+  data.models[[15]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[1], "-", lev.fac2[1], "])"),
+                                    paste0("phi_21(", lev.fac1[2], " effect", ")"),
+                                    paste0("phi_12(", lev.fac2[2], " effect", ")"),
+                                    paste0("phi_22(", lev.fac1[2], "*", lev.fac2[2], " effect", ")"))
 
-  data.models[[16]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[1], "-", lev.fac2[2], "])"), paste0("phi_21(", lev.fac1[2], " effect", ")"),
-                                    paste0("phi_12(", lev.fac1[1], "*", lev.fac2[1], " effect", ")"), paste0("phi_22(", lev.fac1[2], "*", lev.fac2[1], " effect", ")"))
+  data.models[[16]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[2], "-", lev.fac2[1], "])"),
+                                    paste0("phi_21(", lev.fac1[1], " effect", ")"),
+                                    paste0("phi_12(", lev.fac2[2], " effect", ")"),
+                                    paste0("phi_22(", lev.fac1[1], "*", lev.fac2[2], " effect", ")"))
 
-  data.models[[17]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[2], "-", lev.fac2[1], "])"), paste0("phi_21(", lev.fac1[1], " effect", ")"),
-                                    paste0("phi_12(", lev.fac1[2], "*", lev.fac2[2], " effect", ")"), paste0("phi_22(", lev.fac1[1], "*", lev.fac2[2], " effect", ")"))
+  data.models[[17]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[1], "-", lev.fac2[2], "])"),
+                                    paste0("phi_21(", lev.fac1[2], " effect", ")"),
+                                    paste0("phi_12(", lev.fac2[1], " effect", ")"),
+                                    paste0("phi_22(", lev.fac1[2], "*", lev.fac2[1], " effect", ")"))
 
-  data.models[[18]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[2], "-", lev.fac2[2], "])"), paste0("phi_21(", lev.fac1[1], " effect", ")"),
-                                    paste0("phi_12(", lev.fac1[2], "*", lev.fac2[1], " effect", ")"), paste0("phi_22(", lev.fac1[1], "*", lev.fac2[1], " effect", ")"))
+  data.models[[18]]$sp_effects <- c(paste0("phi_11(General[", lev.fac1[2], "-", lev.fac2[2], "])"),
+                                    paste0("phi_21(", lev.fac1[1], " effect", ")"),
+                                    paste0("phi_12(", lev.fac2[1], " effect", ")"),
+                                    paste0("phi_22(", lev.fac1[1], "*", lev.fac2[1], " effect", ")"))
 
+  #---------------------------------------------------------------------------------------------------------#
+  data.models[[19]]$sp_effects <- c(paste0("phi_11(General[", lev.fac2[1], "-", lev.fac1[1], "])"),
+                                    paste0("phi_21(", lev.fac2[2], " effect", ")"),
+                                    paste0("phi_12(", lev.fac1[2], " effect", ")"),
+                                    paste0("phi_22(", lev.fac2[2], "*", lev.fac1[2], " effect", ")"))
 
-  data.models[[19]]$sp_effects <- c(paste0("phi_11(General[", lev.fac2[1], "-", lev.fac1[1], "])"), paste0("phi_21(", lev.fac2[2], " effect", ")"),
-                                    paste0("phi_12(", lev.fac2[1], "*", lev.fac1[2], " effect", ")"), paste0("phi_22(", lev.fac2[2], "*", lev.fac1[2], " effect", ")"))
+  data.models[[20]]$sp_effects <- c(paste0("phi_11(General[", lev.fac2[2], "-", lev.fac1[1], "])"),
+                                    paste0("phi_21(", lev.fac2[1], " effect", ")"),
+                                    paste0("phi_12(", lev.fac1[2], " effect", ")"),
+                                    paste0("phi_22(", lev.fac2[1], "*", lev.fac1[1], " effect", ")"))
 
-  data.models[[20]]$sp_effects <- c(paste0("phi_11(General[", lev.fac2[1], "-", lev.fac1[2], "])"), paste0("phi_21(", lev.fac2[2], " effect", ")"),
-                                    paste0("phi_12(", lev.fac2[1], "*", lev.fac1[1], " effect", ")"), paste0("phi_22(", lev.fac2[2], "*", lev.fac1[1], " effect", ")"))
+  data.models[[21]]$sp_effects <- c(paste0("phi_11(General[", lev.fac2[1], "-", lev.fac1[2], "])"),
+                                    paste0("phi_21(", lev.fac2[2], " effect", ")"),
+                                    paste0("phi_12(", lev.fac1[1], " effect", ")"),
+                                    paste0("phi_22(", lev.fac2[2], "*", lev.fac1[1], " effect", ")"))
 
-  data.models[[21]]$sp_effects <- c(paste0("phi_11(General[", lev.fac2[2], "-", lev.fac1[1], "])"), paste0("phi_21(", lev.fac2[1], " effect", ")"),
-                                    paste0("phi_12(", lev.fac2[2], "*", lev.fac1[2], " effect", ")"), paste0("phi_22(", lev.fac2[1], "*", lev.fac1[2], " effect", ")"))
-
-  data.models[[22]]$sp_effects <- c(paste0("phi_11(General[", lev.fac2[2], "-", lev.fac1[2], "])"), paste0("phi_21(", lev.fac2[1], " effect", ")"),
-                                    paste0("phi_12(", lev.fac2[2], "*", lev.fac1[1], " effect", ")"), paste0("phi_22(", lev.fac2[1], "*", lev.fac1[1], " effect", ")"))
+  data.models[[22]]$sp_effects <- c(paste0("phi_11(General[", lev.fac2[2], "-", lev.fac1[2], "])"),
+                                    paste0("phi_21(", lev.fac2[1], " effect", ")"),
+                                    paste0("phi_12(", lev.fac1[1], " effect", ")"),
+                                    paste0("phi_22(", lev.fac2[1], "*", lev.fac1[1], " effect", ")"))
 
   ## Add name to each model
   names(data.models)[1] <- "M0"
   names(data.models)[2] <- "M1"
 
-  names(data.models)[3] <- paste0("M2.(", lev.fac1[1],")")
-  names(data.models)[4] <- paste0("M2.(", lev.fac1[2],")")
-  names(data.models)[5] <- paste0("M2.(", lev.fac2[1],")")
-  names(data.models)[6] <- paste0("M2.(", lev.fac2[2],")")
+  names(data.models)[3] <- paste0("M2.(", lev.fac1[1], "-", lev.fac2[1], ")")
+  names(data.models)[4] <- paste0("M2.(", lev.fac1[2], "-", lev.fac2[1], ")")
+  names(data.models)[5] <- paste0("M2.(", lev.fac1[1], "-", lev.fac2[2], ")")
+  names(data.models)[6] <- paste0("M2.(", lev.fac1[2], "-", lev.fac2[2], ")")
 
-  names(data.models)[7] <- paste0("M3.", fac.names[1], "(", lev.fac1[1],")")
-  names(data.models)[8] <- paste0("M3.", fac.names[1], "(", lev.fac1[2],")")
+  names(data.models)[7] <- paste0("M3.", fac.names[1], "(ref: ", lev.fac1[1],")")
+  names(data.models)[8] <- paste0("M3.", fac.names[1], "(ref: ", lev.fac1[2],")")
 
-  names(data.models)[9] <- paste0("M4.", fac.names[2], "(", lev.fac2[1],")")
-  names(data.models)[10] <- paste0("M4.", fac.names[2], "(", lev.fac2[2],")")
+  names(data.models)[9] <- paste0("M4.", fac.names[2], "(ref: ", lev.fac2[1],")")
+  names(data.models)[10] <- paste0("M4.", fac.names[2], "(ref: ", lev.fac2[2],")")
 
-  names(data.models)[11] <- paste0("M5.", fac.names[1], "(", lev.fac1[1],")", "+", fac.names[2], "(", lev.fac2[1],")")
-  names(data.models)[12] <- paste0("M5.", fac.names[1], "(", lev.fac1[2],")", "+", fac.names[2], "(", lev.fac2[1],")")
-  names(data.models)[13] <- paste0("M5.", fac.names[1], "(", lev.fac1[1],")", "+", fac.names[2], "(", lev.fac2[2],")")
-  names(data.models)[14] <- paste0("M5.", fac.names[1], "(", lev.fac1[2],")", "+", fac.names[2], "(", lev.fac2[2],")")
+  names(data.models)[11] <- paste0("M5.", fac.names[1], "(ref: ", lev.fac1[1],")", "+", fac.names[2], "(ref: ", lev.fac2[1],")")
+  names(data.models)[12] <- paste0("M5.", fac.names[1], "(ref: ", lev.fac1[2],")", "+", fac.names[2], "(ref: ", lev.fac2[1],")")
+  names(data.models)[13] <- paste0("M5.", fac.names[1], "(ref: ", lev.fac1[1],")", "+", fac.names[2], "(ref: ", lev.fac2[2],")")
+  names(data.models)[14] <- paste0("M5.", fac.names[1], "(ref: ", lev.fac1[2],")", "+", fac.names[2], "(ref: ", lev.fac2[2],")")
 
-  names(data.models)[15] <- paste0("M6.", fac.names[1], "(", lev.fac1[1],")", "*", fac.names[2], "(", lev.fac2[1],")")
-  names(data.models)[16] <- paste0("M6.", fac.names[1], "(", lev.fac1[2],")", "*", fac.names[2], "(", lev.fac2[1],")")
-  names(data.models)[17] <- paste0("M6.", fac.names[1], "(", lev.fac1[1],")", "*", fac.names[2], "(", lev.fac2[2],")")
-  names(data.models)[18] <- paste0("M6.", fac.names[1], "(", lev.fac1[2],")", "*", fac.names[2], "(", lev.fac2[2],")")
+  names(data.models)[15] <- paste0("M6.", fac.names[1], "(ref: ", lev.fac1[1],")", "*", fac.names[2], "(ref: ", lev.fac2[1],")")
+  names(data.models)[16] <- paste0("M6.", fac.names[1], "(ref: ", lev.fac1[2],")", "*", fac.names[2], "(ref: ", lev.fac2[1],")")
+  names(data.models)[17] <- paste0("M6.", fac.names[1], "(ref: ", lev.fac1[1],")", "*", fac.names[2], "(ref: ", lev.fac2[2],")")
+  names(data.models)[18] <- paste0("M6.", fac.names[1], "(ref: ", lev.fac1[2],")", "*", fac.names[2], "(ref: ", lev.fac2[2],")")
 
-  names(data.models)[19] <- paste0("M6.", fac.names[2], "(", lev.fac2[1],")", "*", fac.names[1], "(", lev.fac1[1],")")
-  names(data.models)[20] <- paste0("M6.", fac.names[2], "(", lev.fac2[2],")", "*", fac.names[1], "(", lev.fac1[1],")")
-  names(data.models)[21] <- paste0("M6.", fac.names[2], "(", lev.fac2[1],")", "*", fac.names[1], "(", lev.fac1[2],")")
-  names(data.models)[22] <- paste0("M6.", fac.names[2], "(", lev.fac2[2],")", "*", fac.names[1], "(", lev.fac1[2],")")
+  names(data.models)[19] <- paste0("M6.", fac.names[2], "(ref: ", lev.fac2[1],")", "*", fac.names[1], "(ref: ", lev.fac1[1],")")
+  names(data.models)[20] <- paste0("M6.", fac.names[2], "(ref: ", lev.fac2[2],")", "*", fac.names[1], "(ref: ", lev.fac1[1],")")
+  names(data.models)[21] <- paste0("M6.", fac.names[2], "(ref: ", lev.fac2[1],")", "*", fac.names[1], "(ref: ", lev.fac1[2],")")
+  names(data.models)[22] <- paste0("M6.", fac.names[2], "(ref: ", lev.fac2[2],")", "*", fac.names[1], "(ref: ", lev.fac1[2],")")
 
   data_summary <- data.frame(
     "NUMBER"=1:22,
 
-    "MODEL"=c("M0", "M1",
-              paste0("M2-ind(", lev.fac1[1], "-", lev.fac2[1], ")"), paste0("M2-ind(", lev.fac1[2], "-", lev.fac2[1], ")"),
-              paste0("M2-ind(", lev.fac2[1], "-", lev.fac1[2], ")"), paste0("M2-ind(", lev.fac2[2], "-", lev.fac1[2], ")"),
-
-              paste0("M3-", fac.names[1], ".(", lev.fac1[1],")"), paste0("M3-", fac.names[1], ".(", lev.fac1[2],")"),
-
-              paste0("M4-", fac.names[2], ".(", lev.fac2[1],")"), paste0("M4-", fac.names[2], ".(", lev.fac2[2],")"),
-
-              paste0("M5-", fac.names[1], ".(", lev.fac1[1],")", "+", fac.names[2], ".(", lev.fac2[1],")"),
-              paste0("M5-", fac.names[1], ".(", lev.fac1[2],")", "+", fac.names[2], ".(", lev.fac2[1],")"),
-              paste0("M5-", fac.names[1], ".(", lev.fac1[1],")", "+", fac.names[2], ".(", lev.fac2[2],")"),
-              paste0("M5-", fac.names[1], ".(", lev.fac1[2],")", "+", fac.names[2], ".(", lev.fac2[2],")"),
-
-              paste0("M6-", fac.names[1], ".(", lev.fac1[1],")", "*", fac.names[2], ".(", lev.fac2[1],")"),
-              paste0("M6-", fac.names[1], ".(", lev.fac1[2],")", "*", fac.names[2], ".(", lev.fac2[1],")"),
-              paste0("M6-", fac.names[1], ".(", lev.fac1[1],")", "*", fac.names[2], ".(", lev.fac2[2],")"),
-              paste0("M6-", fac.names[1], ".(", lev.fac1[2],")", "*", fac.names[2], ".(", lev.fac2[2],")"),
-
-              paste0("M6-", fac.names[2], ".(", lev.fac2[1],")", "*", fac.names[1], ".(", lev.fac1[1],")"),
-              paste0("M6-", fac.names[2], ".(", lev.fac2[2],")", "*", fac.names[1], ".(", lev.fac1[1],")"),
-              paste0("M6-", fac.names[2], ".(", lev.fac2[1],")", "*", fac.names[1], ".(", lev.fac1[2],")"),
-              paste0("M6-", fac.names[2], ".(", lev.fac2[2],")", "*", fac.names[1], ".(", lev.fac1[2],")")
-    ),
+    "MODEL"= names(data.models),
 
     "DIC"=c(data.models[[1]]$DIC$dic, # ResMod
             data.models[[2]]$DIC$dic, # ResMod
