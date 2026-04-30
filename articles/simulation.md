@@ -23,6 +23,7 @@ of 100 observations per county, which would be 25 per group if they were
 equally distributed.
 
 ``` r
+
 # Set seed for the simulation
 set.seed(241021227)
 
@@ -54,6 +55,7 @@ for each one of the previous conditions:
 ------------------------------------------------------------------------
 
 ``` r
+
 # Different Risks
 us_counties$group1_dif_risk <- rnorm(n_county, 0.3, 0.5)
 us_counties$group2_dif_risk <- rnorm(n_county, 0.05, 0.5)
@@ -71,6 +73,7 @@ us_counties$group4_dif_risk <- rnorm(n_county, -0.05, 0.5)
 ------------------------------------------------------------------------
 
 ``` r
+
 # Similar Risks
 us_counties$group1_sim_risk <- rnorm(n_county, 0, 0.5)
 us_counties$group2_sim_risk <- rnorm(n_county, 0, 0.5)
@@ -94,6 +97,7 @@ distribution of values is thefollowing:
 ------------------------------------------------------------------------
 
 ``` r
+
 # Load temp data
 temp_data <- temp_data_us_23
 temp_data <- temp_data %>% select(Name, State, Value) %>% mutate(STATE_NAME=State, NAMELSAD=Name) %>% select(-State, -Name)
@@ -127,6 +131,7 @@ have been scaled aswell.
 ------------------------------------------------------------------------
 
 ``` r
+
 # Load population data
 cov_data <- pop_data_us_23 
 cov_data <- cov_data %>% select(STNAME, CTYNAME, POPESTIMATE2023) %>% mutate(STATE_NAME=STNAME, NAMELSAD=CTYNAME) %>% select(-STNAME, -CTYNAME)
@@ -150,6 +155,7 @@ summary(us_counties$POP_DENS_Scale)
     ##  Max.   : 4.149420
 
 ``` r
+
 # Extract Population variable for use later
 POP <- us_counties$POPESTIMATE2023
 ```
@@ -166,6 +172,7 @@ the function **rst()** fromthe package **SUMMER**.
 ------------------------------------------------------------------------
 
 ``` r
+
 sim_sp_ef <- rst(n=4, type = "s", type.s = "ICAR", scale.model = FALSE, Amat = W)
 
 ind.ef.g1 <- ind.ef[1, ]
@@ -183,18 +190,21 @@ ind.ef.g4 <- ind.ef[4, ]
       In this case we are going to assign thevalues using only
 population and the heterogeneity effect simulated foreach group.
 
-$$\begin{aligned}
- & {\theta_{1}^{i} = \omega_{1}^{i}} \\
- & {\theta_{2}^{i} = \omega_{2}^{i}} \\
- & {\theta_{3}^{i} = \omega_{3}^{i}} \\
- & {\theta_{4}^{i} = \omega_{4}^{i}}
-\end{aligned}$$
+``` math
+\begin{aligned}
+& \theta_1^i=\omega_1^i \\
+& \theta_2^i=\omega_2^i \\
+& \theta_3^i=\omega_3^i \\
+& \theta_4^i=\omega_4^i
+\end{aligned}
+```
 
 ### Groups with equal risks
 
 ------------------------------------------------------------------------
 
 ``` r
+
 # Estimate expected values depending on the population of the county (equal for all model used)
 total_pob <- sum(POP)
 EXP <- rep((total_obs*POP)/(total_pob*4), 4)
@@ -259,6 +269,7 @@ if(sum(M0_df$OBS_SIM)!=total_obs){warning("Observed values and expected values d
 ------------------------------------------------------------------------
 
 ``` r
+
 # Estimate the total combination of population and risks
 total_pobrisk <- sum(POP * us_counties$group1_dif_risk + POP * us_counties$group2_dif_risk + 
                        POP * us_counties$group3_dif_risk + POP * us_counties$group4_dif_risk)
@@ -322,18 +333,21 @@ eachgroup, and used to distribute the number of observed cases. We
 willrescale the spatial effects to be between -1 and 1 so that the
 assignedrisk groups dont go to far below .
 
-$$\begin{aligned}
- & {\theta_{1}^{i} = \gamma_{1}^{1}\omega_{1}^{i} + \gamma_{2}^{1}\phi_{1}} \\
- & {\theta_{2}^{i} = \gamma_{1}^{2}\omega_{2}^{i} + \gamma_{2}^{2}\phi_{2}} \\
- & {\theta_{3}^{i} = \gamma_{1}^{3}\omega_{3}^{i} + \gamma_{2}^{3}\phi_{3}} \\
- & {\theta_{4}^{i} = \gamma_{1}^{4}\omega_{4}^{i} + \gamma_{2}^{4}\phi_{4}}
-\end{aligned}$$
+``` math
+\begin{aligned}
+& \theta_1^i=\gamma_1^1 \omega_1^i + \gamma_2^1 \phi_1 \\
+& \theta_2^i=\gamma_1^2 \omega_2^i + \gamma_2^2 \phi_2 \\
+& \theta_3^i=\gamma_1^3 \omega_3^i + \gamma_2^3 \phi_3 \\
+& \theta_4^i=\gamma_1^4 \omega_4^i + \gamma_2^4 \phi_4
+\end{aligned}
+```
 
 ### Groups with equal risks
 
 ------------------------------------------------------------------------
 
 ``` r
+
 # Estimate underlying risk for each group
 g1_prk_v1 <- 1/2*us_counties$group1_sim_risk + 1/2*ind.ef.g2
 g2_prk_v1 <- 1/2*us_counties$group2_sim_risk + 1/2*ind.ef.g1
@@ -457,6 +471,7 @@ the total risk assigned.
 ------------------------------------------------------------------------
 
 ``` r
+
 # Estimate underlying risk for each group
 g1_prk_v1 <- 1/2*us_counties$group1_dif_risk + 1/2*ind.ef.g2
 g2_prk_v1 <- 1/2*us_counties$group2_dif_risk + 1/2*ind.ef.g1
@@ -569,18 +584,21 @@ if(total_dif_v3>0){
 
 ## Shared Spatial Effect
 
-$$\begin{aligned}
- & {\theta_{1}^{i} = \gamma_{1}^{1}\omega_{1}^{i} + \gamma_{2}^{1}\phi_{11}} \\
- & {\theta_{2}^{i} = \gamma_{1}^{2}\omega_{2}^{i} + \gamma_{2}^{2}\phi_{11}} \\
- & {\theta_{3}^{i} = \gamma_{1}^{3}\omega_{3}^{i} + \gamma_{2}^{3}\phi_{11}} \\
- & {\theta_{4}^{i} = \gamma_{1}^{4}\omega_{4}^{i} + \gamma_{2}^{4}\phi_{11}}
-\end{aligned}$$
+``` math
+\begin{aligned}
+& \theta_1^i=\gamma_1^1 \omega_1^i + \gamma_2^1 \phi_{11} \\
+& \theta_2^i=\gamma_1^2 \omega_2^i + \gamma_2^2 \phi_{11} \\
+& \theta_3^i=\gamma_1^3 \omega_3^i + \gamma_2^3 \phi_{11} \\
+& \theta_4^i=\gamma_1^4 \omega_4^i + \gamma_2^4 \phi_{11}
+\end{aligned}
+```
 
 ### Groups with equal risks
 
 ------------------------------------------------------------------------
 
 ``` r
+
 # Estimate underlying risk for each group
 g1_prk_v1 <- 1/2*us_counties$group1_sim_risk + 1/2*ind.ef.g2
 g2_prk_v1 <- 1/2*us_counties$group2_sim_risk + 1/2*ind.ef.g2
@@ -704,6 +722,7 @@ the total risk assigned.
 ------------------------------------------------------------------------
 
 ``` r
+
 # Estimate underlying risk for each group
 g1_prk_v1 <- 1/2*us_counties$group1_dif_risk + 1/2*ind.ef.g2
 g2_prk_v1 <- 1/2*us_counties$group2_dif_risk + 1/2*ind.ef.g2
@@ -816,18 +835,21 @@ if(total_dif_v3>0){
 
 ## Factor 2 Spatial Effect (Rural-Urban)
 
-$$\begin{aligned}
- & {\theta_{1}^{i} = \gamma_{1}^{1}\omega_{1}^{i} + \gamma_{2}^{1}\phi_{11}} \\
- & {\theta_{2}^{i} = \gamma_{1}^{2}\omega_{2}^{i} + \gamma_{2}^{2}\phi_{11}} \\
- & {\theta_{3}^{i} = \gamma_{1}^{3}\omega_{3}^{i} + \gamma_{2}^{3}\phi_{11} + \gamma_{3}^{3}\phi_{21}} \\
- & {\theta_{4}^{i} = \gamma_{1}^{4}\omega_{4}^{i} + \gamma_{2}^{4}\phi_{11} + \gamma_{3}^{4}\phi_{21}}
-\end{aligned}$$
+``` math
+\begin{aligned}
+& \theta_1^i=\gamma_1^1 \omega_1^i + \gamma_2^1 \phi_{11} \\
+& \theta_2^i=\gamma_1^2 \omega_2^i + \gamma_2^2 \phi_{11} \\
+& \theta_3^i=\gamma_1^3 \omega_3^i + \gamma_2^3 \phi_{11} + \gamma_3^3 \phi_{21} \\
+& \theta_4^i=\gamma_1^4 \omega_4^i + \gamma_2^4 \phi_{11} + \gamma_3^4 \phi_{21}
+\end{aligned}
+```
 
 ### Groups with equal risks
 
 ------------------------------------------------------------------------
 
 ``` r
+
 # Estimate underlying risk for each group
 g1_prk_v1 <- 1/2*us_counties$group1_sim_risk + 1/2*ind.ef.g2 
 g2_prk_v1 <- 1/2*us_counties$group2_sim_risk + 1/2*ind.ef.g2
@@ -951,6 +973,7 @@ the total risk assigned.
 ------------------------------------------------------------------------
 
 ``` r
+
 # Estimate underlying risk for each group
 g1_prk_v1 <- 1/2*us_counties$group1_dif_risk + 1/2*ind.ef.g2 
 g2_prk_v1 <- 1/2*us_counties$group2_dif_risk + 1/2*ind.ef.g2
@@ -1063,18 +1086,21 @@ if(total_dif_v3>0){
 
 ## Factor 2 Spatial Effect (North-South)
 
-$$\begin{aligned}
- & {\theta_{1}^{i} = \gamma_{1}^{1}\omega_{1}^{i} + \gamma_{2}^{1}\phi_{11}} \\
- & {\theta_{2}^{i} = \gamma_{1}^{2}\omega_{2}^{i} + \gamma_{2}^{2}\phi_{11} + \gamma_{3}^{2}\phi_{12}} \\
- & {\theta_{3}^{i} = \gamma_{1}^{3}\omega_{3}^{i} + \gamma_{2}^{3}\phi_{11}} \\
- & {\theta_{4}^{i} = \gamma_{1}^{4}\omega_{4}^{i} + \gamma_{2}^{4}\phi_{11} + \gamma_{3}^{4}\phi_{12}}
-\end{aligned}$$
+``` math
+\begin{aligned}
+& \theta_1^i=\gamma_1^1 \omega_1^i + \gamma_2^1 \phi_{11} \\
+& \theta_2^i=\gamma_1^2 \omega_2^i + \gamma_2^2 \phi_{11} + \gamma_3^2 \phi_{12} \\
+& \theta_3^i=\gamma_1^3 \omega_3^i + \gamma_2^3 \phi_{11} \\
+& \theta_4^i=\gamma_1^4 \omega_4^i + \gamma_2^4 \phi_{11} + \gamma_3^4 \phi_{12} 
+\end{aligned}
+```
 
 ### Groups with equal risks
 
 ------------------------------------------------------------------------
 
 ``` r
+
 # Estimate underlying risk for each group
 g1_prk_v1 <- 1/3*us_counties$group1_sim_risk + 1/3*ind.ef.g2 + 1/3*us_counties$Temp_Scale
 g2_prk_v1 <- 1/2*us_counties$group2_sim_risk + 1/2*ind.ef.g2
@@ -1198,6 +1224,7 @@ the total risk assigned.
 ------------------------------------------------------------------------
 
 ``` r
+
 # Estimate underlying risk for each group
 g1_prk_v1 <- 1/3*us_counties$group1_dif_risk + 1/3*ind.ef.g2 + 1/3*us_counties$Temp_Scale
 g2_prk_v1 <- 1/2*us_counties$group2_dif_risk + 1/2*ind.ef.g2
@@ -1310,18 +1337,21 @@ if(total_dif_v3>0){
 
 ## Factor 1 + Factor 2
 
-$$\begin{aligned}
- & {\theta_{1}^{i} = \gamma_{1}^{1}\omega_{1}^{i} + \gamma_{2}^{1}\phi_{11}} \\
- & {\theta_{2}^{i} = \gamma_{1}^{2}\omega_{2}^{i} + \gamma_{2}^{2}\phi_{11} + \gamma_{3}^{2}\phi_{12}} \\
- & {\theta_{3}^{i} = \gamma_{1}^{3}\omega_{3}^{i} + \gamma_{2}^{3}\phi_{11} + \gamma_{3}^{3}\phi_{21}} \\
- & {\theta_{4}^{i} = \gamma_{1}^{4}\omega_{4}^{i} + \gamma_{2}^{4}\phi_{11} + \gamma_{3}^{4}\phi_{12} + \gamma_{4}^{4}\phi_{21}}
-\end{aligned}$$
+``` math
+\begin{aligned}
+& \theta_1^i=\gamma_1^1 \omega_1^i + \gamma_2^1 \phi_{11} \\
+& \theta_2^i=\gamma_1^2 \omega_2^i + \gamma_2^2 \phi_{11} + \gamma_3^2 \phi_{12} \\
+& \theta_3^i=\gamma_1^3 \omega_3^i + \gamma_2^3 \phi_{11} + \gamma_3^3 \phi_{21} \\
+& \theta_4^i=\gamma_1^4 \omega_4^i + \gamma_2^4 \phi_{11} + \gamma_3^4 \phi_{12} + \gamma_4^4 \phi_{21}
+\end{aligned}
+```
 
 ### Groups with equal risks
 
 ------------------------------------------------------------------------
 
 ``` r
+
 # Estimate underlying risk for each group
 g1_prk_v1 <- 1/3*us_counties$group1_sim_risk + 1/3*ind.ef.g2 + 1/3*us_counties$Temp_Scale
 g2_prk_v1 <- 1/2*us_counties$group2_sim_risk + 1/2*ind.ef.g2
@@ -1445,6 +1475,7 @@ the total risk assigned.
 ------------------------------------------------------------------------
 
 ``` r
+
 # Estimate underlying risk for each group
 g1_prk_v1 <- 1/3*us_counties$group1_dif_risk + 1/3*ind.ef.g2 + 1/3*us_counties$Temp_Scale
 g2_prk_v1 <- 1/2*us_counties$group2_dif_risk + 1/2*ind.ef.g2
@@ -1557,18 +1588,21 @@ if(total_dif_v3>0){
 
 ## Factor 1 \* Factor 2
 
-$$\begin{aligned}
- & {\theta_{1}^{i} = \gamma_{1}^{1}\omega_{1}^{i} + \gamma_{2}^{1}\phi_{11}} \\
- & {\theta_{2}^{i} = \gamma_{1}^{2}\omega_{2}^{i} + \gamma_{2}^{2}\phi_{11} + \gamma_{3}^{2}\phi_{12}} \\
- & {\theta_{3}^{i} = \gamma_{1}^{3}\omega_{3}^{i} + \gamma_{2}^{3}\phi_{11} + \gamma_{3}^{3}\phi_{21} + \gamma_{4}^{4}\phi_{21}} \\
- & {\theta_{4}^{i} = \gamma_{1}^{4}\omega_{4}^{i} + \gamma_{2}^{4}\phi_{11} + \gamma_{3}^{4}\phi_{12} + \gamma_{4}^{4}\phi_{22}}
-\end{aligned}$$
+``` math
+\begin{aligned}
+& \theta_1^i=\gamma_1^1 \omega_1^i + \gamma_2^1 \phi_{11} \\
+& \theta_2^i=\gamma_1^2 \omega_2^i + \gamma_2^2 \phi_{11} + \gamma_3^2 \phi_{12} \\
+& \theta_3^i=\gamma_1^3 \omega_3^i + \gamma_2^3 \phi_{11} + \gamma_3^3 \phi_{21} + \gamma_4^4 \phi_{21}\\
+& \theta_4^i=\gamma_1^4 \omega_4^i + \gamma_2^4 \phi_{11} + \gamma_3^4 \phi_{12} + \gamma_4^4 \phi_{22}
+\end{aligned}
+```
 
 ### Groups with equal risks
 
 ------------------------------------------------------------------------
 
 ``` r
+
 # Estimate underlying risk for each group
 g1_prk_v1 <- 1/3*us_counties$group1_sim_risk + 1/3*ind.ef.g2 + 1/3*us_counties$Temp_Scale
 g2_prk_v1 <- 1/2*us_counties$group2_sim_risk + 1/2*ind.ef.g2
@@ -1692,6 +1726,7 @@ the total risk assigned.
 ------------------------------------------------------------------------
 
 ``` r
+
 # Estimate underlying risk for each group
 g1_prk_v1 <- 1/3*us_counties$group1_dif_risk + 1/3*ind.ef.g2 + 1/3*us_counties$Temp_Scale
 g2_prk_v1 <- 1/2*us_counties$group2_dif_risk + 1/2*ind.ef.g2
@@ -1808,6 +1843,7 @@ if(total_dif_v3>0){
 the analysis part and the results part.
 
 ``` r
+
 sp_object_sim <- us_counties 
 sp_object_sim$ind.ef.g1 <- ind.ef.g1
 sp_object_sim$ind.ef.g2 <- ind.ef.g2
@@ -1821,11 +1857,3 @@ save(sp_object_sim, file="./Datos/sp_object_sim.Rdata")
 ------------------------------------------------------------------------
 
   
-
-## On this page
-
-Developed by [Pablo Escobar-Hernández](https://github.com/VdaK1NG),
-[Francisco Palmí-Perales](https://github.com/FranciscoPalmiPerales),
-[Antonio López-Quílez](https://github.com/antoloqui).
-
-Site built with [pkgdown](https://pkgdown.r-lib.org/) 2.2.0.

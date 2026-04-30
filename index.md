@@ -15,6 +15,7 @@ You can install the latest development version from
 [GitHub](https://github.com/VdaK1NG/INLA.SocialEp):
 
 ``` r
+
 install.packages("remotes")
 remotes::install_github("VdaK1NG/INLA.SocialEp")
 ```
