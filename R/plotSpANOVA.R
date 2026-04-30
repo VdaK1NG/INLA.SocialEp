@@ -30,7 +30,7 @@ plotSpANOVA <- function(
     scale_name="Values",
     sp_null=0.125,
     legend.position="right",
-    groups_names=c("G1", "G2", "G3", "G4"),
+    groups_names= "Default",
     ncol_fig=2
     ){
 
@@ -50,8 +50,10 @@ plotSpANOVA <- function(
   CScale <- grDevices::colorRampPalette(fil_scale)
 
   # Retrieve groups
-  #groups_names <- obj[[n_mod]]$groups
-  #sp_names <- obj[[n_mod]]$sp_effects
+  if(groups_names=="Default"){
+    groups_names <- obj[[n_mod]]$groups
+    sp_names <- obj[[n_mod]]$sp_effects
+  }
 
   # Prepare data to plot
   if(obj_type=="SpANOVA"){
