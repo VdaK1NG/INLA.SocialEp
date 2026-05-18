@@ -20,7 +20,7 @@ inla.null.sp <- function(mod, thres = 0.125) {
     if (is.null(sr) || !is.list(sr)) return(rep(NA_real_, length(fields)))
     sapply(fields, function(f) {
       # check that sr[[f]] exists and has a "mean" column
-      if (!is.null(sr[[f]]) && is.data.frame(sr[[f]]) && "mean" %in% names(sr[[f]])) {
+      if (!is.null(sr[[f]]) && "mean" %in% names(sr[[f]])) {
         # safe sd (if single value or all NA -> sd gives NA, fine)
         tryCatch(sd(sr[[f]]$mean, na.rm = TRUE), error = function(e) NA_real_)
       } else {
@@ -37,10 +37,10 @@ inla.null.sp <- function(mod, thres = 0.125) {
   M_4  <- get_sds(4,  c("phi_11"))
   M_5  <- get_sds(5,  c("phi_11"))
   M_6  <- get_sds(6,  c("phi_11"))
-  M_7  <- get_sds(7,  c("phi_11", "phi_12"))
-  M_8  <- get_sds(8,  c("phi_11", "phi_12"))
-  M_9  <- get_sds(9,  c("phi_11", "phi_21"))
-  M_10 <- get_sds(10, c("phi_11", "phi_21"))
+  M_7  <- get_sds(7,  c("phi_11", "phi_21"))
+  M_8  <- get_sds(8,  c("phi_11", "phi_21"))
+  M_9  <- get_sds(9,  c("phi_11", "phi_12"))
+  M_10 <- get_sds(10, c("phi_11", "phi_12"))
   M_11 <- get_sds(11, c("phi_11", "phi_12", "phi_21"))
   M_12 <- get_sds(12, c("phi_11", "phi_12", "phi_21"))
   M_13 <- get_sds(13, c("phi_11", "phi_12", "phi_21"))
