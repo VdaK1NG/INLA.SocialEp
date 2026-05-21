@@ -2932,31 +2932,31 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
   names(data.models)[1] <- "M0"
   names(data.models)[2] <- "M1"
 
-  names(data.models)[3] <- paste0("M2.(", lev.fac1[1], "-", lev.fac2[1], ")")
-  names(data.models)[4] <- paste0("M2.(", lev.fac1[2], "-", lev.fac2[1], ")")
-  names(data.models)[5] <- paste0("M2.(", lev.fac1[1], "-", lev.fac2[2], ")")
-  names(data.models)[6] <- paste0("M2.(", lev.fac1[2], "-", lev.fac2[2], ")")
+  names(data.models)[3] <- paste0("M2.[", lev.fac1[1], "-", lev.fac2[1], "]")
+  names(data.models)[4] <- paste0("M2.[", lev.fac1[2], "-", lev.fac2[1], "]")
+  names(data.models)[5] <- paste0("M2.[", lev.fac1[1], "-", lev.fac2[2], "]")
+  names(data.models)[6] <- paste0("M2.[", lev.fac1[2], "-", lev.fac2[2], "]")
 
-  names(data.models)[7] <- paste0("M3.", fac.names[1], "(ref: ", lev.fac1[1],")")
-  names(data.models)[8] <- paste0("M3.", fac.names[1], "(ref: ", lev.fac1[2],")")
+  names(data.models)[7] <- paste0("M3.", fac.names[1], "[ref: ", lev.fac1[1],"]")
+  names(data.models)[8] <- paste0("M3.", fac.names[1], "[ref: ", lev.fac1[2],"]")
 
-  names(data.models)[9] <- paste0("M4.", fac.names[2], "(ref: ", lev.fac2[1],")")
-  names(data.models)[10] <- paste0("M4.", fac.names[2], "(ref: ", lev.fac2[2],")")
+  names(data.models)[9] <- paste0("M4.", fac.names[2], "[ref: ", lev.fac2[1],"]")
+  names(data.models)[10] <- paste0("M4.", fac.names[2], "[ref: ", lev.fac2[2],"]")
 
-  names(data.models)[11] <- paste0("M5.", fac.names[1], "(ref: ", lev.fac1[1],")", "+", fac.names[2], "(ref: ", lev.fac2[1],")")
-  names(data.models)[12] <- paste0("M5.", fac.names[1], "(ref: ", lev.fac1[2],")", "+", fac.names[2], "(ref: ", lev.fac2[1],")")
-  names(data.models)[13] <- paste0("M5.", fac.names[1], "(ref: ", lev.fac1[1],")", "+", fac.names[2], "(ref: ", lev.fac2[2],")")
-  names(data.models)[14] <- paste0("M5.", fac.names[1], "(ref: ", lev.fac1[2],")", "+", fac.names[2], "(ref: ", lev.fac2[2],")")
+  names(data.models)[11] <- paste0("M5.", fac.names[1], "[ref: ", lev.fac1[1],"]", "+", fac.names[2], "[ref: ", lev.fac2[1],"]")
+  names(data.models)[12] <- paste0("M5.", fac.names[1], "[ref: ", lev.fac1[2],"]", "+", fac.names[2], "[ref: ", lev.fac2[1],"]")
+  names(data.models)[13] <- paste0("M5.", fac.names[1], "[ref: ", lev.fac1[1],"]", "+", fac.names[2], "[ref: ", lev.fac2[2],"]")
+  names(data.models)[14] <- paste0("M5.", fac.names[1], "[ref: ", lev.fac1[2],"]", "+", fac.names[2], "[ref: ", lev.fac2[2],"]")
 
-  names(data.models)[15] <- paste0("M6.", fac.names[1], "(ref: ", lev.fac1[1],")", "*", fac.names[2], "(ref: ", lev.fac2[1],")")
-  names(data.models)[16] <- paste0("M6.", fac.names[1], "(ref: ", lev.fac1[2],")", "*", fac.names[2], "(ref: ", lev.fac2[1],")")
-  names(data.models)[17] <- paste0("M6.", fac.names[1], "(ref: ", lev.fac1[1],")", "*", fac.names[2], "(ref: ", lev.fac2[2],")")
-  names(data.models)[18] <- paste0("M6.", fac.names[1], "(ref: ", lev.fac1[2],")", "*", fac.names[2], "(ref: ", lev.fac2[2],")")
+  names(data.models)[15] <- paste0("M6.", fac.names[1], "[ref: ", lev.fac1[1],"]", "*", fac.names[2], "[ref: ", lev.fac2[1],"]")
+  names(data.models)[16] <- paste0("M6.", fac.names[1], "[ref: ", lev.fac1[2],"]", "*", fac.names[2], "[ref: ", lev.fac2[1],"]")
+  names(data.models)[17] <- paste0("M6.", fac.names[1], "[ref: ", lev.fac1[1],"]", "*", fac.names[2], "[ref: ", lev.fac2[2],"]")
+  names(data.models)[18] <- paste0("M6.", fac.names[1], "[ref: ", lev.fac1[2],"]", "*", fac.names[2], "[ref: ", lev.fac2[2],"]")
 
-  names(data.models)[19] <- paste0("M6.", fac.names[2], "(ref: ", lev.fac2[1],")", "*", fac.names[1], "(ref: ", lev.fac1[1],")")
-  names(data.models)[20] <- paste0("M6.", fac.names[2], "(ref: ", lev.fac2[2],")", "*", fac.names[1], "(ref: ", lev.fac1[1],")")
-  names(data.models)[21] <- paste0("M6.", fac.names[2], "(ref: ", lev.fac2[1],")", "*", fac.names[1], "(ref: ", lev.fac1[2],")")
-  names(data.models)[22] <- paste0("M6.", fac.names[2], "(ref: ", lev.fac2[2],")", "*", fac.names[1], "(ref: ", lev.fac1[2],")")
+  names(data.models)[19] <- paste0("M6.", fac.names[2], "[ref: ", lev.fac2[1],"]", "*", fac.names[1], "[ref: ", lev.fac1[1],"]")
+  names(data.models)[20] <- paste0("M6.", fac.names[2], "[ref: ", lev.fac2[2],"]", "*", fac.names[1], "[ref: ", lev.fac1[1],"]")
+  names(data.models)[21] <- paste0("M6.", fac.names[2], "[ref: ", lev.fac2[1],"]", "*", fac.names[1], "[ref: ", lev.fac1[2],"]")
+  names(data.models)[22] <- paste0("M6.", fac.names[2], "[ref: ", lev.fac2[2],"]", "*", fac.names[1], "[ref: ", lev.fac1[2],"]")
 
   data_summary <- data.frame(
     "NUMBER"=1:22,
