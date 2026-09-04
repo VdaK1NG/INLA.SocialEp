@@ -19,13 +19,14 @@
 #' @param save.hyper Save hyperparameter values from each individual model, default is TRUE
 #' @param verbose.INLA Verbose option for INLA, default is FALSE
 #' @param save.mod.data Save modelling data to run the model afterwards
+#' @param save.cov.mat Save posterior variance-covariance matrix of the random effects
 #' @param thres thres value for inla.null.sp function
 #' @return List with all the models analyzed and a summary table with the most common performance metrics.
 #' @export
 
 inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fac2 = NULL, scale.mod=TRUE, sp.prior="sdunif", pc.prec.val = c(1, 0.01),
                              sp.copy.fixed=TRUE, save.res=FALSE, save.random=TRUE, save.hyper=TRUE, save.fixed=TRUE, save.mod.data=FALSE, verbose.INLA=FALSE,
-                             thres=0.125) {
+                             save.cov.mat=TRUE, thres=0.125) {
 
   ## Print warnings (warnings are printed as they occur)
   options(warn=1)
@@ -271,7 +272,8 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
   # Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
+                     control.inla = list(tolerance.step = 1e-8, lincomb.derived.correlation.matrix=save.cov.mat),
+                     verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
@@ -317,6 +319,9 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
 
+    # Extract covariance matrix for random effects
+    if(save.cov.mat==TRUE){list_temp$ref.cov.matrix <- ResMod$misc$lincomb.derived.covariance.matrix}
+
     # Clean Environment
     rm(ResMod)
 
@@ -334,6 +339,7 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
+    list_temp$ref.cov.matrix <- NA
   }
 
   # Clean RAM
@@ -387,7 +393,8 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
   # Run Model
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
+                     control.inla = list(tolerance.step = 1e-8, lincomb.derived.correlation.matrix=save.cov.mat),
+                     verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
@@ -433,6 +440,9 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
 
+    # Extract covariance matrix for random effects
+    if(save.cov.mat==TRUE){list_temp$ref.cov.matrix <- ResMod$misc$lincomb.derived.covariance.matrix}
+
     # Clean Environment
     rm(ResMod)
 
@@ -450,6 +460,7 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
+    list_temp$ref.cov.matrix <- NA
   }
 
   # Clean RAM
@@ -498,7 +509,8 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
+                     control.inla = list(tolerance.step = 1e-8, lincomb.derived.correlation.matrix=save.cov.mat),
+                     verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
@@ -544,6 +556,9 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
 
+    # Extract covariance matrix for random effects
+    if(save.cov.mat==TRUE){list_temp$ref.cov.matrix <- ResMod$misc$lincomb.derived.covariance.matrix}
+
     # Clean Environment
     rm(ResMod)
 
@@ -561,12 +576,8 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
+    list_temp$ref.cov.matrix <- NA
   }
-
-  # Clean RAM
-  data.models[[length(data.models)+1]] <- list_temp
-  names(data.models)[length(data.models)] <- "M2"
-  rm(list_temp)
 
   ### F1L2-F2L1 ---------------------------------------------------------------------------------------------------------------------
 
@@ -592,7 +603,8 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l2_f2l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
+                     control.inla = list(tolerance.step = 1e-8, lincomb.derived.correlation.matrix=save.cov.mat),
+                     verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
@@ -638,6 +650,9 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
 
+    # Extract covariance matrix for random effects
+    if(save.cov.mat==TRUE){list_temp$ref.cov.matrix <- ResMod$misc$lincomb.derived.covariance.matrix}
+
     # Clean Environment
     rm(ResMod)
 
@@ -655,6 +670,7 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
+    list_temp$ref.cov.matrix <- NA
   }
 
   # Clean RAM
@@ -686,7 +702,8 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l2,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
+                     control.inla = list(tolerance.step = 1e-8, lincomb.derived.correlation.matrix=save.cov.mat),
+                     verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
@@ -732,6 +749,9 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
 
+    # Extract covariance matrix for random effects
+    if(save.cov.mat==TRUE){list_temp$ref.cov.matrix <- ResMod$misc$lincomb.derived.covariance.matrix}
+
     # Clean Environment
     rm(ResMod)
 
@@ -749,6 +769,7 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
+    list_temp$ref.cov.matrix <- NA
   }
 
   # Clean RAM
@@ -780,7 +801,8 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l2_f2l2,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
+                     control.inla = list(tolerance.step = 1e-8, lincomb.derived.correlation.matrix=save.cov.mat),
+                     verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
@@ -823,8 +845,11 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     # Extract Hyperparameters
     if(save.hyper==TRUE){list_temp$summary.hyperpar <- ResMod$summary.hyperpar}
 
-    ## Extract RME for each group
+    # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
+
+    # Extract covariance matrix for random effects
+    if(save.cov.mat==TRUE){list_temp$ref.cov.matrix <- ResMod$misc$lincomb.derived.covariance.matrix}
 
     # Clean Environment
     rm(ResMod)
@@ -843,6 +868,7 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
+    list_temp$ref.cov.matrix <- NA
   }
 
   # Clean RAM
@@ -901,7 +927,8 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
+                     control.inla = list(tolerance.step = 1e-8, lincomb.derived.correlation.matrix=save.cov.mat),
+                     verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
@@ -947,6 +974,9 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
 
+    # Extract covariance matrix for random effects
+    if(save.cov.mat==TRUE){list_temp$ref.cov.matrix <- ResMod$misc$lincomb.derived.covariance.matrix}
+
     # Clean Environment
     rm(ResMod)
 
@@ -964,12 +994,8 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
+    list_temp$ref.cov.matrix <- NA
   }
-
-  # Clean RAM
-  data.models[[length(data.models)+1]] <- list_temp
-  names(data.models)[length(data.models)] <- "M3"
-  rm(list_temp)
 
   ### F1L2-F2L1 ---------------------------------------------------------------------------------------------------------------------
 
@@ -1003,7 +1029,8 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l2_f2l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
+                     control.inla = list(tolerance.step = 1e-8, lincomb.derived.correlation.matrix=save.cov.mat),
+                     verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
@@ -1049,6 +1076,9 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
 
+    # Extract covariance matrix for random effects
+    if(save.cov.mat==TRUE){list_temp$ref.cov.matrix <- ResMod$misc$lincomb.derived.covariance.matrix}
+
     # Clean Environment
     rm(ResMod)
 
@@ -1066,6 +1096,7 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
+    list_temp$ref.cov.matrix <- NA
   }
 
   # Clean RAM
@@ -1118,7 +1149,8 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
+                     control.inla = list(tolerance.step = 1e-8, lincomb.derived.correlation.matrix=save.cov.mat),
+                     verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
@@ -1164,6 +1196,9 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
 
+    # Extract covariance matrix for random effects
+    if(save.cov.mat==TRUE){list_temp$ref.cov.matrix <- ResMod$misc$lincomb.derived.covariance.matrix}
+
     # Clean Environment
     rm(ResMod)
 
@@ -1181,6 +1216,7 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
+    list_temp$ref.cov.matrix <- NA
   }
 
   # Clean RAM
@@ -1220,7 +1256,8 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l2,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
+                     control.inla = list(tolerance.step = 1e-8, lincomb.derived.correlation.matrix=save.cov.mat),
+                     verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
@@ -1266,6 +1303,9 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
 
+    # Extract covariance matrix for random effects
+    if(save.cov.mat==TRUE){list_temp$ref.cov.matrix <- ResMod$misc$lincomb.derived.covariance.matrix}
+
     # Clean Environment
     rm(ResMod)
 
@@ -1283,6 +1323,7 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
+    list_temp$ref.cov.matrix <- NA
   }
 
   # Clean RAM
@@ -1354,7 +1395,8 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
+                     control.inla = list(tolerance.step = 1e-8, lincomb.derived.correlation.matrix=save.cov.mat),
+                     verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
@@ -1400,6 +1442,9 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
 
+    # Extract covariance matrix for random effects
+    if(save.cov.mat==TRUE){list_temp$ref.cov.matrix <- ResMod$misc$lincomb.derived.covariance.matrix}
+
     # Clean Environment
     rm(ResMod)
 
@@ -1417,6 +1462,7 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
+    list_temp$ref.cov.matrix <- NA
   }
 
   # Clean RAM
@@ -1465,7 +1511,8 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l2_f2l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
+                     control.inla = list(tolerance.step = 1e-8, lincomb.derived.correlation.matrix=save.cov.mat),
+                     verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
@@ -1511,6 +1558,9 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
 
+    # Extract covariance matrix for random effects
+    if(save.cov.mat==TRUE){list_temp$ref.cov.matrix <- ResMod$misc$lincomb.derived.covariance.matrix}
+
     # Clean Environment
     rm(ResMod)
 
@@ -1528,6 +1578,7 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
+    list_temp$ref.cov.matrix <- NA
   }
 
   # Clean RAM
@@ -1576,7 +1627,8 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l2,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
+                     control.inla = list(tolerance.step = 1e-8, lincomb.derived.correlation.matrix=save.cov.mat),
+                     verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
@@ -1622,6 +1674,9 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
 
+    # Extract covariance matrix for random effects
+    if(save.cov.mat==TRUE){list_temp$ref.cov.matrix <- ResMod$misc$lincomb.derived.covariance.matrix}
+
     # Clean Environment
     rm(ResMod)
 
@@ -1639,6 +1694,7 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
+    list_temp$ref.cov.matrix <- NA
   }
 
 
@@ -1688,7 +1744,8 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l2_f2l2,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
+                     control.inla = list(tolerance.step = 1e-8, lincomb.derived.correlation.matrix=save.cov.mat),
+                     verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
@@ -1734,6 +1791,9 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
 
+    # Extract covariance matrix for random effects
+    if(save.cov.mat==TRUE){list_temp$ref.cov.matrix <- ResMod$misc$lincomb.derived.covariance.matrix}
+
     # Clean Environment
     rm(ResMod)
 
@@ -1751,6 +1811,7 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
+    list_temp$ref.cov.matrix <- NA
   }
 
   # Clean RAM
@@ -1834,7 +1895,8 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
+                     control.inla = list(tolerance.step = 1e-8, lincomb.derived.correlation.matrix=save.cov.mat),
+                     verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
@@ -1880,6 +1942,9 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
 
+    # Extract covariance matrix for random effects
+    if(save.cov.mat==TRUE){list_temp$ref.cov.matrix <- ResMod$misc$lincomb.derived.covariance.matrix}
+
     # Clean Environment
     rm(ResMod)
 
@@ -1897,6 +1962,7 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
+    list_temp$ref.cov.matrix <- NA
   }
 
   # Clean RAM
@@ -1951,7 +2017,8 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l2_f2l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
+                     control.inla = list(tolerance.step = 1e-8, lincomb.derived.correlation.matrix=save.cov.mat),
+                     verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
@@ -1997,6 +2064,9 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
 
+    # Extract covariance matrix for random effects
+    if(save.cov.mat==TRUE){list_temp$ref.cov.matrix <- ResMod$misc$lincomb.derived.covariance.matrix}
+
     # Clean Environment
     rm(ResMod)
 
@@ -2014,6 +2084,7 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
+    list_temp$ref.cov.matrix <- NA
   }
 
   # Clean RAM
@@ -2068,7 +2139,8 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l1_f2l2,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
+                     control.inla = list(tolerance.step = 1e-8, lincomb.derived.correlation.matrix=save.cov.mat),
+                     verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
@@ -2114,6 +2186,9 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
 
+    # Extract covariance matrix for random effects
+    if(save.cov.mat==TRUE){list_temp$ref.cov.matrix <- ResMod$misc$lincomb.derived.covariance.matrix}
+
     # Clean Environment
     rm(ResMod)
 
@@ -2131,6 +2206,7 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
+    list_temp$ref.cov.matrix <- NA
   }
 
   # Clean RAM
@@ -2185,7 +2261,8 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f1l2_f2l2,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
+                     control.inla = list(tolerance.step = 1e-8, lincomb.derived.correlation.matrix=save.cov.mat),
+                     verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
@@ -2231,6 +2308,9 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
 
+    # Extract covariance matrix for random effects
+    if(save.cov.mat==TRUE){list_temp$ref.cov.matrix <- ResMod$misc$lincomb.derived.covariance.matrix}
+
     # Clean Environment
     rm(ResMod)
 
@@ -2248,6 +2328,7 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
+    list_temp$ref.cov.matrix <- NA
   }
 
   # Clean RAM
@@ -2302,7 +2383,8 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f2l1_f1l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
+                     control.inla = list(tolerance.step = 1e-8, lincomb.derived.correlation.matrix=save.cov.mat),
+                     verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
@@ -2348,6 +2430,9 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
 
+    # Extract covariance matrix for random effects
+    if(save.cov.mat==TRUE){list_temp$ref.cov.matrix <- ResMod$misc$lincomb.derived.covariance.matrix}
+
     # Clean Environment
     rm(ResMod)
 
@@ -2365,6 +2450,7 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
+    list_temp$ref.cov.matrix <- NA
   }
 
   # Clean RAM
@@ -2419,7 +2505,8 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f2l2_f1l1,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
+                     control.inla = list(tolerance.step = 1e-8, lincomb.derived.correlation.matrix=save.cov.mat),
+                     verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
@@ -2465,6 +2552,9 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
 
+    # Extract covariance matrix for random effects
+    if(save.cov.mat==TRUE){list_temp$ref.cov.matrix <- ResMod$misc$lincomb.derived.covariance.matrix}
+
     # Clean Environment
     rm(ResMod)
 
@@ -2482,6 +2572,7 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
+    list_temp$ref.cov.matrix <- NA
   }
 
   # Clean RAM
@@ -2536,7 +2627,8 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f2l1_f1l2,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
+                     control.inla = list(tolerance.step = 1e-8, lincomb.derived.correlation.matrix=save.cov.mat),
+                     verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
@@ -2582,6 +2674,9 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
 
+    # Extract covariance matrix for random effects
+    if(save.cov.mat==TRUE){list_temp$ref.cov.matrix <- ResMod$misc$lincomb.derived.covariance.matrix}
+
     # Clean Environment
     rm(ResMod)
 
@@ -2599,6 +2694,7 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
+    list_temp$ref.cov.matrix <- NA
   }
 
   # Clean RAM
@@ -2653,7 +2749,8 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
   ## Run model in INLA
   try(ResMod <- INLA::inla(formula = formula, data = data.INLA, family = rep("poisson", 4), E = data.INLA$EXP_f2l2_f1l2,
                      control.predictor = list(compute = TRUE), control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-                     control.inla = list(tolerance.step = 1e-8), verbose = verbose.INLA))
+                     control.inla = list(tolerance.step = 1e-8, lincomb.derived.correlation.matrix=save.cov.mat),
+                     verbose = verbose.INLA))
 
   # Save Data of the Model into list of models
   list_temp <- list()
@@ -2699,6 +2796,9 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     # Extract RME for each group
     list_temp$summary.fitted.values <- ResMod$summary.fitted.values
 
+    # Extract covariance matrix for random effects
+    if(save.cov.mat==TRUE){list_temp$ref.cov.matrix <- ResMod$misc$lincomb.derived.covariance.matrix}
+
     # Clean Environment
     rm(ResMod)
 
@@ -2716,6 +2816,7 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     list_temp$summary.fixed <- NA
     list_temp$summary.hyperpar <- NA
     list_temp$summary.fitted.values <- NA
+    list_temp$ref.cov.matrix <- NA
   }
 
   # Clean RAM
