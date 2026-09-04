@@ -91,7 +91,8 @@ ResMod <- INLA.SocialEp::inla.SpANOVA.2x2(
   save.res=FALSE, 
   save.random=FALSE,
   save.hyper=FALSE, 
-  save.mod.data=TRUE
+  save.mod.data=TRUE, 
+  save.cov.mat= TRUE
   )
 ```
 
