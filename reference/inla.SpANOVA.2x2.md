@@ -23,6 +23,7 @@ inla.SpANOVA.2x2(
   save.fixed = TRUE,
   save.mod.data = FALSE,
   verbose.INLA = FALSE,
+  save.cov.mat = TRUE,
   thres = 0.125
 )
 ```
@@ -94,6 +95,10 @@ inla.SpANOVA.2x2(
 - verbose.INLA:
 
   Verbose option for INLA, default is FALSE
+
+- save.cov.mat:
+
+  Save posterior variance-covariance matrix of the random effects
 
 - thres:
 

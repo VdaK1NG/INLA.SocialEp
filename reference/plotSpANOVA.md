@@ -18,6 +18,7 @@ plotSpANOVA(
   scale_name = "Values",
   sp_null = 0.125,
   legend.position = "right",
+  groups_names = "Default",
   ncol_fig = 2
 )
 ```
@@ -70,6 +71,10 @@ plotSpANOVA(
 - legend.position:
 
   Position for the legend of the plot
+
+- groups_names:
+
+  Names of the different groups
 
 - ncol_fig:
 
