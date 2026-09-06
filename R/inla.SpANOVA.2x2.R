@@ -579,6 +579,11 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     list_temp$ref.cov.matrix <- NA
   }
 
+  # Clean RAM
+  data.models[[length(data.models)+1]] <- list_temp
+  names(data.models)[length(data.models)] <- "M2"
+  rm(list_temp)
+
   ### F1L2-F2L1 ---------------------------------------------------------------------------------------------------------------------
 
   ## Formulas for the model
@@ -996,6 +1001,11 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     list_temp$summary.fitted.values <- NA
     list_temp$ref.cov.matrix <- NA
   }
+
+  # Clean RAM
+  data.models[[length(data.models)+1]] <- list_temp
+  names(data.models)[length(data.models)] <- "M3"
+  rm(list_temp)
 
   ### F1L2-F2L1 ---------------------------------------------------------------------------------------------------------------------
 
@@ -1696,7 +1706,6 @@ inla.SpANOVA.2x2 <- function(data, gr, fac.names = NULL, lev.fac1 = NULL, lev.fa
     list_temp$summary.fitted.values <- NA
     list_temp$ref.cov.matrix <- NA
   }
-
 
   # Clean RAM
   data.models[[length(data.models)+1]] <- list_temp
