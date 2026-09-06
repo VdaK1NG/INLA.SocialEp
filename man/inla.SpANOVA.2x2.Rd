@@ -20,6 +20,7 @@ inla.SpANOVA.2x2(
   save.fixed = TRUE,
   save.mod.data = FALSE,
   verbose.INLA = FALSE,
+  save.cov.mat = TRUE,
   thres = 0.125
 )
 }
@@ -53,6 +54,8 @@ inla.SpANOVA.2x2(
 \item{save.mod.data}{Save modelling data to run the model afterwards}
 
 \item{verbose.INLA}{Verbose option for INLA, default is FALSE}
+
+\item{save.cov.mat}{Save posterior variance-covariance matrix of the random effects}
 
 \item{thres}{thres value for inla.null.sp function}
 }

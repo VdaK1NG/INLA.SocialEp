@@ -16,6 +16,7 @@ plotSpANOVA(
   scale_name = "Values",
   sp_null = 0.125,
   legend.position = "right",
+  groups_names = "Default",
   ncol_fig = 2
 )
 }
@@ -41,6 +42,8 @@ plotSpANOVA(
 \item{sp_null}{Threshold desired to considered a spatial effect represented null, default is 0.125}
 
 \item{legend.position}{Position for the legend of the plot}
+
+\item{groups_names}{Names of the different groups}
 
 \item{ncol_fig}{Number of columns desired for the grid of figures}
 }
